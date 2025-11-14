@@ -148,7 +148,7 @@ results/logs/*
 wandb/
 
 # Data directories (uncomment if storing data locally)
-# data/
+data/
 # datasets/
 
 # Temporary files
