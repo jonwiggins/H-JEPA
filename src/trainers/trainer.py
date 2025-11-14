@@ -337,32 +337,40 @@ class HJEPATrainer:
         images = images.to(self.device)
 
         # Generate masks
-        context_masks, target_masks = self.masking_fn(
+        masks_dict = self.masking_fn(
             batch_size=images.size(0),
             device=self.device,
         )
 
+        # Use level 0 masks (finest level)
+        # The masking function returns:
+        # - 'context': [B, N] - regions to keep visible
+        # - 'targets': [B, num_target_masks, N] - multiple target regions to predict
+        #
+        # For H-JEPA, we need to combine all target masks into a single mask of patches to predict
+        # targets shape: [B, num_target_masks, N]
+        target_masks = masks_dict['level_0']['targets']
+
+        # Combine all target masks using OR operation (any target that covers a patch)
+        # This gives us a single mask of shape [B, N] where 1 = predict, 0 = don't predict
+        context_mask = target_masks.any(dim=1)  # [B, N]
+
         # Forward pass with automatic mixed precision
         with autocast(enabled=self.use_amp):
-            # Context encoder forward (student)
-            context_embeddings = self.model.encode_context(images, context_masks)
+            # Forward through H-JEPA model
+            outputs = self.model(images, context_mask)
 
-            # Target encoder forward (teacher, no gradient)
-            with torch.no_grad():
-                target_embeddings = self.model.encode_target(images, target_masks)
-
-            # Predictor forward
-            predictions = self.model.predict(
-                context_embeddings,
-                target_masks,
-                context_masks,
-            )
+            # Extract predictions and targets for all hierarchy levels
+            predictions = outputs['predictions']
+            targets = outputs['targets']
 
             # Compute loss
-            loss, loss_dict = self.loss_fn(
+            # Loss function returns a dict with 'loss' key and other metrics
+            loss_dict = self.loss_fn(
                 predictions=predictions,
-                targets=target_embeddings,
+                targets=targets,
             )
+            loss = loss_dict['loss']
 
         # Update target encoder with EMA
         ema_momentum = self.ema_scheduler(self.global_step)
@@ -371,8 +379,8 @@ class HJEPATrainer:
         # Monitor representation collapse
         if step % (self.log_frequency * 10) == 0:
             collapse_metrics = self._compute_collapse_metrics(
-                context_embeddings,
-                target_embeddings,
+                outputs['context_features'],
+                outputs['target_features'],
             )
             loss_dict.update(collapse_metrics)
 

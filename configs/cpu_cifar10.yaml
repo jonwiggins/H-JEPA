@@ -1,0 +1,182 @@
+# CPU-Optimized H-JEPA Configuration for CIFAR-10
+# This configuration is designed for CPU-only training with limited resources
+# Expected training time: 18-24 hours for 20 epochs
+
+# Model architecture settings (minimized for CPU)
+model:
+  # Smallest ViT variant (~5M parameters)
+  encoder_type: "vit_tiny_patch16_224"
+
+  # Embedding dimension (reduced from 384)
+  embed_dim: 192
+
+  # Number of hierarchical levels (reduced from 3)
+  num_hierarchies: 2
+
+  # Predictor configuration (simplified)
+  predictor:
+    depth: 2          # Reduced from 4-6
+    num_heads: 3      # Reduced from 6
+    mlp_ratio: 4.0
+
+  # EMA (Exponential Moving Average) settings for target encoder
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 5
+
+# Dataset and data loading
+data:
+  # CIFAR-10: 50K training images, 10K test images, 32x32 resolution
+  dataset: "cifar10"
+
+  # Data directory (CIFAR-10 will auto-download here)
+  data_path: "./data/cifar10"
+
+  # Image size (standard ViT input)
+  image_size: 224
+
+  # Batch size per device (small for CPU memory constraints)
+  batch_size: 8
+
+  # Number of data loading workers (limited for CPU)
+  num_workers: 2
+
+  # Pin memory (not beneficial for CPU)
+  pin_memory: false
+
+  # Data augmentation settings (mild for JEPA)
+  augmentation:
+    color_jitter: 0.4
+    horizontal_flip: true
+    random_crop: true
+
+# Multi-block masking strategy
+masking:
+  # Number of target blocks to predict (reduced from 4)
+  num_masks: 2
+
+  # Mask scale range (as fraction of image)
+  mask_scale: [0.15, 0.2]
+
+  # Aspect ratio range for masks
+  aspect_ratio: [0.75, 1.5]
+
+  # Number of context blocks
+  num_context_masks: 1
+
+  # Context mask scale
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters
+training:
+  # Total number of epochs (reduced for quick validation)
+  epochs: 20
+
+  # Warmup epochs (reduced from 40)
+  warmup_epochs: 2
+
+  # Base learning rate (conservative for CPU stability)
+  lr: 5.0e-5
+
+  # Minimum learning rate
+  min_lr: 1.0e-6
+
+  # Weight decay
+  weight_decay: 0.05
+
+  # Optimizer
+  optimizer: "adamw"
+
+  # Betas for AdamW
+  betas: [0.9, 0.95]
+
+  # Learning rate schedule
+  lr_schedule: "cosine"
+
+  # Gradient clipping (aggressive for stability)
+  clip_grad: 1.0
+
+  # Mixed precision training (not beneficial on CPU)
+  use_amp: false
+
+  # Gradient accumulation steps (effective batch size: 8*4=32)
+  accumulation_steps: 4
+
+# Loss function settings
+loss:
+  # Loss type
+  type: "smoothl1"
+
+  # Hierarchical loss weights (one per hierarchy level)
+  # 2 levels only: [fine, coarse]
+  hierarchy_weights: [1.0, 0.5]
+
+  # Whether to normalize embeddings before loss computation
+  normalize_embeddings: true
+
+# Checkpointing and logging
+checkpoint:
+  # Save checkpoint every N epochs
+  save_frequency: 5
+
+  # Keep only the best N checkpoints
+  keep_best_n: 3
+
+  # Checkpoint directory
+  checkpoint_dir: "results/checkpoints/cpu_cifar10"
+
+  # Resume from checkpoint (null for fresh start)
+  resume: null
+
+# Logging configuration
+logging:
+  # Experiment name
+  experiment_name: "hjepa_cpu_cifar10_baseline"
+
+  # Logging directory
+  log_dir: "results/logs/cpu_cifar10"
+
+  # Log every N steps
+  log_frequency: 50
+
+  # Weights & Biases settings (disabled for faster training)
+  wandb:
+    enabled: false
+    project: "h-jepa"
+    entity: null
+    tags: ["cpu", "cifar10", "baseline", "vit-tiny"]
+
+  # TensorBoard settings (enabled for local monitoring)
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+distributed:
+  # Enable distributed training (not applicable for single CPU)
+  enabled: false
+
+  # Backend
+  backend: "nccl"
+
+  # World size
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  # Evaluate every N epochs
+  eval_frequency: 5
+
+  # Linear probing settings (optional during training)
+  linear_probe:
+    enabled: false
+    dataset: "cifar10"
+    batch_size: 32
+    epochs: 50
+    lr: 0.1
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cpu"

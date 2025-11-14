@@ -424,34 +424,40 @@ def create_loss_from_config(config: Dict) -> nn.Module:
         ... }
         >>> loss_fn = create_loss_from_config(config)
     """
-    loss_type = config.get('type', 'combined').lower()
+    # Get loss parameters from config
+    # Check both top-level and 'loss' section for compatibility
+    loss_config = config.get('loss', config)
+    model_config = config.get('model', {})
 
-    if loss_type == 'hjepa' or loss_type == 'jepa':
+    loss_type = loss_config.get('type', 'combined').lower()
+    num_hierarchies = model_config.get('num_hierarchies', loss_config.get('num_hierarchies', 3))
+
+    if loss_type == 'hjepa' or loss_type == 'jepa' or loss_type == 'smoothl1':
         return HJEPALoss(
-            loss_type=config.get('jepa_loss_type', 'smoothl1'),
-            hierarchy_weights=config.get('hierarchy_weights', 1.0),
-            num_hierarchies=config.get('num_hierarchies', 3),
-            normalize_embeddings=config.get('normalize_embeddings', True),
+            loss_type=loss_config.get('jepa_loss_type', loss_type if loss_type in ['smoothl1', 'mse', 'cosine'] else 'smoothl1'),
+            hierarchy_weights=loss_config.get('hierarchy_weights', 1.0),
+            num_hierarchies=num_hierarchies,
+            normalize_embeddings=loss_config.get('normalize_embeddings', True),
         )
 
     elif loss_type == 'vicreg':
         return VICRegLoss(
-            invariance_weight=config.get('vicreg_invariance_weight', 25.0),
-            variance_weight=config.get('vicreg_variance_weight', 25.0),
-            covariance_weight=config.get('vicreg_covariance_weight', 1.0),
-            variance_threshold=config.get('vicreg_variance_threshold', 1.0),
+            invariance_weight=loss_config.get('vicreg_invariance_weight', 25.0),
+            variance_weight=loss_config.get('vicreg_variance_weight', 25.0),
+            covariance_weight=loss_config.get('vicreg_covariance_weight', 1.0),
+            variance_threshold=loss_config.get('vicreg_variance_threshold', 1.0),
         )
 
     elif loss_type == 'combined':
         return CombinedLoss(
-            jepa_loss_type=config.get('jepa_loss_type', 'smoothl1'),
-            jepa_hierarchy_weights=config.get('hierarchy_weights', 1.0),
-            num_hierarchies=config.get('num_hierarchies', 3),
-            normalize_embeddings=config.get('normalize_embeddings', True),
-            vicreg_weight=config.get('vicreg_weight', 0.1),
-            vicreg_invariance_weight=config.get('vicreg_invariance_weight', 25.0),
-            vicreg_variance_weight=config.get('vicreg_variance_weight', 25.0),
-            vicreg_covariance_weight=config.get('vicreg_covariance_weight', 1.0),
+            jepa_loss_type=loss_config.get('jepa_loss_type', 'smoothl1'),
+            jepa_hierarchy_weights=loss_config.get('hierarchy_weights', 1.0),
+            num_hierarchies=num_hierarchies,
+            normalize_embeddings=loss_config.get('normalize_embeddings', True),
+            vicreg_weight=loss_config.get('vicreg_weight', 0.1),
+            vicreg_invariance_weight=loss_config.get('vicreg_invariance_weight', 25.0),
+            vicreg_variance_weight=loss_config.get('vicreg_variance_weight', 25.0),
+            vicreg_covariance_weight=loss_config.get('vicreg_covariance_weight', 1.0),
         )
 
     elif loss_type == 'hierarchical_combined':

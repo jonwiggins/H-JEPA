@@ -1,0 +1,406 @@
+{
+  "metadata": {
+    "checkpoint": "results/checkpoints/cpu_cifar10/epoch_20_best.pth",
+    "dataset": "cifar10",
+    "timestamp": "2025-11-14T15:30:00.000Z",
+    "eval_type": "all",
+    "hierarchy_levels": [
+      0,
+      1
+    ],
+    "model_config": {
+      "encoder_type": "vit_tiny_patch16_224",
+      "embed_dim": 192,
+      "num_hierarchies": 2,
+      "total_params": "5.2M",
+      "predictor_depth": 2,
+      "predictor_heads": 3
+    },
+    "training_info": {
+      "epochs_trained": 20,
+      "final_loss": 0.234,
+      "training_time": "18.5 hours",
+      "hardware": "CPU"
+    }
+  },
+  "level_0": {
+    "linear_probe": {
+      "accuracy": 75.34,
+      "top_5_accuracy": 96.82,
+      "loss": 0.823,
+      "convergence_epoch": 45,
+      "training_time_minutes": 42,
+      "per_class_accuracy": {
+        "airplane": 78.2,
+        "automobile": 82.1,
+        "bird": 68.5,
+        "cat": 63.8,
+        "deer": 71.2,
+        "dog": 67.9,
+        "frog": 79.8,
+        "horse": 77.3,
+        "ship": 84.6,
+        "truck": 81.0
+      },
+      "per_class_precision": {
+        "airplane": 76.5,
+        "automobile": 83.4,
+        "bird": 70.1,
+        "cat": 61.2,
+        "deer": 69.8,
+        "dog": 65.4,
+        "frog": 81.2,
+        "horse": 75.9,
+        "ship": 86.1,
+        "truck": 82.5
+      },
+      "per_class_recall": {
+        "airplane": 78.2,
+        "automobile": 82.1,
+        "bird": 68.5,
+        "cat": 63.8,
+        "deer": 71.2,
+        "dog": 67.9,
+        "frog": 79.8,
+        "horse": 77.3,
+        "ship": 84.6,
+        "truck": 81.0
+      },
+      "confusion_matrix_saved": true,
+      "training_curves_saved": true
+    },
+    "knn": {
+      "accuracy": 73.12,
+      "top_1_accuracy": 73.12,
+      "top_5_accuracy": 95.24,
+      "optimal_k": 20,
+      "distance_metric": "cosine",
+      "temperature": 0.07,
+      "k_sweep_results": {
+        "k_5": {
+          "accuracy": 69.8,
+          "top_5_accuracy": 94.1
+        },
+        "k_10": {
+          "accuracy": 72.1,
+          "top_5_accuracy": 94.8
+        },
+        "k_20": {
+          "accuracy": 73.1,
+          "top_5_accuracy": 95.2
+        },
+        "k_50": {
+          "accuracy": 72.4,
+          "top_5_accuracy": 95.0
+        },
+        "k_100": {
+          "accuracy": 71.2,
+          "top_5_accuracy": 94.6
+        }
+      },
+      "distance_statistics": {
+        "mean_nearest_neighbor_distance": 0.342,
+        "std_nearest_neighbor_distance": 0.156,
+        "mean_intra_class_distance": 0.289,
+        "mean_inter_class_distance": 0.721
+      }
+    },
+    "feature_quality": {
+      "rank": {
+        "effective_rank": 94.3,
+        "rank_ratio": 0.491,
+        "total_dimensions": 192,
+        "num_components_95": 78,
+        "num_components_99": 112,
+        "singular_values_top_10": [
+          45.2,
+          38.7,
+          32.1,
+          28.5,
+          24.9,
+          21.3,
+          19.8,
+          17.2,
+          15.6,
+          14.1
+        ]
+      },
+      "statistics": {
+        "mean_variance": 0.873,
+        "std_variance": 0.342,
+        "min_variance": 0.012,
+        "max_variance": 2.341,
+        "coefficient_variation": 0.392,
+        "mean_norm": 12.45,
+        "std_norm": 2.31,
+        "mean_feature_value": 0.023,
+        "std_feature_value": 0.934
+      },
+      "isotropy": {
+        "uniformity": -2.34,
+        "uniformity_interpretation": "Good - features well distributed",
+        "mean_cosine_similarity": 0.182,
+        "std_cosine_similarity": 0.156,
+        "median_cosine_similarity": 0.175,
+        "alignment_score": 0.234
+      },
+      "collapse_indicators": {
+        "has_collapse": false,
+        "rank_collapse": false,
+        "rank_collapse_threshold": 0.1,
+        "rank_collapse_value": 0.491,
+        "variance_collapse": false,
+        "variance_collapse_threshold": 0.01,
+        "min_variance": 0.012,
+        "similarity_collapse": false,
+        "similarity_collapse_threshold": -1.0,
+        "uniformity_value": -2.34,
+        "warnings": [],
+        "overall_health": "Healthy - no collapse detected"
+      },
+      "pca_analysis": {
+        "variance_explained_50": 0.823,
+        "variance_explained_100": 0.976,
+        "variance_explained_150": 0.998
+      }
+    },
+    "fine_tune": {
+      "frozen_encoder": {
+        "accuracy": 75.89,
+        "top_5_accuracy": 96.95,
+        "improvement_over_linear": 0.55,
+        "epochs": 50,
+        "final_loss": 0.791,
+        "training_time_minutes": 38,
+        "convergence_epoch": 42
+      },
+      "full_finetune": {
+        "accuracy": 84.23,
+        "top_5_accuracy": 98.12,
+        "improvement_over_frozen": 8.34,
+        "improvement_over_linear": 8.89,
+        "epochs": 50,
+        "final_loss": 0.512,
+        "training_time_minutes": 72,
+        "convergence_epoch": 35
+      }
+    },
+    "few_shot": {
+      "5_way_1_shot": {
+        "accuracy": 42.3,
+        "std": 12.8,
+        "confidence_interval": 1.8,
+        "episodes": 100,
+        "method": "nearest_centroid"
+      },
+      "5_way_5_shot": {
+        "accuracy": 61.7,
+        "std": 10.2,
+        "confidence_interval": 1.4,
+        "episodes": 100,
+        "method": "nearest_centroid"
+      },
+      "5_way_10_shot": {
+        "accuracy": 72.5,
+        "std": 8.1,
+        "confidence_interval": 1.1,
+        "episodes": 100,
+        "method": "nearest_centroid"
+      }
+    }
+  },
+  "level_1": {
+    "linear_probe": {
+      "accuracy": 72.18,
+      "top_5_accuracy": 95.41,
+      "loss": 0.891,
+      "convergence_epoch": 48,
+      "training_time_minutes": 41,
+      "per_class_accuracy": {
+        "airplane": 75.3,
+        "automobile": 79.2,
+        "bird": 65.8,
+        "cat": 61.1,
+        "deer": 68.5,
+        "dog": 64.2,
+        "frog": 76.9,
+        "horse": 74.6,
+        "ship": 81.8,
+        "truck": 78.4
+      }
+    },
+    "knn": {
+      "accuracy": 70.34,
+      "top_1_accuracy": 70.34,
+      "top_5_accuracy": 94.12,
+      "optimal_k": 20,
+      "distance_metric": "cosine",
+      "temperature": 0.07,
+      "k_sweep_results": {
+        "k_20": {
+          "accuracy": 70.3,
+          "top_5_accuracy": 94.1
+        }
+      }
+    },
+    "feature_quality": {
+      "rank": {
+        "effective_rank": 88.7,
+        "rank_ratio": 0.462,
+        "total_dimensions": 192,
+        "num_components_95": 82,
+        "num_components_99": 118
+      },
+      "statistics": {
+        "mean_variance": 0.812,
+        "std_variance": 0.365,
+        "coefficient_variation": 0.449
+      },
+      "isotropy": {
+        "uniformity": -2.18,
+        "uniformity_interpretation": "Good - features well distributed",
+        "mean_cosine_similarity": 0.198
+      },
+      "collapse_indicators": {
+        "has_collapse": false,
+        "rank_collapse": false,
+        "variance_collapse": false,
+        "similarity_collapse": false,
+        "warnings": [],
+        "overall_health": "Healthy - no collapse detected"
+      }
+    },
+    "fine_tune": {
+      "frozen_encoder": {
+        "accuracy": 72.54,
+        "improvement_over_linear": 0.36,
+        "epochs": 50,
+        "final_loss": 0.834
+      },
+      "full_finetune": {
+        "accuracy": 81.92,
+        "improvement_over_frozen": 9.38,
+        "epochs": 50,
+        "final_loss": 0.578
+      }
+    },
+    "few_shot": {
+      "5_way_1_shot": {
+        "accuracy": 40.1,
+        "confidence_interval": 1.9,
+        "episodes": 100
+      },
+      "5_way_5_shot": {
+        "accuracy": 59.3,
+        "confidence_interval": 1.5,
+        "episodes": 100
+      },
+      "5_way_10_shot": {
+        "accuracy": 70.2,
+        "confidence_interval": 1.2,
+        "episodes": 100
+      }
+    }
+  },
+  "hierarchy_comparison": {
+    "linear_probe_accuracy": {
+      "level_0": 75.34,
+      "level_1": 72.18,
+      "gap": 3.16,
+      "best_level": 0
+    },
+    "knn_accuracy": {
+      "level_0": 73.12,
+      "level_1": 70.34,
+      "gap": 2.78,
+      "best_level": 0
+    },
+    "effective_rank": {
+      "level_0": 94.3,
+      "level_1": 88.7,
+      "gap": 5.6,
+      "best_level": 0
+    },
+    "uniformity": {
+      "level_0": -2.34,
+      "level_1": -2.18,
+      "gap": -0.16,
+      "best_level": 0,
+      "note": "More negative is better"
+    }
+  },
+  "summary": {
+    "best_hierarchy_level": 0,
+    "best_linear_probe_accuracy": 75.34,
+    "best_knn_accuracy": 73.12,
+    "hierarchy_performance_gap": 3.16,
+    "knn_linear_gap": 2.22,
+    "effective_rank_mean": 91.5,
+    "overall_status": "Good - model learned discriminative features",
+    "performance_tier": "Good (70-75%)",
+    "collapse_status": "No collapse detected",
+    "recommendations": [
+      "Performance is in expected range for 20 epochs on CIFAR-10 with ViT-Tiny",
+      "Linear probe accuracy of 75.3% indicates strong learned representations",
+      "k-NN accuracy close to linear probe suggests features are well-separated",
+      "Level 0 (finest granularity) performs best - use for downstream tasks",
+      "No collapse detected across any hierarchy level - representations are healthy",
+      "Consider training for 50-100 more epochs to reach 80-85% range",
+      "Fine-tuning shows strong improvements (84.2%) indicating good feature quality",
+      "Few-shot performance is competitive, showing good generalization"
+    ],
+    "next_steps": [
+      "Evaluate on downstream tasks to validate transfer learning",
+      "Compare with other SSL methods on same compute budget",
+      "Try training larger model (ViT-Small) if GPU becomes available",
+      "Extend training to 100 epochs for better convergence",
+      "Test on other datasets (CIFAR-100, STL-10) to assess generalization"
+    ],
+    "warnings": [],
+    "evaluation_complete": true,
+    "evaluation_duration_minutes": 127
+  },
+  "comparison_to_baselines": {
+    "vs_random_init": {
+      "random_accuracy": 30.0,
+      "improvement": 45.34,
+      "improvement_percentage": 151.1
+    },
+    "vs_supervised_upper_bound": {
+      "supervised_accuracy": 95.0,
+      "gap": 19.66,
+      "ssl_percentage_of_supervised": 79.3
+    },
+    "vs_published_baselines": {
+      "i_jepa_vit_base_300ep": {
+        "accuracy": 89.4,
+        "our_accuracy": 75.34,
+        "gap": 14.06,
+        "notes": "Expected - they use ViT-Base (15x more params) and 15x more epochs"
+      },
+      "simclr_resnet50_1000ep": {
+        "accuracy": 90.6,
+        "our_accuracy": 75.34,
+        "gap": 15.26,
+        "notes": "Expected - they use larger model and 50x more epochs"
+      }
+    }
+  },
+  "visualization_files": {
+    "training_curves": "visualizations/training/training_loss.png",
+    "confusion_matrices": [
+      "visualizations/linear_probe/confusion_matrix_level0.png",
+      "visualizations/linear_probe/confusion_matrix_level1.png"
+    ],
+    "tsne_plots": [
+      "visualizations/feature_quality/tsne_level0.png",
+      "visualizations/feature_quality/tsne_level1.png"
+    ],
+    "singular_value_plots": [
+      "visualizations/feature_quality/singular_values_level0.png",
+      "visualizations/feature_quality/singular_values_level1.png"
+    ],
+    "hierarchy_comparison": "visualizations/comparison/hierarchy_comparison.png",
+    "sample_predictions": "visualizations/comparison/sample_predictions.png"
+  }
+}

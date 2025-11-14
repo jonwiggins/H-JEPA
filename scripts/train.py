@@ -465,7 +465,7 @@ def main():
 
     # Setup logging
     log_level = logging.DEBUG if args.debug else logging.INFO
-    setup_logging(log_level=log_level)
+    setup_logging(level=log_level)
 
     try:
         # Load and validate configuration
@@ -495,10 +495,10 @@ def main():
 
         train_dataset = build_dataset(
             dataset_name=config['data']['dataset'],
-            root=config['data']['data_path'],
+            data_path=config['data']['data_path'],
             split='train',
             image_size=config['data']['image_size'],
-            augmentation_config=config['data'].get('augmentation', {}),
+            color_jitter=config['data'].get('augmentation', {}).get('color_jitter', 0.4),
         )
 
         # Build validation dataset if eval is enabled
@@ -507,10 +507,10 @@ def main():
             try:
                 val_dataset = build_dataset(
                     dataset_name=config['data']['dataset'],
-                    root=config['data']['data_path'],
+                    data_path=config['data']['data_path'],
                     split='val',
                     image_size=config['data']['image_size'],
-                    augmentation_config=None,  # No augmentation for validation
+                    color_jitter=None,  # No augmentation for validation
                 )
                 logger.info(f"Validation dataset size: {len(val_dataset)}")
             except Exception as e:
@@ -525,7 +525,6 @@ def main():
             num_workers=config['data']['num_workers'],
             pin_memory=config['data'].get('pin_memory', True),
             shuffle=True,
-            distributed=is_distributed,
         )
 
         val_loader = None
@@ -536,7 +535,6 @@ def main():
                 num_workers=config['data']['num_workers'],
                 pin_memory=config['data'].get('pin_memory', True),
                 shuffle=False,
-                distributed=is_distributed,
             )
 
         logger.info(f"Training batches per epoch: {len(train_loader)}")
@@ -579,10 +577,10 @@ def main():
         masking_generator = HierarchicalMaskGenerator(
             input_size=(img_size, img_size),
             patch_size=patch_size,
-            num_masking_patches=int(num_patches * 0.15),  # Mask ~15% of patches
-            min_num_patches=4,
-            max_num_patches=num_patches // 4,
             num_hierarchies=config['model']['num_hierarchies'],
+            num_target_masks=config['masking'].get('num_masks', 4),
+            base_scale=tuple(config['masking'].get('mask_scale', [0.05, 0.15])),
+            aspect_ratio_range=tuple(config['masking'].get('aspect_ratio', [0.75, 1.5])),
         )
 
         logger.info(f"Masking: {num_patches} patches, hierarchical levels: {config['model']['num_hierarchies']}")
@@ -604,10 +602,7 @@ def main():
 
         optimizer = create_optimizer(
             model=model,
-            optimizer_type=config['training']['optimizer'],
-            lr=config['training']['lr'],
-            weight_decay=config['training']['weight_decay'],
-            betas=tuple(config['training'].get('betas', [0.9, 0.95])),
+            config=config,
         )
 
         logger.info(f"Optimizer: {config['training']['optimizer']} (lr={config['training']['lr']})")

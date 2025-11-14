@@ -167,17 +167,31 @@ class HJEPA(nn.Module):
             target_features = self.target_encoder(images)
 
         # Get mask indices for prediction
+        # mask shape: [B, N] where N is number of patches
+        # We need to handle variable number of masked patches per sample
         mask_bool = mask.bool()
-        mask_indices = mask_bool.nonzero(as_tuple=True)[1].view(B, -1)
+
+        # Find the number of masked patches per sample
+        num_masked_per_sample = mask_bool.sum(dim=1)
+        max_masked = num_masked_per_sample.max().item()
+
+        # Create padded mask indices tensor [B, max_masked]
+        mask_indices = torch.zeros((B, max_masked), dtype=torch.long, device=mask.device)
+
+        # Fill in the actual mask indices for each sample
+        for i in range(B):
+            sample_mask_indices = mask_bool[i].nonzero(as_tuple=True)[0]
+            mask_indices[i, :len(sample_mask_indices)] = sample_mask_indices
 
         # Get positional embeddings from context encoder
-        pos_embed = self.context_encoder.vit.pos_embed
+        # pos_embed is [1, N+1, D], we need to expand to [B, N, D] (excluding CLS)
+        pos_embed = self.context_encoder.vit.pos_embed[:, 1:, :].expand(B, -1, -1)
 
         # Predict masked representations
         predicted_features = self.predictor(
             context_features=context_features[:, 1:, :],  # Exclude CLS token
             mask_indices=mask_indices,
-            pos_embed=pos_embed[:, 1:, :],  # Exclude CLS position
+            pos_embed=pos_embed,  # Already excludes CLS and expanded to batch size
         )
 
         # Extract target features for masked positions

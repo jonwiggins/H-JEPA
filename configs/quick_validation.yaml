@@ -1,0 +1,129 @@
+# Quick Validation Config for H-JEPA - 5 Epochs
+# This configuration is for quick validation testing to demonstrate the system works
+
+# Model architecture settings (minimized for CPU)
+model:
+  # Smallest ViT variant (~5M parameters)
+  encoder_type: "vit_tiny_patch16_224"
+
+  # Embedding dimension (reduced)
+  embed_dim: 192
+
+  # Number of hierarchical levels (minimal)
+  num_hierarchies: 2
+
+  # Predictor configuration (simplified)
+  predictor:
+    depth: 2
+    num_heads: 3
+    mlp_ratio: 4.0
+
+  # EMA settings for target encoder
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 2
+
+# Dataset and data loading
+data:
+  dataset: "cifar10"
+  data_path: "./data/cifar10"
+  image_size: 224
+  batch_size: 8
+  num_workers: 2
+  pin_memory: false
+
+  # Data augmentation settings
+  augmentation:
+    color_jitter: 0.4
+    horizontal_flip: true
+    random_crop: true
+
+# Multi-block masking strategy
+masking:
+  num_masks: 2
+  mask_scale: [0.15, 0.2]
+  aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters
+training:
+  # QUICK VALIDATION: Only 5 epochs
+  epochs: 5
+
+  # Warmup epochs
+  warmup_epochs: 1
+
+  # Base learning rate
+  lr: 5.0e-5
+
+  # Minimum learning rate
+  min_lr: 1.0e-6
+
+  # Weight decay
+  weight_decay: 0.05
+
+  # Optimizer
+  optimizer: "adamw"
+
+  # Betas for AdamW
+  betas: [0.9, 0.95]
+
+  # Learning rate schedule
+  lr_schedule: "cosine"
+
+  # Gradient clipping
+  clip_grad: 1.0
+
+  # Mixed precision training (not beneficial on CPU)
+  use_amp: false
+
+  # Gradient accumulation steps
+  accumulation_steps: 4
+
+# Loss function settings
+loss:
+  type: "smoothl1"
+  hierarchy_weights: [1.0, 0.5]
+  normalize_embeddings: true
+
+# Checkpointing and logging
+checkpoint:
+  save_frequency: 5
+  keep_best_n: 3
+  checkpoint_dir: "results/checkpoints/quick_validation"
+  resume: null
+
+# Logging configuration
+logging:
+  experiment_name: "hjepa_quick_validation_5epochs"
+  log_dir: "results/logs/quick_validation"
+  log_frequency: 10
+
+  wandb:
+    enabled: false
+    project: "h-jepa"
+    entity: null
+    tags: ["cpu", "cifar10", "validation", "5epochs"]
+
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+distributed:
+  enabled: false
+  backend: "nccl"
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  eval_frequency: 5
+  linear_probe:
+    enabled: false
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cpu"
