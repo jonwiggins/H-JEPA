@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: h-jepa
+  labels:
+    name: h-jepa
+    monitoring: enabled
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: h-jepa-quota
+  namespace: h-jepa
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    requests.nvidia.com/gpu: "10"
+    persistentvolumeclaims: "10"
+    pods: "20"
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: h-jepa-limits
+  namespace: h-jepa
+spec:
+  limits:
+  - max:
+      cpu: "8"
+      memory: "16Gi"
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    default:
+      cpu: "2"
+      memory: "4Gi"
+    defaultRequest:
+      cpu: "1"
+      memory: "2Gi"
+    type: Container

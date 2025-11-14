@@ -1,0 +1,66 @@
+# Training Dockerfile for H-JEPA
+# Optimized for CUDA 11.8+ and PyTorch 2.0+
+
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV TORCH_CUDA_ARCH_LIST="7.0 7.5 8.0 8.6 8.9 9.0+PTX"
+
+# Set working directory
+WORKDIR /workspace/h-jepa
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
+    git \
+    wget \
+    curl \
+    vim \
+    htop \
+    build-essential \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3.10 -m pip install --upgrade pip setuptools wheel
+
+# Install PyTorch with CUDA support
+RUN pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Install additional training dependencies
+RUN pip install \
+    nvidia-ml-py3 \
+    gpustat \
+    py-cpuinfo \
+    psutil
+
+# Copy project files
+COPY . .
+
+# Install h-jepa package in development mode
+RUN pip install -e .
+
+# Create directories for data and results
+RUN mkdir -p /workspace/data /workspace/results /workspace/checkpoints
+
+# Set environment variables for optimal performance
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+
+# Expose tensorboard port
+EXPOSE 6006
+
+# Default command: run training
+CMD ["python3.10", "scripts/train.py"]

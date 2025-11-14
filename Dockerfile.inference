@@ -1,0 +1,74 @@
+# Inference Dockerfile for H-JEPA
+# Optimized for production serving with minimal image size
+
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04 AS base
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install system dependencies (minimal for inference)
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3.10 -m pip install --upgrade pip setuptools wheel
+
+# Install PyTorch (CPU or CUDA runtime)
+ARG TORCH_DEVICE=cpu
+RUN if [ "$TORCH_DEVICE" = "cuda" ]; then \
+    pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118; \
+    else \
+    pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
+# Copy requirements and install minimal dependencies for inference
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Install serving dependencies
+RUN pip install \
+    fastapi==0.104.1 \
+    uvicorn[standard]==0.24.0 \
+    pydantic==2.5.0 \
+    python-multipart==0.0.6 \
+    aiofiles==23.2.1 \
+    prometheus-client==0.19.0
+
+# Copy only necessary source files
+COPY src/ ./src/
+COPY pyproject.toml .
+COPY README.md .
+
+# Install h-jepa package
+RUN pip install -e .
+
+# Create model directory
+RUN mkdir -p /app/models
+
+# Copy model server
+COPY src/serving/ ./src/serving/
+
+# Set non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Expose API port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python3.10 -c "import requests; requests.get('http://localhost:8000/health')"
+
+# Default command: run model server
+CMD ["python3.10", "-m", "uvicorn", "src.serving.model_server:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: h-jepa-config
+  labels:
+    app: h-jepa
+data:
+  # Model configuration
+  MODEL_PATH: "/models/checkpoint_best.pt"
+  DEVICE: "cuda"
+  IMAGE_SIZE: "224"
+
+  # Server configuration
+  LOG_LEVEL: "info"
+  WORKERS: "4"
+
+  # Performance tuning
+  OMP_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: h-jepa-secrets
+  labels:
+    app: h-jepa
+type: Opaque
+stringData:
+  # Add your secrets here (e.g., API keys)
+  # WANDB_API_KEY: "your-api-key"
+  placeholder: "no-secrets-yet"

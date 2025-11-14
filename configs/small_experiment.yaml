@@ -1,0 +1,104 @@
+# Small configuration for quick experiments and debugging
+
+# Model architecture settings (smaller for faster testing)
+model:
+  encoder_type: "vit_small_patch16_224"
+  embed_dim: 384
+  num_hierarchies: 2
+
+  predictor:
+    depth: 4
+    num_heads: 6
+    mlp_ratio: 4.0
+
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 10
+
+# Dataset and data loading
+data:
+  dataset: "cifar10"  # Smaller dataset for quick testing
+  data_path: "/path/to/cifar10"
+  image_size: 224
+  batch_size: 64  # Smaller batch size
+  num_workers: 4
+  pin_memory: true
+
+  augmentation:
+    color_jitter: 0.4
+    horizontal_flip: true
+    random_crop: true
+
+# Multi-block masking strategy
+masking:
+  num_masks: 2  # Fewer masks for faster training
+  mask_scale: [0.15, 0.2]
+  aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters (for quick experiments)
+training:
+  epochs: 50  # Fewer epochs for testing
+  warmup_epochs: 5
+  lr: 1.0e-4  # Slightly lower LR for smaller model
+  min_lr: 1.0e-6
+  weight_decay: 0.05
+  optimizer: "adamw"
+  betas: [0.9, 0.95]
+  lr_schedule: "cosine"
+  clip_grad: 3.0
+  use_amp: true
+  accumulation_steps: 1
+
+# Loss function settings
+loss:
+  type: "smoothl1"
+  hierarchy_weights: [1.0, 0.5]  # Only 2 levels
+  normalize_embeddings: true
+
+# Checkpointing and logging
+checkpoint:
+  save_frequency: 5
+  keep_best_n: 2
+  checkpoint_dir: "results/checkpoints/small_exp"
+  resume: null
+
+# Logging configuration
+logging:
+  experiment_name: "hjepa_small_test"
+  log_dir: "results/logs/small_exp"
+  log_frequency: 50
+
+  wandb:
+    enabled: false  # Disable for quick tests
+    project: "h-jepa"
+    entity: null
+    tags: ["test", "small", "vit-small"]
+
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+distributed:
+  enabled: false
+  backend: "nccl"
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  eval_frequency: 5
+
+  linear_probe:
+    enabled: false
+    dataset: "cifar10"
+    batch_size: 128
+    epochs: 50
+    lr: 0.1
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cuda"

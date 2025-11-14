@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # Training service with GPU support
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile.train
+    image: h-jepa:train
+    container_name: h-jepa-train
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - WANDB_PROJECT=h-jepa
+    volumes:
+      - ./configs:/workspace/h-jepa/configs:ro
+      - ./data:/workspace/data:rw
+      - ./results:/workspace/results:rw
+      - ./checkpoints:/workspace/checkpoints:rw
+    shm_size: '16gb'
+    stdin_open: true
+    tty: true
+    command: python3.10 scripts/train.py --config configs/default.yaml
+    networks:
+      - hjepa-network
+
+  # Tensorboard service for monitoring training
+  tensorboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.train
+    image: h-jepa:train
+    container_name: h-jepa-tensorboard
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./results:/workspace/results:ro
+    command: tensorboard --logdir /workspace/results --host 0.0.0.0 --port 6006
+    networks:
+      - hjepa-network
+    depends_on:
+      - train
+
+  # Inference service (CPU)
+  inference-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.inference
+      args:
+        TORCH_DEVICE: cpu
+    image: h-jepa:inference-cpu
+    container_name: h-jepa-inference-cpu
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/models/checkpoint_best.pt
+      - DEVICE=cpu
+      - LOG_LEVEL=info
+    volumes:
+      - ./checkpoints:/app/models:ro
+    networks:
+      - hjepa-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  # Inference service (GPU)
+  inference-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.inference
+      args:
+        TORCH_DEVICE: cuda
+    image: h-jepa:inference-gpu
+    container_name: h-jepa-inference-gpu
+    runtime: nvidia
+    ports:
+      - "8001:8000"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - MODEL_PATH=/app/models/checkpoint_best.pt
+      - DEVICE=cuda
+      - LOG_LEVEL=info
+    volumes:
+      - ./checkpoints:/app/models:ro
+    networks:
+      - hjepa-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: h-jepa-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - hjepa-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: h-jepa-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deployment/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    networks:
+      - hjepa-network
+    depends_on:
+      - prometheus
+
+networks:
+  hjepa-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
