@@ -170,9 +170,9 @@ class MultiCropDatasetRaw(Dataset[Tuple[Union[List[torch.Tensor], torch.Tensor],
 
         # Build multi-crop transform
         if split == "train":
-            self.transform: Union[
-                MultiCropTransform, MultiCropEvalTransform
-            ] = build_multicrop_transform(**multicrop_config)
+            self.transform: Union[MultiCropTransform, MultiCropEvalTransform] = (
+                build_multicrop_transform(**multicrop_config)
+            )
         else:
             # For validation, use single-crop evaluation transform
             self.transform = MultiCropEvalTransform(
