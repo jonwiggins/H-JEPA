@@ -357,24 +357,18 @@ class HJEPATrainer:
 
         images = images.to(self.device)
 
-        # Generate masks
-        masks_dict = self.masking_fn(
+        # Generate masks using multi-block masking strategy
+        # Returns: (context_mask, target_masks)
+        # - context_mask: [B, N] - regions to keep visible (currently unused in training)
+        # - target_masks: [B, num_target_masks, N] - multiple target regions to predict
+        context_mask, target_masks = self.masking_fn(
             batch_size=images.size(0),
             device=self.device,
         )
 
         # IMPORTANT: H-JEPA hierarchy is created via POOLING, not different spatial masks
-        # The masking function generates multi-level masks but we only use level_0
-        # because the model applies pooling to create multi-scale representations
-        # from the SAME spatial regions (not different regions per level)
-        #
-        # The masking function returns:
-        # - 'context': [B, N] - regions to keep visible (currently unused)
-        # - 'targets': [B, num_target_masks, N] - multiple target regions to predict
-        #
-        # We combine all target masks into a single mask of patches to predict
-        # targets shape: [B, num_target_masks, N]
-        target_masks = masks_dict["level_0"]["targets"]
+        # The model applies pooling to create multi-scale representations from the
+        # SAME spatial regions (not different regions per level)
 
         # Combine all target masks using OR operation (any target that covers a patch)
         # This gives us a single mask of shape [B, N] where 1 = predict, 0 = don't predict
@@ -440,27 +434,30 @@ class HJEPATrainer:
 
             images = images.to(self.device)
 
-            # Generate masks
-            context_masks, target_masks = self.masking_fn(
+            # Generate masks (same as training loop)
+            # Returns: (context_mask, target_masks) tuple
+            context_mask, target_masks = self.masking_fn(
                 batch_size=images.size(0),
                 device=self.device,
             )
 
-            # Forward pass
+            # Combine all target masks into single prediction mask (same as training)
+            prediction_mask = target_masks.any(dim=1)  # [B, N]
+
+            # Forward pass using unified model interface (same as training)
             with autocast(enabled=self.use_amp):
-                context_embeddings = self.model.encode_context(images, context_masks)
-                target_embeddings = self.model.encode_target(images, target_masks)
+                outputs = self.model(images, prediction_mask)
 
-                predictions = self.model.predict(
-                    context_embeddings,
-                    target_masks,
-                    context_masks,
-                )
+                # Extract predictions and targets for all hierarchy levels
+                predictions = outputs["predictions"]
+                targets = outputs["targets"]
 
-                loss, _ = self.loss_fn(
+                # Compute loss using same loss function as training
+                loss_dict = self.loss_fn(
                     predictions=predictions,
-                    targets=target_embeddings,
+                    targets=targets,
                 )
+                loss = loss_dict["loss"]
 
             val_losses.append(loss.item())
             pbar.set_postfix({"val_loss": f"{loss.item():.4f}"})
@@ -581,11 +578,10 @@ class HJEPATrainer:
             images = images[:4].to(self.device)  # Only use first 4 images
 
             # Generate masks
-            masks_dict = self.masking_fn(
+            context_mask, target_masks = self.masking_fn(
                 batch_size=images.size(0),
                 device=self.device,
             )
-            target_masks = masks_dict["level_0"]["targets"]
             prediction_mask = target_masks.any(dim=1)
 
             # Forward pass

@@ -633,17 +633,21 @@ def main():
         img_size = config['data']['image_size']
         num_patches = (img_size // patch_size) ** 2
 
-        # Use hierarchical masking for multi-level prediction
-        masking_generator = HierarchicalMaskGenerator(
+        # Use multi-block masking strategy (I-JEPA specification)
+        # Note: Hierarchy is created via pooling in the model, not different spatial masks
+        masking_generator = MultiBlockMaskGenerator(
             input_size=(img_size, img_size),
             patch_size=patch_size,
-            num_hierarchies=config['model']['num_hierarchies'],
             num_target_masks=config['masking'].get('num_masks', 4),
-            base_scale=tuple(config['masking'].get('mask_scale', [0.05, 0.15])),
+            target_scale=tuple(config['masking'].get('mask_scale', [0.15, 0.2])),
+            context_scale=tuple(config['masking'].get('context_scale', [0.85, 1.0])),
             aspect_ratio_range=tuple(config['masking'].get('aspect_ratio', [0.75, 1.5])),
         )
 
-        logger.info(f"Masking: {num_patches} patches, hierarchical levels: {config['model']['num_hierarchies']}")
+        logger.info(
+            f"Masking: {num_patches} patches, {config['masking'].get('num_masks', 4)} target blocks, "
+            f"hierarchy created via pooling ({config['model']['num_hierarchies']} levels)"
+        )
 
         # ====================================================================
         # Build Loss Function
