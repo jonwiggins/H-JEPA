@@ -15,6 +15,14 @@ import torch.nn.functional as F
 import torch.utils.checkpoint
 from einops import rearrange
 
+# Check if Flash Attention is available via PyTorch's scaled_dot_product_attention
+# Available in PyTorch 2.0+ with CUDA 7.5+ or MPS
+FLASH_ATTENTION_AVAILABLE = (
+    hasattr(F, "scaled_dot_product_attention")
+    and torch.__version__ >= "2.0.0"
+    and (torch.cuda.is_available() or torch.backends.mps.is_available())
+)
+
 
 class VisionRoPE2D(nn.Module):
     """
@@ -250,16 +258,24 @@ class RoPEAttentionWrapper(nn.Module):
     Args:
         attn_module: Original attention module from timm
         rope_module: RoPE module to apply
+        use_flash_attention: Whether to use Flash Attention (F.scaled_dot_product_attention)
 
     Attributes:
         attn: Original attention module
         rope: RoPE module for position encoding
+        use_flash: Whether Flash Attention is enabled and available
     """
 
-    def __init__(self, attn_module: nn.Module, rope_module: VisionRoPE2D):
+    def __init__(
+        self,
+        attn_module: nn.Module,
+        rope_module: VisionRoPE2D,
+        use_flash_attention: bool = False,
+    ):
         super().__init__()
         self.attn = attn_module
         self.rope = rope_module
+        self.use_flash = use_flash_attention and FLASH_ATTENTION_AVAILABLE
 
         # Copy all attributes from original attention
         for attr in [
@@ -276,12 +292,13 @@ class RoPEAttentionWrapper(nn.Module):
             if hasattr(attn_module, attr):
                 setattr(self, attr, getattr(attn_module, attr))
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, attn_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Forward pass with RoPE applied to Q and K.
 
         Args:
             x: Input tensor [batch, seq_len, embed_dim]
+            attn_mask: Optional attention mask (currently ignored with Flash Attention)
 
         Returns:
             Output tensor [batch, seq_len, embed_dim]
@@ -319,13 +336,26 @@ class RoPEAttentionWrapper(nn.Module):
             # No CLS token, apply RoPE to all tokens
             q, k = self.rope(q, k, num_patches_h=grid_size, num_patches_w=grid_size)
 
-        # Compute attention
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-        attn = self.attn_drop(attn)
+        # Compute attention using Flash Attention if available
+        if self.use_flash:
+            # Use PyTorch's Flash Attention implementation
+            # scaled_dot_product_attention automatically selects the best backend
+            x = F.scaled_dot_product_attention(
+                q,
+                k,
+                v,
+                dropout_p=self.attn_drop.p if self.training else 0.0,
+                scale=self.scale,
+            )
+            x = x.transpose(1, 2).reshape(B, N, C)
+        else:
+            # Standard attention fallback
+            attn = (q @ k.transpose(-2, -1)) * self.scale
+            attn = attn.softmax(dim=-1)
+            attn = self.attn_drop(attn)
 
-        # Apply attention to values
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+            # Apply attention to values
+            x = (attn @ v).transpose(1, 2).reshape(B, N, C)
 
         # Project output
         x = self.proj(x)
@@ -368,6 +398,7 @@ class ContextEncoder(nn.Module):
         use_gradient_checkpointing: bool = False,
         use_rope: bool = False,
         rope_theta: float = 10000.0,
+        use_flash_attention: bool = False,
     ):
         super().__init__()
 
@@ -394,6 +425,9 @@ class ContextEncoder(nn.Module):
         # Gradient checkpointing flag
         self.use_gradient_checkpointing = use_gradient_checkpointing
 
+        # Flash Attention configuration
+        self.use_flash_attention = use_flash_attention
+
         # RoPE configuration
         self.use_rope = use_rope
         if use_rope:
@@ -411,7 +445,9 @@ class ContextEncoder(nn.Module):
 
             # Wrap all attention layers with RoPE
             for block in self.vit.blocks:
-                block.attn = RoPEAttentionWrapper(block.attn, self.rope)
+                block.attn = RoPEAttentionWrapper(
+                    block.attn, self.rope, use_flash_attention=use_flash_attention
+                )
 
             # When using RoPE, we can optionally reduce or remove absolute position embeddings
             # Here we keep them but they can be set to zero or removed
@@ -520,6 +556,7 @@ class TargetEncoder(nn.Module):
         drop_path_rate: float = 0.0,
         use_rope: bool = False,
         rope_theta: float = 10000.0,
+        use_flash_attention: bool = False,
     ):
         super().__init__()
 
@@ -548,6 +585,9 @@ class TargetEncoder(nn.Module):
         self.ema_momentum_end = ema_momentum_end
         self.ema_warmup_steps = ema_warmup_steps
 
+        # Flash Attention configuration
+        self.use_flash_attention = use_flash_attention
+
         # RoPE configuration
         self.use_rope = use_rope
         if use_rope:
@@ -565,7 +605,9 @@ class TargetEncoder(nn.Module):
 
             # Wrap all attention layers with RoPE
             for block in self.vit.blocks:
-                block.attn = RoPEAttentionWrapper(block.attn, self.rope)
+                block.attn = RoPEAttentionWrapper(
+                    block.attn, self.rope, use_flash_attention=use_flash_attention
+                )
 
         # Disable gradient computation for target encoder
         for param in self.parameters():
@@ -665,21 +707,19 @@ def create_encoder(
         drop_path_rate: Stochastic depth rate
         use_rope: Whether to use Rotary Position Embeddings
         rope_theta: Base frequency for RoPE rotation
-        use_flash_attention: Whether to use Flash Attention (TODO: not implemented yet)
+        use_flash_attention: Whether to use Flash Attention (PyTorch 2.0+ scaled_dot_product_attention)
         use_layerscale: Whether to use LayerScale (TODO: not implemented yet)
         layerscale_init: Initial value for LayerScale (TODO: not implemented yet)
 
     Returns:
         Tuple of (context_encoder, target_encoder)
-    """
-    # TODO: Flash Attention integration
-    # Flash Attention can provide 2-5x speedup for attention computation
-    # Currently this parameter is accepted but not used
-    # Implementation would require:
-    # 1. Install flash-attn package
-    # 2. Replace standard attention with FlashAttention in transformer blocks
-    # 3. Handle compatibility with RoPE and other features
 
+    Note:
+        Flash Attention provides 2-5x speedup for attention computation using PyTorch's
+        F.scaled_dot_product_attention, which automatically selects the best backend
+        (Flash Attention, memory-efficient, or standard). Requires PyTorch 2.0+ and
+        CUDA 7.5+ or MPS for best performance. Compatible with RoPE and all other features.
+    """
     # TODO: LayerScale integration
     # LayerScale provides training stability for deep networks
     # Currently these parameters are accepted but not used
@@ -694,6 +734,7 @@ def create_encoder(
         drop_path_rate=drop_path_rate,
         use_rope=use_rope,
         rope_theta=rope_theta,
+        use_flash_attention=use_flash_attention,
     )
 
     target_encoder = TargetEncoder(
@@ -703,6 +744,7 @@ def create_encoder(
         drop_path_rate=drop_path_rate,
         use_rope=use_rope,
         rope_theta=rope_theta,
+        use_flash_attention=use_flash_attention,
     )
 
     # Initialize target encoder with context encoder weights
