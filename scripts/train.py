@@ -493,28 +493,67 @@ def main():
         # ====================================================================
         logger.info("Building datasets...")
 
-        train_dataset = build_dataset(
-            dataset_name=config['data']['dataset'],
-            data_path=config['data']['data_path'],
-            split='train',
-            image_size=config['data']['image_size'],
-            color_jitter=config['data'].get('augmentation', {}).get('color_jitter', 0.4),
-        )
+        # Check if using multi-dataset (foundation model)
+        use_multi_dataset = config['data'].get('use_multi_dataset', False)
 
-        # Build validation dataset if eval is enabled
-        val_dataset = None
-        if config.get('evaluation', {}).get('eval_frequency', 0) > 0:
-            try:
-                val_dataset = build_dataset(
-                    dataset_name=config['data']['dataset'],
-                    data_path=config['data']['data_path'],
-                    split='val',
-                    image_size=config['data']['image_size'],
-                    color_jitter=None,  # No augmentation for validation
-                )
-                logger.info(f"Validation dataset size: {len(val_dataset)}")
-            except Exception as e:
-                logger.warning(f"Could not load validation dataset: {e}")
+        if use_multi_dataset:
+            # Foundation model: Multiple datasets
+            from src.data import build_multi_dataset
+
+            logger.info("Using multi-dataset configuration for foundation model training")
+
+            train_dataset = build_multi_dataset(
+                dataset_configs=config['data']['datasets'],
+                data_path=config['data']['data_path'],
+                split='train',
+                sampling_strategy=config['data'].get('sampling_strategy', 'weighted'),
+                image_size=config['data']['image_size'],
+                color_jitter=config['data'].get('augmentation', {}).get('color_jitter', 0.4),
+            )
+
+            # For multi-dataset, validation is tricky - use first dataset for now
+            val_dataset = None
+            if config.get('evaluation', {}).get('eval_frequency', 0) > 0:
+                try:
+                    # Use first dataset for validation
+                    first_dataset = config['data']['datasets'][0]['name']
+                    logger.info(f"Using {first_dataset} for validation")
+
+                    val_dataset = build_dataset(
+                        dataset_name=first_dataset,
+                        data_path=config['data']['data_path'],
+                        split='val',
+                        image_size=config['data']['image_size'],
+                        color_jitter=None,
+                    )
+                    logger.info(f"Validation dataset size: {len(val_dataset)}")
+                except Exception as e:
+                    logger.warning(f"Could not load validation dataset: {e}")
+
+        else:
+            # Single dataset (original behavior)
+            train_dataset = build_dataset(
+                dataset_name=config['data']['dataset'],
+                data_path=config['data']['data_path'],
+                split='train',
+                image_size=config['data']['image_size'],
+                color_jitter=config['data'].get('augmentation', {}).get('color_jitter', 0.4),
+            )
+
+            # Build validation dataset if eval is enabled
+            val_dataset = None
+            if config.get('evaluation', {}).get('eval_frequency', 0) > 0:
+                try:
+                    val_dataset = build_dataset(
+                        dataset_name=config['data']['dataset'],
+                        data_path=config['data']['data_path'],
+                        split='val',
+                        image_size=config['data']['image_size'],
+                        color_jitter=None,  # No augmentation for validation
+                    )
+                    logger.info(f"Validation dataset size: {len(val_dataset)}")
+                except Exception as e:
+                    logger.warning(f"Could not load validation dataset: {e}")
 
         logger.info(f"Training dataset size: {len(train_dataset)}")
 

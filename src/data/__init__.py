@@ -22,6 +22,13 @@ from .download import (
     DATASET_INFO,
 )
 
+from .multi_dataset import (
+    WeightedMultiDataset,
+    BalancedMultiDataset,
+    build_multi_dataset,
+    create_foundation_model_dataset,
+)
+
 __all__ = [
     # Transforms
     "JEPATransform",
@@ -32,6 +39,11 @@ __all__ = [
     "CIFAR10Dataset",
     "CIFAR100Dataset",
     "STL10Dataset",
+    # Multi-dataset (foundation models)
+    "WeightedMultiDataset",
+    "BalancedMultiDataset",
+    "build_multi_dataset",
+    "create_foundation_model_dataset",
     # Builders
     "build_dataset",
     "build_dataloader",

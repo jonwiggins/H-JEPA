@@ -1,0 +1,109 @@
+# H-JEPA Training Configuration for ImageNet-100 on M1 Max
+# Much better dataset than CIFAR-10 for hierarchical learning
+#
+# Expected Results:
+#   - Linear probe: 60-70% (competitive with published results)
+#   - k-NN accuracy: 55-65%
+#   - Training time: ~10-15 hours for 100 epochs
+#
+# ImageNet-100: 126K images, 224x224 resolution, 100 classes
+
+experiment:
+  name: "imagenet100_100epoch"
+  seed: 42
+  output_dir: "results/checkpoints"
+  save_frequency: 10
+  eval_frequency: 10
+
+model:
+  # ViT-Small: Good balance for ImageNet-100
+  encoder_type: "vit_small_patch16_224"  # 22M parameters
+  embed_dim: 384  # ViT-Small embedding dimension
+  num_hierarchies: 3  # More hierarchies for higher resolution
+
+  # Target encoder (EMA of context encoder)
+  target_encoder:
+    ema_decay: 0.996
+    ema_end_decay: 1.0
+    ema_anneal_end_step: 300000  # ~190 epochs at 126K images
+
+  # Predictor network
+  predictor:
+    depth: 6  # Deeper predictor for ImageNet
+    num_heads: 6
+    mlp_ratio: 4.0
+    qkv_bias: True
+    dropout: 0.0
+
+data:
+  dataset: "imagenet100"
+  data_path: "./data"
+  image_size: 224  # Standard ImageNet resolution
+  batch_size: 32  # Adjust based on memory (24-48 range)
+  num_workers: 6  # M1 Max has 10 cores
+
+  # JEPA-specific transforms (minimal augmentation)
+  transforms:
+    crop_scale: [0.8, 1.0]  # Conservative cropping
+    horizontal_flip: true
+    color_jitter: 0.1  # Minimal color jitter
+
+training:
+  epochs: 100
+  warmup_epochs: 10  # Longer warmup for larger dataset
+
+  # Optimizer
+  optimizer: "adamw"
+  lr: 0.0001  # Base learning rate
+  weight_decay: 0.04
+  betas: [0.9, 0.95]
+
+  # Learning rate schedule
+  lr_schedule: "cosine"
+  min_lr_ratio: 0.01  # LR decays to 1% of base
+  warmup_lr_ratio: 0.001  # Start from 0.1% of base LR
+
+  # Mixed precision
+  use_amp: true
+
+# Hierarchical masking strategy
+masking:
+  # Multi-block masking for hierarchical learning
+  num_target_masks: 4
+  mask_scale: [0.15, 0.25]  # Mask 15-25% of image per block
+  aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1  # Single context mask
+
+# Loss configuration
+loss:
+  type: "smoothl1"
+  # Hierarchical loss weighting (finest to coarsest)
+  hierarchy_weights: [1.0, 0.7, 0.5]  # Weight finest level more
+
+  # VICReg regularization (prevent collapse)
+  use_vicreg: true
+  vicreg:
+    sim_coeff: 25.0
+    std_coeff: 25.0
+    cov_coeff: 1.0
+
+# Logging
+logging:
+  use_wandb: false
+  use_tensorboard: true
+  log_frequency: 50  # Log every 50 steps
+
+  # What to log
+  log_images: true
+  log_attention: true
+  log_gradients: false
+
+# Device
+device: "mps"  # M1 Max MPS acceleration
+
+# Checkpointing
+checkpoint:
+  save_best: true
+  metric: "val_loss"
+  mode: "min"
+  keep_last_k: 3

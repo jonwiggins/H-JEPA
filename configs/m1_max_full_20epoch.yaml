@@ -1,0 +1,135 @@
+# H-JEPA Full Training - 20 Epochs on M1 Max
+# Optimized based on 5-epoch validation learnings
+# Expected training time: ~2.5 hours
+# Target: 70-78% linear probe accuracy on CIFAR-10
+
+# Model architecture - ViT-Tiny optimized
+model:
+  # ViT-Tiny for M1 Max - validated at 3.2 it/s
+  encoder_type: "vit_tiny_patch16_224"
+  embed_dim: 192
+  num_hierarchies: 2
+
+  # Predictor configuration
+  predictor:
+    depth: 4  # Slightly deeper than validation (was 2)
+    num_heads: 6  # More heads for better representation
+    mlp_ratio: 4.0
+
+  # EMA settings optimized for 20 epochs
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 10  # 50% warmup for stability
+
+# Dataset and data loading
+data:
+  dataset: "cifar10"
+  data_path: "./data"
+  image_size: 224
+
+  # Batch size validated at 32 (stable on M1 Max)
+  batch_size: 32
+
+  # Optimal workers for M1 Max
+  num_workers: 4
+  pin_memory: false
+
+  # Standard JEPA augmentation
+  augmentation:
+    color_jitter: 0.4
+    horizontal_flip: true
+    random_crop: true
+
+# Masking strategy - validated and working
+masking:
+  num_masks: 4
+  mask_scale: [0.15, 0.25]
+  aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters - optimized
+training:
+  epochs: 20
+
+  # Longer warmup for stability
+  warmup_epochs: 4
+
+  # Learning rate tuned for 20 epochs
+  lr: 1.5e-4  # Increased from validation
+
+  min_lr: 1.0e-6
+
+  # Weight decay
+  weight_decay: 0.04
+
+  # Optimizer
+  optimizer: "adamw"
+  betas: [0.9, 0.95]
+
+  # Cosine schedule
+  lr_schedule: "cosine"
+
+  # Gradient clipping
+  clip_grad: 3.0
+
+  # Mixed precision (MPS compatible)
+  use_amp: true
+
+  # No accumulation needed at batch size 32
+  accumulation_steps: 1
+
+# Loss function
+loss:
+  type: "smoothl1"
+  hierarchy_weights: [1.0, 0.5]
+  normalize_embeddings: true
+  vicreg_weight: 0.1  # Collapse prevention
+
+# Checkpointing
+checkpoint:
+  save_frequency: 5  # Every 5 epochs
+  keep_best_n: 3
+  checkpoint_dir: "results/checkpoints"
+  resume: null
+
+# Logging
+logging:
+  experiment_name: "m1_max_full_20epoch"
+  log_dir: "results/logs"
+  log_frequency: 50
+
+  wandb:
+    enabled: false  # Set true for cloud logging
+    project: "h-jepa"
+    entity: null
+    tags: ["m1-max", "20-epoch", "vit-tiny", "cifar10"]
+
+  tensorboard:
+    enabled: true
+
+# Distributed (single GPU)
+distributed:
+  enabled: false
+  backend: "gloo"
+  world_size: 1
+
+# Evaluation - run every 5 epochs
+evaluation:
+  eval_frequency: 5
+  linear_probe:
+    enabled: false  # Enable after training for full evaluation
+
+# Reproducibility
+seed: 42
+
+# Device
+device: "mps"
+
+# Expected outcomes (20 epochs):
+# - Training time: ~2.5 hours
+# - Final loss: ~0.002-0.004
+# - Linear probe: 70-78% accuracy
+# - k-NN: 65-75% accuracy
+# - Feature quality: Effective rank >90/192

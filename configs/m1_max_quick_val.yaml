@@ -1,0 +1,179 @@
+# H-JEPA Quick Validation Configuration for M1 Max
+# Optimized for Apple Silicon MPS (Metal Performance Shaders) training
+# Purpose: 5-10 epoch validation run to verify system functionality
+
+# Model architecture - Small but functional
+model:
+  # ViT-Tiny for faster training on M1 Max
+  encoder_type: "vit_tiny_patch16_224"
+
+  # Smaller embedding dimension (ViT-Tiny standard)
+  embed_dim: 192
+
+  # 2 hierarchical levels (faster than 3-4)
+  num_hierarchies: 2
+
+  # Predictor configuration (lightweight)
+  predictor:
+    depth: 2  # Reduced from 6
+    num_heads: 4  # Reduced from 12
+    mlp_ratio: 4.0
+
+  # EMA settings
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 5  # Reduced for quick validation
+
+# Dataset and data loading
+data:
+  dataset: "cifar10"
+
+  # Data path (relative to repo root)
+  data_path: "./data"
+
+  # Image size (224 for ViT compatibility)
+  image_size: 224
+
+  # Batch size optimized for M1 Max (32GB unified memory)
+  batch_size: 32  # Can increase to 64 if memory allows
+
+  # Number of data loading workers for macOS
+  num_workers: 4  # Reduced for macOS (avoid excessive forking)
+
+  # Pin memory not beneficial for MPS
+  pin_memory: false
+
+  # Data augmentation (JEPA-optimized)
+  augmentation:
+    color_jitter: 0.3  # Slightly reduced for quick validation
+    horizontal_flip: true
+    random_crop: true
+
+# Multi-block masking strategy
+masking:
+  # Number of target blocks
+  num_masks: 4
+
+  # Mask scale (slightly larger for faster learning)
+  mask_scale: [0.15, 0.25]
+
+  # Aspect ratio range
+  aspect_ratio: [0.75, 1.5]
+
+  # Context mask settings
+  num_context_masks: 1
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters
+training:
+  # Quick validation: 5 epochs
+  epochs: 5
+
+  # Warmup epochs
+  warmup_epochs: 1
+
+  # Learning rate (scaled for smaller batch size)
+  lr: 1.0e-4  # Slightly lower than default
+
+  # Minimum learning rate
+  min_lr: 1.0e-6
+
+  # Weight decay
+  weight_decay: 0.04  # Slightly reduced
+
+  # Optimizer
+  optimizer: "adamw"
+
+  # AdamW betas
+  betas: [0.9, 0.95]
+
+  # Learning rate schedule
+  lr_schedule: "cosine"
+
+  # Gradient clipping
+  clip_grad: 3.0
+
+  # Mixed precision training (MPS supports AMP)
+  use_amp: true
+
+  # Gradient accumulation (1 = no accumulation)
+  accumulation_steps: 1
+
+# Loss function settings
+loss:
+  # Loss type
+  type: "smoothl1"
+
+  # Hierarchical loss weights
+  hierarchy_weights: [1.0, 0.5]  # 2 levels
+
+  # Normalize embeddings
+  normalize_embeddings: true
+
+  # VICReg weight for collapse prevention
+  vicreg_weight: 0.1
+
+# Checkpointing and logging
+checkpoint:
+  # Save every epoch for quick validation
+  save_frequency: 2
+
+  # Keep best 2 checkpoints
+  keep_best_n: 2
+
+  # Checkpoint directory
+  checkpoint_dir: "results/checkpoints"
+
+  # Resume from checkpoint (null = start fresh)
+  resume: null
+
+# Logging configuration
+logging:
+  # Experiment name
+  experiment_name: "m1_max_quick_val"
+
+  # Log directory
+  log_dir: "results/logs"
+
+  # Log every N steps
+  log_frequency: 50  # More frequent for quick validation
+
+  # Weights & Biases settings (disabled for quick validation)
+  wandb:
+    enabled: false  # Enable if you want cloud logging
+    project: "h-jepa"
+    entity: null
+    tags: ["m1-max", "quick-validation", "vit-tiny"]
+
+  # TensorBoard settings
+  tensorboard:
+    enabled: true
+
+# Distributed training settings (not applicable for M1 Max single GPU)
+distributed:
+  enabled: false
+  backend: "gloo"  # Use gloo for CPU/MPS (nccl is CUDA-only)
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  # Evaluate every epoch for quick validation
+  eval_frequency: 1
+
+  # Linear probing (disabled during quick validation)
+  linear_probe:
+    enabled: false
+
+# Reproducibility
+seed: 42
+
+# Device settings - CRITICAL for M1 Max
+device: "mps"  # Apple Metal Performance Shaders
+
+# M1 Max specific optimizations
+# Note: These are handled by PyTorch internally, but documented here:
+# - Unified memory architecture (32GB shared between CPU/GPU)
+# - Up to 10-core GPU with 32 cores
+# - Metal API for GPU acceleration
+# - Expected speedup: 3-8x over CPU for this model size

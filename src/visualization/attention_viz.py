@@ -134,7 +134,7 @@ def visualize_attention_maps(
 
             # Reshape to 2D grid
             grid_size = int(np.sqrt(len(attn_head)))
-            attn_2d = attn_head.reshape(grid_size, grid_size).numpy()
+            attn_2d = attn_head.reshape(grid_size, grid_size).cpu().numpy()
 
             # Plot
             im = ax.imshow(attn_2d, cmap='hot', interpolation='bilinear')
@@ -199,7 +199,7 @@ def visualize_multihead_attention(
 
         # Reshape to 2D grid
         grid_size = int(np.sqrt(len(attn_head)))
-        attn_2d = attn_head.reshape(grid_size, grid_size).numpy()
+        attn_2d = attn_head.reshape(grid_size, grid_size).cpu().numpy()
 
         # Plot
         im = ax.imshow(attn_2d, cmap='viridis', interpolation='bilinear')
@@ -271,7 +271,7 @@ def visualize_attention_rollout(
             rollout = torch.matmul(attn_avg, rollout)
 
     # Get attention from CLS token
-    rollout_cls = rollout[0, 1:].numpy()  # [num_patches]
+    rollout_cls = rollout[0, 1:].cpu().numpy()  # [num_patches]
 
     # Reshape to 2D
     grid_size = int(np.sqrt(len(rollout_cls)))
@@ -358,7 +358,7 @@ def visualize_hierarchical_attention(
         attn_avg = attn.mean(dim=0)  # [seq_len, seq_len]
 
         # Get attention from CLS token
-        attn_cls = attn_avg[0, 1:].numpy()  # [num_patches]
+        attn_cls = attn_avg[0, 1:].cpu().numpy()  # [num_patches]
 
         # Reshape to 2D
         grid_size = int(np.sqrt(len(attn_cls)))
@@ -431,7 +431,7 @@ def visualize_patch_to_patch_attention(
     attn_avg = attn.mean(dim=0)  # [seq_len, seq_len]
 
     # Get attention from specified patch (add 1 for CLS token)
-    patch_attn = attn_avg[patch_idx + 1, 1:].numpy()  # [num_patches]
+    patch_attn = attn_avg[patch_idx + 1, 1:].cpu().numpy()  # [num_patches]
 
     # Reshape to 2D
     grid_size = int(np.sqrt(len(patch_attn)))

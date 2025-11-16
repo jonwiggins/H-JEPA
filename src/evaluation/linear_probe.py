@@ -191,7 +191,7 @@ class LinearProbeEvaluator:
             )
 
             all_features.append(features.cpu().numpy())
-            all_labels.append(labels.numpy())
+            all_labels.append(labels.cpu().numpy())
 
         features = np.concatenate(all_features, axis=0)
         labels = np.concatenate(all_labels, axis=0)

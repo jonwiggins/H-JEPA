@@ -518,7 +518,7 @@ def plot_masking_statistics(
     axes[0].grid(alpha=0.3)
 
     # Plot 2: Spatial distribution
-    im1 = axes[1].imshow(spatial_avg.numpy(), cmap='hot', interpolation='bilinear')
+    im1 = axes[1].imshow(spatial_avg.cpu().numpy(), cmap='hot', interpolation='bilinear')
     axes[1].set_title('Average Spatial Distribution\n(Hotter = More Often Masked)')
     axes[1].axis('off')
     plt.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)

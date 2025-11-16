@@ -98,7 +98,7 @@ class FeatureQualityAnalyzer:
                 features = F.normalize(features, p=2, dim=-1)
 
             all_features.append(features.cpu().numpy())
-            all_labels.append(labels.numpy())
+            all_labels.append(labels.cpu().numpy())
 
             num_samples += len(images)
 
