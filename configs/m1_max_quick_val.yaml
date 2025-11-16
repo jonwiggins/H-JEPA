@@ -56,7 +56,7 @@ masking:
   num_masks: 4
 
   # Mask scale (slightly larger for faster learning)
-  mask_scale: [0.15, 0.25]
+  mask_scale: [0.15, 0.2]
 
   # Aspect ratio range
   aspect_ratio: [0.75, 1.5]
@@ -103,13 +103,13 @@ training:
 # Loss function settings
 loss:
   # Loss type
-  type: "smoothl1"
+  type: "mse"
 
   # Hierarchical loss weights
   hierarchy_weights: [1.0, 0.5]  # 2 levels
 
   # Normalize embeddings
-  normalize_embeddings: true
+  normalize_embeddings: false
 
   # VICReg weight for collapse prevention
   vicreg_weight: 0.1

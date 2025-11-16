@@ -81,9 +81,9 @@ training:
 
 # Loss function
 loss:
-  type: "smoothl1"
+  type: "mse"
   hierarchy_weights: [1.0, 0.5, 0.25]  # 3 levels
-  normalize_embeddings: true
+  normalize_embeddings: false
   vicreg_weight: 0.1
 
 # Checkpointing

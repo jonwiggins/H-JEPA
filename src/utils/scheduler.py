@@ -138,7 +138,8 @@ class EMAScheduler:
     Exponential Moving Average (EMA) momentum scheduler.
 
     Schedules the EMA momentum coefficient from start value to end value
-    with optional warmup. Used for updating target encoder in H-JEPA.
+    with optional warmup using linear interpolation as per I-JEPA paper.
+    Used for updating target encoder in H-JEPA.
 
     Args:
         base_value: Base EMA momentum after warmup (typically 0.996)
@@ -179,13 +180,12 @@ class EMAScheduler:
             # During warmup, stay at base value
             return self.base_value
         else:
-            # Cosine schedule from base to final value
+            # Linear schedule from base to final value
             step_after_warmup = step - self.warmup_steps
             total_steps_after_warmup = self.total_steps - self.warmup_steps
 
-            momentum = self.final_value - (self.final_value - self.base_value) * 0.5 * (
-                1.0 + math.cos(math.pi * step_after_warmup / total_steps_after_warmup)
-            )
+            progress = min(1.0, step_after_warmup / total_steps_after_warmup)
+            momentum = self.base_value + (self.final_value - self.base_value) * progress
 
         return momentum
 

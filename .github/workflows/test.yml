@@ -136,4 +136,4 @@ jobs:
 
     - name: Test masking strategies
       run: |
-        python -c "from src.masks.multi_block import MultiBlockMaskingStrategy; print('Masking strategies OK')"
+        python -c "from src.masks.multi_block import MultiBlockMaskGenerator; print('Masking strategies OK')"

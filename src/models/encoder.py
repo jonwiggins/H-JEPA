@@ -87,8 +87,14 @@ class ContextEncoder(nn.Module):
         # Apply mask if provided (set masked patches to zero)
         if mask is not None:
             # mask shape: [B, N], we need [B, N+1, 1] to account for cls token
+            # Determine dtype for zeros tensor
+            zero_dtype = (
+                torch.bool if mask.dtype == torch.bool else mask.dtype
+            )
             mask_with_cls = torch.cat([
-                torch.zeros(mask.shape[0], 1, device=mask.device, dtype=torch.bool if mask.dtype == torch.bool else mask.dtype),
+                torch.zeros(
+                    mask.shape[0], 1, device=mask.device, dtype=zero_dtype
+                ),
                 mask
             ], dim=1).unsqueeze(-1)
             # Convert boolean mask to float for multiplication
@@ -209,8 +215,8 @@ class TargetEncoder(nn.Module):
         """
         Update target encoder weights using EMA from context encoder.
 
-        Implements cosine schedule for momentum:
-        tau(t) = tau_base + (tau_end - tau_base) * (1 + cos(pi * t / T)) / 2
+        Implements linear schedule for momentum as per I-JEPA paper:
+        tau(t) = tau_base + (tau_end - tau_base) * min(1.0, t / T)
 
         Args:
             context_encoder: Context encoder to copy weights from
@@ -219,14 +225,9 @@ class TargetEncoder(nn.Module):
         Returns:
             Current momentum value
         """
-        # Calculate momentum with cosine schedule
-        if current_step < self.ema_warmup_steps:
-            # Cosine warmup schedule
-            momentum = self.momentum + (self.ema_momentum_end - self.momentum) * (
-                1 + math.cos(math.pi * current_step / self.ema_warmup_steps)
-            ) / 2
-        else:
-            momentum = self.ema_momentum_end
+        # Calculate momentum with linear schedule
+        progress = min(1.0, current_step / self.ema_warmup_steps)
+        momentum = self.momentum + (self.ema_momentum_end - self.momentum) * progress
 
         # Update weights: θ_target = momentum * θ_target + (1 - momentum) * θ_context
         for param_target, param_context in zip(
