@@ -198,11 +198,11 @@ jobs:
         docker ps | grep test-container
 
         # Check Python installation
-        docker exec test-container python3 --version
+        docker exec test-container python3.11 --version
 
         # Check package installation
-        docker exec test-container python3 -c "import torch; print(f'PyTorch: {torch.__version__}')"
-        docker exec test-container python3 -c "from src.models.hjepa import create_hjepa; print('H-JEPA import successful')"
+        docker exec test-container python3.11 -c "import torch; print(f'PyTorch: {torch.__version__}')"
+        docker exec test-container python3.11 -c "from src.models.hjepa import create_hjepa; print('H-JEPA import successful')"
 
         # Cleanup
         docker stop test-container
@@ -225,7 +225,7 @@ jobs:
         output: 'trivy-results.sarif'
 
     - name: Upload Trivy results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
