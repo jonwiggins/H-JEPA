@@ -273,14 +273,26 @@ def validate_config(config: Dict[str, Any]) -> None:
 
     # Validate data path exists if not using downloadable datasets
     data_path = Path(config['data']['data_path'])
-    dataset_name = config['data']['dataset'].lower()
+    use_multi_dataset = config['data'].get('use_multi_dataset', False)
     downloadable = ['cifar10', 'cifar100', 'stl10']
 
-    if dataset_name not in downloadable and not data_path.exists():
-        logger.warning(
-            f"Data path does not exist: {data_path}\n"
-            f"For {dataset_name}, please ensure the data is available before training."
-        )
+    if use_multi_dataset:
+        # Multi-dataset mode: check if all datasets are downloadable or paths exist
+        for ds_config in config['data']['datasets']:
+            dataset_name = ds_config['name'].lower()
+            if dataset_name not in downloadable and not data_path.exists():
+                logger.warning(
+                    f"Data path does not exist: {data_path}\n"
+                    f"For {dataset_name}, please ensure the data is available before training."
+                )
+    else:
+        # Single dataset mode
+        dataset_name = config['data']['dataset'].lower()
+        if dataset_name not in downloadable and not data_path.exists():
+            logger.warning(
+                f"Data path does not exist: {data_path}\n"
+                f"For {dataset_name}, please ensure the data is available before training."
+            )
 
     logger.info("Configuration validation passed")
 
@@ -417,7 +429,12 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
     print(f"  Predictor depth: {config['model']['predictor']['depth']}")
 
     print("\nData:")
-    print(f"  Dataset: {config['data']['dataset']}")
+    if config['data'].get('use_multi_dataset', False):
+        datasets_info = ', '.join([f"{ds['name']} ({ds['weight']:.0%})" for ds in config['data']['datasets']])
+        print(f"  Datasets: {datasets_info}")
+        print(f"  Sampling: {config['data']['sampling_strategy']}")
+    else:
+        print(f"  Dataset: {config['data']['dataset']}")
     print(f"  Data path: {config['data']['data_path']}")
     print(f"  Image size: {config['data']['image_size']}")
     print(f"  Batch size: {config['data']['batch_size']}")
@@ -433,7 +450,8 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
     print(f"  Mixed precision: {config['training']['use_amp']}")
 
     print("\nMasking:")
-    print(f"  Num target masks: {config['masking']['num_masks']}")
+    num_masks = config['masking'].get('num_target_masks', config['masking'].get('num_masks', 4))
+    print(f"  Num target masks: {num_masks}")
     print(f"  Mask scale: {config['masking']['mask_scale']}")
     print(f"  Num context masks: {config['masking']['num_context_masks']}")
 
@@ -442,8 +460,11 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
     print(f"  Hierarchy weights: {config['loss']['hierarchy_weights']}")
 
     print("\nLogging:")
-    print(f"  W&B: {'Enabled' if config['logging']['wandb']['enabled'] else 'Disabled'}")
-    print(f"  TensorBoard: {'Enabled' if config['logging']['tensorboard']['enabled'] else 'Disabled'}")
+    # Handle both nested and flat wandb/tensorboard config structures
+    wandb_enabled = config['logging'].get('use_wandb', config['logging'].get('wandb', {}).get('enabled', False))
+    tb_enabled = config['logging'].get('use_tensorboard', config['logging'].get('tensorboard', {}).get('enabled', False))
+    print(f"  W&B: {'Enabled' if wandb_enabled else 'Disabled'}")
+    print(f"  TensorBoard: {'Enabled' if tb_enabled else 'Disabled'}")
     print(f"  Log frequency: {config['logging']['log_frequency']} steps")
 
     if args.distributed:
