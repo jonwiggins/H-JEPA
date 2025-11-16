@@ -60,7 +60,10 @@ class CosineScheduler:
         """
         if step < self.warmup_steps:
             # Linear warmup
-            lr = self.start_warmup_value + (self.base_value - self.start_warmup_value) * step / self.warmup_steps
+            lr = (
+                self.start_warmup_value
+                + (self.base_value - self.start_warmup_value) * step / self.warmup_steps
+            )
         else:
             # Cosine annealing
             step_after_warmup = step - self.warmup_steps
@@ -122,13 +125,21 @@ class LinearScheduler:
         """Get learning rate for the given training step."""
         if step < self.warmup_steps:
             # Linear warmup
-            lr = self.start_warmup_value + (self.base_value - self.start_warmup_value) * step / self.warmup_steps
+            lr = (
+                self.start_warmup_value
+                + (self.base_value - self.start_warmup_value) * step / self.warmup_steps
+            )
         else:
             # Linear decay
             step_after_warmup = step - self.warmup_steps
             total_steps_after_warmup = self.total_steps - self.warmup_steps
 
-            lr = self.base_value - (self.base_value - self.final_value) * step_after_warmup / total_steps_after_warmup
+            lr = (
+                self.base_value
+                - (self.base_value - self.final_value)
+                * step_after_warmup
+                / total_steps_after_warmup
+            )
 
         return lr
 
@@ -211,10 +222,7 @@ class HierarchicalScheduler:
         >>> lrs = hier_sched(step=500)  # Returns list of 3 learning rates
     """
 
-    def __init__(
-        self,
-        schedulers: List[Union[CosineScheduler, LinearScheduler, EMAScheduler]]
-    ):
+    def __init__(self, schedulers: List[Union[CosineScheduler, LinearScheduler, EMAScheduler]]):
         self.schedulers = schedulers
         self.num_levels = len(schedulers)
 

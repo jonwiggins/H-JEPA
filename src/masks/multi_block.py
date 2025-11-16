@@ -5,11 +5,12 @@ This module implements the multi-block masking strategy used in H-JEPA training,
 which samples multiple target blocks and a large context block for predictive learning.
 """
 
+from typing import Dict, List, Optional, Tuple
+
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from typing import Tuple, List, Optional, Dict
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 
 
 class MultiBlockMaskGenerator:
@@ -75,11 +76,7 @@ class MultiBlockMaskGenerator:
         self.num_patches_w = self.input_size[1] // patch_size
         self.num_patches = self.num_patches_h * self.num_patches_w
 
-    def __call__(
-        self,
-        batch_size: int,
-        device: str = 'cuda'
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, batch_size: int, device: str = "cuda") -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate multi-block masks for a batch.
 
@@ -129,7 +126,7 @@ class MultiBlockMaskGenerator:
                 target_blocks.append(block)
                 # Mark patches as occupied
                 top, left, height, width = block
-                occupied_patches[top:top+height, left:left+width] = True
+                occupied_patches[top : top + height, left : left + width] = True
 
         # Sample context block
         context_block = self._sample_block(
@@ -184,10 +181,7 @@ class MultiBlockMaskGenerator:
         for attempt in range(self.max_attempts):
             # Sample scale and aspect ratio
             scale = np.random.uniform(scale_range[0], scale_range[1])
-            aspect_ratio = np.random.uniform(
-                self.aspect_ratio_range[0],
-                self.aspect_ratio_range[1]
-            )
+            aspect_ratio = np.random.uniform(self.aspect_ratio_range[0], self.aspect_ratio_range[1])
 
             # Calculate block size in patches
             area = scale * self.num_patches
@@ -204,7 +198,7 @@ class MultiBlockMaskGenerator:
 
             # Check for overlaps if occupied array provided
             if occupied is not None:
-                block_area = occupied[top:top+height, left:left+width]
+                block_area = occupied[top : top + height, left : left + width]
                 if not block_area.any():  # No overlap
                     return (top, left, height, width)
             else:
@@ -230,7 +224,7 @@ class MultiBlockMaskGenerator:
         """
         top, left, height, width = block
         mask_2d = np.zeros((self.num_patches_h, self.num_patches_w), dtype=bool)
-        mask_2d[top:top+height, left:left+width] = True
+        mask_2d[top : top + height, left : left + width] = True
 
         # Flatten to 1D
         mask_1d = mask_2d.reshape(-1)
@@ -268,9 +262,9 @@ class MultiBlockMaskGenerator:
         ctx_mask_2d = ctx_mask.reshape(self.num_patches_h, self.num_patches_w)
 
         # Visualize context mask
-        axes[0].imshow(ctx_mask_2d, cmap='Blues', vmin=0, vmax=1)
-        axes[0].set_title('Context Mask')
-        axes[0].axis('off')
+        axes[0].imshow(ctx_mask_2d, cmap="Blues", vmin=0, vmax=1)
+        axes[0].set_title("Context Mask")
+        axes[0].axis("off")
 
         # Visualize all target masks combined
         target_union = np.zeros((self.num_patches_h, self.num_patches_w))
@@ -278,9 +272,9 @@ class MultiBlockMaskGenerator:
             tgt_mask_2d = tgt_mask.reshape(self.num_patches_h, self.num_patches_w)
             target_union = np.maximum(target_union, tgt_mask_2d * (i + 1))
 
-        axes[1].imshow(target_union, cmap='Set1', vmin=0, vmax=self.num_target_masks)
-        axes[1].set_title(f'Target Masks ({self.num_target_masks} blocks)')
-        axes[1].axis('off')
+        axes[1].imshow(target_union, cmap="Set1", vmin=0, vmax=self.num_target_masks)
+        axes[1].set_title(f"Target Masks ({self.num_target_masks} blocks)")
+        axes[1].axis("off")
 
         # Visualize combined view
         combined = np.zeros((self.num_patches_h, self.num_patches_w, 3))
@@ -292,13 +286,13 @@ class MultiBlockMaskGenerator:
             combined[tgt_mask_2d > 0] = color
 
         axes[2].imshow(combined)
-        axes[2].set_title('Combined View')
-        axes[2].axis('off')
+        axes[2].set_title("Combined View")
+        axes[2].axis("off")
 
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(save_path, dpi=150, bbox_inches='tight')
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
         return fig
 
@@ -335,12 +329,12 @@ class MultiBlockMaskGenerator:
                 overlaps.append(overlap.item())
 
         stats = {
-            'context_coverage_mean': context_coverage.mean().item(),
-            'context_coverage_std': context_coverage.std().item(),
-            'target_coverage_mean': target_coverage.mean().item(),
-            'target_coverage_std': target_coverage.std().item(),
-            'overlap_mean': np.mean(overlaps),
-            'overlap_max': np.max(overlaps),
+            "context_coverage_mean": context_coverage.mean().item(),
+            "context_coverage_std": context_coverage.std().item(),
+            "target_coverage_mean": target_coverage.mean().item(),
+            "target_coverage_std": target_coverage.std().item(),
+            "overlap_mean": np.mean(overlaps),
+            "overlap_max": np.max(overlaps),
         }
 
         return stats
@@ -363,13 +357,15 @@ def demo():
 
     print(f"Input size: {mask_gen.input_size}")
     print(f"Patch size: {mask_gen.patch_size}")
-    print(f"Number of patches: {mask_gen.num_patches} ({mask_gen.num_patches_h}x{mask_gen.num_patches_w})")
+    print(
+        f"Number of patches: {mask_gen.num_patches} ({mask_gen.num_patches_h}x{mask_gen.num_patches_w})"
+    )
     print(f"Number of target masks: {mask_gen.num_target_masks}")
     print()
 
     # Generate masks
     batch_size = 4
-    context_mask, target_masks = mask_gen(batch_size=batch_size, device='cpu')
+    context_mask, target_masks = mask_gen(batch_size=batch_size, device="cpu")
 
     print(f"Generated masks for batch_size={batch_size}")
     print(f"Context mask shape: {context_mask.shape}")
@@ -386,7 +382,7 @@ def demo():
     # Visualize
     print("Generating visualization...")
     fig = mask_gen.visualize_masks(context_mask, target_masks, sample_idx=0)
-    plt.savefig('/tmp/multi_block_masks_demo.png', dpi=150, bbox_inches='tight')
+    plt.savefig("/tmp/multi_block_masks_demo.png", dpi=150, bbox_inches="tight")
     print("Visualization saved to /tmp/multi_block_masks_demo.png")
     plt.close()
 

@@ -9,20 +9,22 @@ Supports:
 - System monitoring (GPU, memory)
 """
 
+import logging
 import os
 import time
-import logging
-from pathlib import Path
-from typing import Dict, Any, Optional, List, Union
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 # Optional imports
 try:
     import wandb
+
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
@@ -30,6 +32,7 @@ except ImportError:
 
 try:
     from torch.utils.tensorboard import SummaryWriter
+
     TENSORBOARD_AVAILABLE = True
 except ImportError:
     TENSORBOARD_AVAILABLE = False
@@ -227,11 +230,14 @@ class MetricsLogger:
         if self.use_tensorboard:
             try:
                 # Stack images into a grid
-                images_tensor = torch.stack([
-                    torch.from_numpy(img) if isinstance(img, np.ndarray) else img
-                    for img in images_np
-                ])
+                images_tensor = torch.stack(
+                    [
+                        torch.from_numpy(img) if isinstance(img, np.ndarray) else img
+                        for img in images_np
+                    ]
+                )
                 from torchvision.utils import make_grid
+
                 grid = make_grid(images_tensor, nrow=4)
                 self.tb_writer.add_image(name, grid, step)
             except Exception as e:
@@ -338,8 +344,8 @@ class MetricsLogger:
         level_losses = {}
         total_loss = 0
         for key, value in loss_dict.items():
-            if key.startswith('loss_level_'):
-                level = key.split('_')[-1]
+            if key.startswith("loss_level_"):
+                level = key.split("_")[-1]
                 level_losses[level] = value
                 total_loss += value
 
@@ -348,7 +354,9 @@ class MetricsLogger:
             self.log_metrics(
                 {
                     f"{prefix}level_{level}_loss": loss_value,
-                    f"{prefix}level_{level}_percentage": (loss_value / total_loss * 100) if total_loss > 0 else 0,
+                    f"{prefix}level_{level}_percentage": (
+                        (loss_value / total_loss * 100) if total_loss > 0 else 0
+                    ),
                 },
                 step=step,
                 commit=False,
@@ -402,11 +410,9 @@ class MetricsLogger:
         # Log predictions vs targets for each hierarchy level
         for level_idx, (preds, targs) in enumerate(zip(predictions, targets)):
             # Compute similarity
-            similarity = F.cosine_similarity(
-                preds.flatten(1),
-                targs.flatten(1),
-                dim=1
-            ).mean().item()
+            similarity = (
+                F.cosine_similarity(preds.flatten(1), targs.flatten(1), dim=1).mean().item()
+            )
 
             self.log_metrics(
                 {f"predictions/level_{level_idx}_similarity": similarity},
@@ -491,10 +497,8 @@ class MetricsLogger:
         for name, values in self.metrics_buffer.items():
             # Convert to CPU if tensors, then to numpy array
             import torch
-            cpu_values = [
-                v.cpu().item() if isinstance(v, torch.Tensor) else v
-                for v in values
-            ]
+
+            cpu_values = [v.cpu().item() if isinstance(v, torch.Tensor) else v for v in values]
             averaged_metrics[name] = np.mean(cpu_values)
 
         # Log the averaged metrics
@@ -523,16 +527,13 @@ class MetricsLogger:
         if torch.cuda.is_available():
             for i in range(torch.cuda.device_count()):
                 # Memory
-                metrics[f"system/gpu{i}_memory_allocated_gb"] = (
-                    torch.cuda.memory_allocated(i) / 1e9
-                )
-                metrics[f"system/gpu{i}_memory_reserved_gb"] = (
-                    torch.cuda.memory_reserved(i) / 1e9
-                )
+                metrics[f"system/gpu{i}_memory_allocated_gb"] = torch.cuda.memory_allocated(i) / 1e9
+                metrics[f"system/gpu{i}_memory_reserved_gb"] = torch.cuda.memory_reserved(i) / 1e9
 
                 # Utilization (if available)
                 try:
                     import pynvml
+
                     pynvml.nvmlInit()
                     handle = pynvml.nvmlDeviceGetHandleByIndex(i)
                     util = pynvml.nvmlDeviceGetUtilizationRates(handle)
@@ -638,9 +639,8 @@ class ProgressTracker:
             return "N/A"
 
         avg_step_time = np.mean(self.step_times)
-        steps_remaining = (
-            (self.total_epochs - current_epoch - 1) * self.steps_per_epoch +
-            (self.steps_per_epoch - current_step)
+        steps_remaining = (self.total_epochs - current_epoch - 1) * self.steps_per_epoch + (
+            self.steps_per_epoch - current_step
         )
         eta_seconds = avg_step_time * steps_remaining
 
@@ -675,8 +675,7 @@ def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO):
     """
     # Create formatters
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # Console handler

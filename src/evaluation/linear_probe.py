@@ -6,16 +6,16 @@ on frozen features from H-JEPA. This is a standard evaluation protocol for
 self-supervised learning models.
 """
 
-from typing import Dict, List, Optional, Tuple
 import warnings
+from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, SubsetRandomSampler
-import numpy as np
+from sklearn.metrics import accuracy_score, confusion_matrix, top_k_accuracy_score
 from sklearn.model_selection import KFold
-from sklearn.metrics import confusion_matrix, accuracy_score, top_k_accuracy_score
+from torch.utils.data import DataLoader, SubsetRandomSampler
 from tqdm import tqdm
 
 
@@ -34,12 +34,12 @@ class LinearProbe(nn.Module):
         self,
         input_dim: int,
         num_classes: int,
-        pooling: str = 'mean',
+        pooling: str = "mean",
         normalize: bool = False,
     ):
         super().__init__()
 
-        if pooling not in ['mean', 'cls', 'max', 'attention']:
+        if pooling not in ["mean", "cls", "max", "attention"]:
             raise ValueError(f"Invalid pooling method: {pooling}")
 
         self.pooling = pooling
@@ -49,7 +49,7 @@ class LinearProbe(nn.Module):
         self.classifier = nn.Linear(input_dim, num_classes)
 
         # Attention pooling (if needed)
-        if pooling == 'attention':
+        if pooling == "attention":
             self.attention = nn.Sequential(
                 nn.Linear(input_dim, input_dim // 4),
                 nn.ReLU(),
@@ -77,19 +77,21 @@ class LinearProbe(nn.Module):
             # Already pooled
             return features
 
-        if self.pooling == 'mean':
+        if self.pooling == "mean":
             # Mean pooling over all patches
             pooled = features.mean(dim=1)
-        elif self.pooling == 'cls':
+        elif self.pooling == "cls":
             # Use first token (CLS token) - assuming it's present in features
             # Note: extract_features removes CLS, so this won't work by default
             # We'll fall back to mean pooling
-            warnings.warn("CLS pooling requested but features don't have CLS token. Using mean pooling.")
+            warnings.warn(
+                "CLS pooling requested but features don't have CLS token. Using mean pooling."
+            )
             pooled = features.mean(dim=1)
-        elif self.pooling == 'max':
+        elif self.pooling == "max":
             # Max pooling over patches
             pooled = features.max(dim=1)[0]
-        elif self.pooling == 'attention':
+        elif self.pooling == "attention":
             # Attention-weighted pooling
             attention_weights = self.attention(features)  # [B, N, 1]
             attention_weights = F.softmax(attention_weights, dim=1)
@@ -140,9 +142,9 @@ class LinearProbeEvaluator:
         num_classes: int,
         input_dim: int,
         hierarchy_level: int = 0,
-        pooling: str = 'mean',
+        pooling: str = "mean",
         normalize: bool = False,
-        device: str = 'cuda',
+        device: str = "cuda",
     ):
         self.model = model
         self.device = device
@@ -163,9 +165,7 @@ class LinearProbeEvaluator:
 
     @torch.no_grad()
     def extract_features(
-        self,
-        dataloader: DataLoader,
-        desc: str = "Extracting features"
+        self, dataloader: DataLoader, desc: str = "Extracting features"
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Extract features from dataset.
@@ -206,7 +206,7 @@ class LinearProbeEvaluator:
         lr: float = 0.1,
         weight_decay: float = 0.0,
         momentum: float = 0.9,
-        scheduler_type: str = 'cosine',
+        scheduler_type: str = "cosine",
         verbose: bool = True,
     ) -> Dict[str, List[float]]:
         """
@@ -234,14 +234,10 @@ class LinearProbeEvaluator:
         )
 
         # Setup scheduler
-        if scheduler_type == 'cosine':
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=epochs
-            )
-        elif scheduler_type == 'step':
-            scheduler = torch.optim.lr_scheduler.StepLR(
-                optimizer, step_size=epochs // 3, gamma=0.1
-            )
+        if scheduler_type == "cosine":
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+        elif scheduler_type == "step":
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=epochs // 3, gamma=0.1)
         else:
             scheduler = None
 
@@ -249,10 +245,10 @@ class LinearProbeEvaluator:
 
         # Training history
         history = {
-            'train_loss': [],
-            'train_acc': [],
-            'val_loss': [],
-            'val_acc': [],
+            "train_loss": [],
+            "train_acc": [],
+            "val_loss": [],
+            "val_acc": [],
         }
 
         for epoch in range(epochs):
@@ -291,31 +287,37 @@ class LinearProbeEvaluator:
                 train_correct += predicted.eq(labels).sum().item()
 
                 if verbose:
-                    pbar.set_postfix({
-                        'loss': train_loss / (pbar.n + 1),
-                        'acc': 100. * train_correct / train_total
-                    })
+                    pbar.set_postfix(
+                        {
+                            "loss": train_loss / (pbar.n + 1),
+                            "acc": 100.0 * train_correct / train_total,
+                        }
+                    )
 
-            train_acc = 100. * train_correct / train_total
+            train_acc = 100.0 * train_correct / train_total
             train_loss = train_loss / len(train_loader)
 
-            history['train_loss'].append(train_loss)
-            history['train_acc'].append(train_acc)
+            history["train_loss"].append(train_loss)
+            history["train_acc"].append(train_acc)
 
             # Validation
             if val_loader is not None:
                 val_metrics = self.evaluate(val_loader, verbose=False)
-                history['val_loss'].append(val_metrics['loss'])
-                history['val_acc'].append(val_metrics['accuracy'])
+                history["val_loss"].append(val_metrics["loss"])
+                history["val_acc"].append(val_metrics["accuracy"])
 
                 if verbose:
-                    print(f"Epoch {epoch+1}/{epochs} - "
-                          f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% - "
-                          f"Val Loss: {val_metrics['loss']:.4f}, Val Acc: {val_metrics['accuracy']:.2f}%")
+                    print(
+                        f"Epoch {epoch+1}/{epochs} - "
+                        f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% - "
+                        f"Val Loss: {val_metrics['loss']:.4f}, Val Acc: {val_metrics['accuracy']:.2f}%"
+                    )
             else:
                 if verbose:
-                    print(f"Epoch {epoch+1}/{epochs} - "
-                          f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%")
+                    print(
+                        f"Epoch {epoch+1}/{epochs} - "
+                        f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%"
+                    )
 
             # Step scheduler
             if scheduler is not None:
@@ -387,22 +389,22 @@ class LinearProbeEvaluator:
         accuracy = accuracy_score(all_labels, all_preds) * 100
 
         # Top-k accuracy
-        top_k_acc = top_k_accuracy_score(
-            all_labels, all_probs, k=min(top_k, all_probs.shape[1])
-        ) * 100
+        top_k_acc = (
+            top_k_accuracy_score(all_labels, all_probs, k=min(top_k, all_probs.shape[1])) * 100
+        )
 
         avg_loss = total_loss / len(dataloader)
 
         metrics = {
-            'loss': avg_loss,
-            'accuracy': accuracy,
-            f'top_{top_k}_accuracy': top_k_acc,
+            "loss": avg_loss,
+            "accuracy": accuracy,
+            f"top_{top_k}_accuracy": top_k_acc,
         }
 
         # Confusion matrix
         if compute_confusion:
             conf_matrix = confusion_matrix(all_labels, all_preds)
-            metrics['confusion_matrix'] = conf_matrix
+            metrics["confusion_matrix"] = conf_matrix
 
         return metrics
 
@@ -434,10 +436,10 @@ class LinearProbeEvaluator:
         kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
         results = {
-            'fold_accuracies': [],
-            'fold_losses': [],
-            'mean_accuracy': 0.0,
-            'std_accuracy': 0.0,
+            "fold_accuracies": [],
+            "fold_losses": [],
+            "mean_accuracy": 0.0,
+            "std_accuracy": 0.0,
         }
 
         for fold, (train_ids, val_ids) in enumerate(kfold.split(dataset)):
@@ -481,21 +483,23 @@ class LinearProbeEvaluator:
             # Evaluate
             metrics = self.evaluate(val_loader, verbose=False)
 
-            results['fold_accuracies'].append(metrics['accuracy'])
-            results['fold_losses'].append(metrics['loss'])
+            results["fold_accuracies"].append(metrics["accuracy"])
+            results["fold_losses"].append(metrics["loss"])
 
             if verbose:
                 print(f"Fold {fold + 1} - Accuracy: {metrics['accuracy']:.2f}%")
 
         # Compute statistics
-        results['mean_accuracy'] = np.mean(results['fold_accuracies'])
-        results['std_accuracy'] = np.std(results['fold_accuracies'])
+        results["mean_accuracy"] = np.mean(results["fold_accuracies"])
+        results["std_accuracy"] = np.std(results["fold_accuracies"])
 
         if verbose:
             print(f"\n{'='*50}")
             print(f"Cross-Validation Results")
             print(f"{'='*50}")
-            print(f"Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%")
+            print(
+                f"Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%"
+            )
             print(f"Fold Accuracies: {results['fold_accuracies']}")
 
         return results
@@ -509,7 +513,7 @@ def linear_probe_eval(
     hierarchy_level: int = 0,
     epochs: int = 100,
     lr: float = 0.1,
-    device: str = 'cuda',
+    device: str = "cuda",
     verbose: bool = True,
 ) -> Dict[str, float]:
     """

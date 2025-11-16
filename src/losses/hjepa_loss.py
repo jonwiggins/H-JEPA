@@ -20,10 +20,11 @@ References:
     - VICReg: https://arxiv.org/abs/2105.04906
 """
 
+from typing import Dict, List, Literal, Optional, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, List, Union, Optional, Literal
 
 
 class HJEPALoss(nn.Module):
@@ -62,10 +63,10 @@ class HJEPALoss(nn.Module):
 
     def __init__(
         self,
-        loss_type: Literal['mse', 'smoothl1', 'huber'] = 'smoothl1',
+        loss_type: Literal["mse", "smoothl1", "huber"] = "smoothl1",
         hierarchy_weights: Union[float, List[float]] = 1.0,
         num_hierarchies: int = 3,
-        reduction: Literal['mean', 'sum', 'none'] = 'mean',
+        reduction: Literal["mean", "sum", "none"] = "mean",
         normalize_embeddings: bool = True,
         huber_delta: float = 1.0,
         eps: float = 1e-8,
@@ -91,15 +92,14 @@ class HJEPALoss(nn.Module):
 
         # Register as buffer so it moves to correct device
         self.register_buffer(
-            '_hierarchy_weights',
-            torch.tensor(self.hierarchy_weights, dtype=torch.float32)
+            "_hierarchy_weights", torch.tensor(self.hierarchy_weights, dtype=torch.float32)
         )
 
         # Validate loss type
-        valid_loss_types = ['mse', 'smoothl1', 'huber']
-        assert loss_type in valid_loss_types, (
-            f"loss_type must be one of {valid_loss_types}, got {loss_type}"
-        )
+        valid_loss_types = ["mse", "smoothl1", "huber"]
+        assert (
+            loss_type in valid_loss_types
+        ), f"loss_type must be one of {valid_loss_types}, got {loss_type}"
 
     def _compute_base_loss(
         self,
@@ -116,21 +116,18 @@ class HJEPALoss(nn.Module):
         Returns:
             Loss tensor with shape depending on reduction parameter
         """
-        if self.loss_type == 'mse':
+        if self.loss_type == "mse":
             # MSE: (pred - target)^2
             loss = F.mse_loss(predictions, targets, reduction=self.reduction)
 
-        elif self.loss_type == 'smoothl1':
+        elif self.loss_type == "smoothl1":
             # Smooth L1: Huber loss with β=1
             loss = F.smooth_l1_loss(predictions, targets, reduction=self.reduction)
 
-        elif self.loss_type == 'huber':
+        elif self.loss_type == "huber":
             # Huber loss with configurable delta
             loss = F.huber_loss(
-                predictions,
-                targets,
-                reduction=self.reduction,
-                delta=self.huber_delta
+                predictions, targets, reduction=self.reduction, delta=self.huber_delta
             )
         else:
             raise ValueError(f"Unknown loss type: {self.loss_type}")
@@ -190,8 +187,7 @@ class HJEPALoss(nn.Module):
 
         num_levels = len(predictions)
         assert num_levels == self.num_hierarchies, (
-            f"Expected {self.num_hierarchies} hierarchy levels, "
-            f"but got {num_levels}"
+            f"Expected {self.num_hierarchies} hierarchy levels, " f"but got {num_levels}"
         )
 
         # Validate shapes
@@ -201,8 +197,7 @@ class HJEPALoss(nn.Module):
                 f"Got pred: {pred.shape}, target: {target.shape}"
             )
             assert pred.ndim == 3, (
-                f"Predictions must be 3D tensors [B, N, D], "
-                f"got shape {pred.shape} at level {i}"
+                f"Predictions must be 3D tensors [B, N, D], " f"got shape {pred.shape} at level {i}"
             )
 
         # Process masks
@@ -240,7 +235,7 @@ class HJEPALoss(nn.Module):
                 mask = mask.unsqueeze(-1)  # [B, N, 1]
 
                 # Masked loss computation
-                if self.reduction == 'none':
+                if self.reduction == "none":
                     base_loss = self._compute_base_loss(pred, target)
                     level_loss = (base_loss * mask).sum() / (mask.sum() + self.eps)
                 else:
@@ -250,7 +245,7 @@ class HJEPALoss(nn.Module):
                     base_loss = self._compute_base_loss(masked_pred, masked_target)
 
                     # Normalize by number of masked elements
-                    if self.reduction == 'mean':
+                    if self.reduction == "mean":
                         level_loss = base_loss * pred.numel() / (mask.sum() + self.eps)
                     else:  # sum
                         level_loss = base_loss
@@ -259,7 +254,7 @@ class HJEPALoss(nn.Module):
                 level_loss = self._compute_base_loss(pred, target)
 
             losses.append(level_loss)
-            loss_dict[f'loss_h{i}'] = level_loss
+            loss_dict[f"loss_h{i}"] = level_loss
 
         # Stack losses for vectorized weighting
         losses_tensor = torch.stack(losses)  # [num_hierarchies]
@@ -269,8 +264,8 @@ class HJEPALoss(nn.Module):
         total_loss = weighted_losses.sum()
 
         # Add to loss dictionary
-        loss_dict['loss'] = total_loss
-        loss_dict['loss_unweighted'] = losses_tensor.mean()
+        loss_dict["loss"] = total_loss
+        loss_dict["loss_unweighted"] = losses_tensor.mean()
 
         return loss_dict
 

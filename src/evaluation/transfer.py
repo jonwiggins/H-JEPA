@@ -5,14 +5,14 @@ This module implements transfer learning protocols including fine-tuning,
 few-shot learning, and domain adaptation evaluation.
 """
 
-from typing import Dict, List, Optional, Tuple
 import copy
+from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Subset, RandomSampler
-import numpy as np
+from torch.utils.data import DataLoader, RandomSampler, Subset
 from tqdm import tqdm
 
 
@@ -34,7 +34,7 @@ class TransferHead(nn.Module):
         num_classes: int,
         hidden_dims: List[int] = [],
         dropout: float = 0.0,
-        pooling: str = 'mean',
+        pooling: str = "mean",
     ):
         super().__init__()
         self.pooling = pooling
@@ -60,9 +60,9 @@ class TransferHead(nn.Module):
         if features.ndim == 2:
             return features
 
-        if self.pooling == 'mean':
+        if self.pooling == "mean":
             return features.mean(dim=1)
-        elif self.pooling == 'max':
+        elif self.pooling == "max":
             return features.max(dim=1)[0]
         else:
             raise ValueError(f"Unknown pooling: {self.pooling}")
@@ -95,7 +95,7 @@ class FineTuneEvaluator:
         freeze_encoder: bool = False,
         hidden_dims: List[int] = [],
         dropout: float = 0.0,
-        device: str = 'cuda',
+        device: str = "cuda",
     ):
         self.device = device
         self.hierarchy_level = hierarchy_level
@@ -180,14 +180,13 @@ class FineTuneEvaluator:
             correct += predicted.eq(labels).sum().item()
 
             if verbose:
-                pbar.set_postfix({
-                    'loss': total_loss / (pbar.n + 1),
-                    'acc': 100. * correct / total
-                })
+                pbar.set_postfix(
+                    {"loss": total_loss / (pbar.n + 1), "acc": 100.0 * correct / total}
+                )
 
         metrics = {
-            'loss': total_loss / len(train_loader),
-            'accuracy': 100. * correct / total,
+            "loss": total_loss / len(train_loader),
+            "accuracy": 100.0 * correct / total,
         }
 
         return metrics
@@ -229,8 +228,8 @@ class FineTuneEvaluator:
             all_labels.append(labels.cpu().numpy())
 
         metrics = {
-            'loss': total_loss / len(test_loader),
-            'accuracy': 100. * correct / total,
+            "loss": total_loss / len(test_loader),
+            "accuracy": 100.0 * correct / total,
         }
 
         return metrics
@@ -242,7 +241,7 @@ class FineTuneEvaluator:
         epochs: int = 50,
         lr: float = 1e-3,
         weight_decay: float = 1e-4,
-        scheduler_type: str = 'cosine',
+        scheduler_type: str = "cosine",
         verbose: bool = True,
     ) -> Dict[str, List[float]]:
         """
@@ -267,21 +266,17 @@ class FineTuneEvaluator:
         else:
             # Optimize both encoder and classifier (with different LRs)
             params = [
-                {'params': self.model.parameters(), 'lr': lr * 0.1},
-                {'params': self.classifier.parameters(), 'lr': lr},
+                {"params": self.model.parameters(), "lr": lr * 0.1},
+                {"params": self.classifier.parameters(), "lr": lr},
             ]
 
         optimizer = torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
 
         # Setup scheduler
-        if scheduler_type == 'cosine':
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=epochs
-            )
-        elif scheduler_type == 'step':
-            scheduler = torch.optim.lr_scheduler.StepLR(
-                optimizer, step_size=epochs // 3, gamma=0.1
-            )
+        if scheduler_type == "cosine":
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+        elif scheduler_type == "step":
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=epochs // 3, gamma=0.1)
         else:
             scheduler = None
 
@@ -289,44 +284,46 @@ class FineTuneEvaluator:
 
         # Training history
         history = {
-            'train_loss': [],
-            'train_acc': [],
-            'val_loss': [],
-            'val_acc': [],
+            "train_loss": [],
+            "train_acc": [],
+            "val_loss": [],
+            "val_acc": [],
         }
 
         best_val_acc = 0.0
 
         for epoch in range(1, epochs + 1):
             # Train
-            train_metrics = self.train_epoch(
-                train_loader, optimizer, criterion, epoch, verbose
-            )
+            train_metrics = self.train_epoch(train_loader, optimizer, criterion, epoch, verbose)
 
-            history['train_loss'].append(train_metrics['loss'])
-            history['train_acc'].append(train_metrics['accuracy'])
+            history["train_loss"].append(train_metrics["loss"])
+            history["train_acc"].append(train_metrics["accuracy"])
 
             # Validate
             if val_loader is not None:
                 val_metrics = self.evaluate(val_loader, criterion, verbose=False)
-                history['val_loss'].append(val_metrics['loss'])
-                history['val_acc'].append(val_metrics['accuracy'])
+                history["val_loss"].append(val_metrics["loss"])
+                history["val_acc"].append(val_metrics["accuracy"])
 
                 if verbose:
-                    print(f"Epoch {epoch}/{epochs} - "
-                          f"Train Loss: {train_metrics['loss']:.4f}, "
-                          f"Train Acc: {train_metrics['accuracy']:.2f}% - "
-                          f"Val Loss: {val_metrics['loss']:.4f}, "
-                          f"Val Acc: {val_metrics['accuracy']:.2f}%")
+                    print(
+                        f"Epoch {epoch}/{epochs} - "
+                        f"Train Loss: {train_metrics['loss']:.4f}, "
+                        f"Train Acc: {train_metrics['accuracy']:.2f}% - "
+                        f"Val Loss: {val_metrics['loss']:.4f}, "
+                        f"Val Acc: {val_metrics['accuracy']:.2f}%"
+                    )
 
                 # Track best
-                if val_metrics['accuracy'] > best_val_acc:
-                    best_val_acc = val_metrics['accuracy']
+                if val_metrics["accuracy"] > best_val_acc:
+                    best_val_acc = val_metrics["accuracy"]
             else:
                 if verbose:
-                    print(f"Epoch {epoch}/{epochs} - "
-                          f"Train Loss: {train_metrics['loss']:.4f}, "
-                          f"Train Acc: {train_metrics['accuracy']:.2f}%")
+                    print(
+                        f"Epoch {epoch}/{epochs} - "
+                        f"Train Loss: {train_metrics['loss']:.4f}, "
+                        f"Train Acc: {train_metrics['accuracy']:.2f}%"
+                    )
 
             # Step scheduler
             if scheduler is not None:
@@ -356,7 +353,7 @@ class FewShotEvaluator:
         model: nn.Module,
         num_classes: int,
         hierarchy_level: int = 0,
-        device: str = 'cuda',
+        device: str = "cuda",
     ):
         self.model = model
         self.num_classes = num_classes
@@ -405,9 +402,7 @@ class FewShotEvaluator:
 
         for _ in range(n_episodes):
             # Sample n_way classes
-            selected_classes = np.random.choice(
-                self.num_classes, size=n_way, replace=False
-            )
+            selected_classes = np.random.choice(self.num_classes, size=n_way, replace=False)
 
             support_indices = []
             query_indices = []
@@ -415,18 +410,18 @@ class FewShotEvaluator:
             for class_idx in selected_classes:
                 # Sample k_shot + n_query examples
                 indices = class_indices[class_idx]
-                sampled = np.random.choice(
-                    indices, size=k_shot + n_query, replace=False
-                )
+                sampled = np.random.choice(indices, size=k_shot + n_query, replace=False)
 
                 support_indices.extend(sampled[:k_shot])
                 query_indices.extend(sampled[k_shot:])
 
-            episodes.append({
-                'support_indices': support_indices,
-                'query_indices': query_indices,
-                'classes': selected_classes,
-            })
+            episodes.append(
+                {
+                    "support_indices": support_indices,
+                    "query_indices": query_indices,
+                    "classes": selected_classes,
+                }
+            )
 
         return episodes
 
@@ -435,7 +430,7 @@ class FewShotEvaluator:
         self,
         dataset: torch.utils.data.Dataset,
         episode: Dict,
-        metric: str = 'cosine',
+        metric: str = "cosine",
     ) -> float:
         """
         Evaluate one few-shot episode using nearest centroid classifier.
@@ -452,7 +447,7 @@ class FewShotEvaluator:
         support_features = []
         support_labels = []
 
-        for idx in episode['support_indices']:
+        for idx in episode["support_indices"]:
             image, label = dataset[idx]
             image = image.unsqueeze(0).to(self.device)
 
@@ -469,11 +464,11 @@ class FewShotEvaluator:
         support_labels = torch.tensor(support_labels)
 
         # Compute class centroids
-        class_to_new_label = {c: i for i, c in enumerate(episode['classes'])}
-        n_way = len(episode['classes'])
+        class_to_new_label = {c: i for i, c in enumerate(episode["classes"])}
+        n_way = len(episode["classes"])
 
         centroids = []
-        for class_idx in episode['classes']:
+        for class_idx in episode["classes"]:
             mask = support_labels == class_idx
             centroid = support_features[mask].mean(dim=0)
             centroids.append(centroid)
@@ -484,7 +479,7 @@ class FewShotEvaluator:
         correct = 0
         total = 0
 
-        for idx in episode['query_indices']:
+        for idx in episode["query_indices"]:
             image, true_label = dataset[idx]
             image = image.unsqueeze(0).to(self.device)
 
@@ -495,7 +490,7 @@ class FewShotEvaluator:
             features = F.normalize(features, p=2, dim=-1)
 
             # Compute similarity to centroids
-            if metric == 'cosine':
+            if metric == "cosine":
                 similarities = features @ centroids.T
                 predicted = similarities.argmax(dim=-1).item()
             else:
@@ -503,13 +498,13 @@ class FewShotEvaluator:
                 predicted = distances.argmin(dim=-1).item()
 
             # Map back to original label
-            predicted_label = episode['classes'][predicted]
+            predicted_label = episode["classes"][predicted]
 
             if predicted_label == true_label:
                 correct += 1
             total += 1
 
-        accuracy = 100. * correct / total
+        accuracy = 100.0 * correct / total
         return accuracy
 
     def evaluate_few_shot(
@@ -539,9 +534,7 @@ class FewShotEvaluator:
             print(f"\nEvaluating {n_way}-way {k_shot}-shot learning...")
 
         # Sample episodes
-        episodes = self.sample_few_shot_episodes(
-            dataset, n_way, k_shot, n_query, n_episodes
-        )
+        episodes = self.sample_few_shot_episodes(dataset, n_way, k_shot, n_query, n_episodes)
 
         # Evaluate each episode
         accuracies = []
@@ -558,16 +551,15 @@ class FewShotEvaluator:
         conf_interval = 1.96 * std_acc / np.sqrt(n_episodes)
 
         metrics = {
-            'accuracy': mean_acc,
-            'std': std_acc,
-            'confidence_interval': conf_interval,
-            'n_way': n_way,
-            'k_shot': k_shot,
+            "accuracy": mean_acc,
+            "std": std_acc,
+            "confidence_interval": conf_interval,
+            "n_way": n_way,
+            "k_shot": k_shot,
         }
 
         if verbose:
-            print(f"{n_way}-way {k_shot}-shot: "
-                  f"{mean_acc:.2f}% ± {conf_interval:.2f}%")
+            print(f"{n_way}-way {k_shot}-shot: " f"{mean_acc:.2f}% ± {conf_interval:.2f}%")
 
         return metrics
 
@@ -581,7 +573,7 @@ def fine_tune_eval(
     freeze_encoder: bool = False,
     epochs: int = 50,
     lr: float = 1e-3,
-    device: str = 'cuda',
+    device: str = "cuda",
     verbose: bool = True,
 ) -> Dict[str, float]:
     """
@@ -634,7 +626,7 @@ def few_shot_eval(
     k_shot_list: List[int] = [1, 5, 10],
     n_episodes: int = 100,
     hierarchy_level: int = 0,
-    device: str = 'cuda',
+    device: str = "cuda",
     verbose: bool = True,
 ) -> Dict[int, Dict[str, float]]:
     """

@@ -6,19 +6,18 @@ for H-JEPA training. It handles automatic downloads where possible and
 provides clear instructions for manual downloads when required.
 """
 
-import os
-import sys
 import hashlib
+import os
 import shutil
-from pathlib import Path
-from typing import Optional, Dict, List, Tuple
-from urllib.error import URLError
+import sys
 import warnings
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+from urllib.error import URLError
 
 import torch
 from torchvision import datasets
 from tqdm import tqdm
-
 
 # Dataset information and requirements
 DATASET_INFO = {

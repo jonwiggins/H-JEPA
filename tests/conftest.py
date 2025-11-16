@@ -4,12 +4,13 @@ Shared pytest configuration and fixtures for H-JEPA tests.
 This module provides common fixtures and configuration for all test modules.
 """
 
-import pytest
-import torch
-import numpy as np
-from PIL import Image
 import sys
 from pathlib import Path
+
+import numpy as np
+import pytest
+import torch
+from PIL import Image
 
 # Add src to path for all tests
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -23,11 +24,11 @@ def test_device():
     Priority: CUDA > MPS > CPU
     """
     if torch.cuda.is_available():
-        return torch.device('cuda')
+        return torch.device("cuda")
     elif torch.backends.mps.is_available():
-        return torch.device('mps')
+        return torch.device("mps")
     else:
-        return torch.device('cpu')
+        return torch.device("cpu")
 
 
 @pytest.fixture
@@ -51,13 +52,13 @@ def random_seed():
 @pytest.fixture
 def sample_image_224():
     """Create a sample 224x224 PIL image."""
-    return Image.new('RGB', (224, 224), color=(128, 128, 128))
+    return Image.new("RGB", (224, 224), color=(128, 128, 128))
 
 
 @pytest.fixture
 def sample_image_96():
     """Create a sample 96x96 PIL image."""
-    return Image.new('RGB', (96, 96), color=(100, 100, 100))
+    return Image.new("RGB", (96, 96), color=(100, 100, 100))
 
 
 @pytest.fixture
@@ -122,12 +123,12 @@ def sample_embeddings_3d(device):
 def tiny_vit_config():
     """Configuration for a tiny ViT model for fast testing."""
     return {
-        'encoder_type': 'vit_tiny_patch16_224',
-        'img_size': 224,
-        'embed_dim': 192,
-        'predictor_depth': 2,
-        'predictor_num_heads': 3,
-        'num_hierarchies': 2,
+        "encoder_type": "vit_tiny_patch16_224",
+        "img_size": 224,
+        "embed_dim": 192,
+        "predictor_depth": 2,
+        "predictor_num_heads": 3,
+        "num_hierarchies": 2,
     }
 
 
@@ -135,12 +136,12 @@ def tiny_vit_config():
 def small_vit_config():
     """Configuration for a small ViT model for testing."""
     return {
-        'encoder_type': 'vit_small_patch16_224',
-        'img_size': 224,
-        'embed_dim': 384,
-        'predictor_depth': 4,
-        'predictor_num_heads': 6,
-        'num_hierarchies': 3,
+        "encoder_type": "vit_small_patch16_224",
+        "img_size": 224,
+        "embed_dim": 384,
+        "predictor_depth": 4,
+        "predictor_num_heads": 6,
+        "num_hierarchies": 3,
     }
 
 
@@ -148,9 +149,9 @@ def small_vit_config():
 def fpn_config():
     """Configuration for FPN testing."""
     return {
-        'use_fpn': True,
-        'fpn_feature_dim': 192,
-        'fpn_fusion_method': 'add',
+        "use_fpn": True,
+        "fpn_feature_dim": 192,
+        "fpn_fusion_method": "add",
     }
 
 
@@ -158,10 +159,10 @@ def fpn_config():
 def training_config():
     """Standard training configuration."""
     return {
-        'batch_size': 4,
-        'learning_rate': 1e-4,
-        'num_epochs': 1,
-        'use_gradient_checkpointing': False,
+        "batch_size": 4,
+        "learning_rate": 1e-4,
+        "num_epochs": 1,
+        "use_gradient_checkpointing": False,
     }
 
 
@@ -169,14 +170,14 @@ def training_config():
 def augmentation_config():
     """DeiT III augmentation configuration."""
     return {
-        'image_size': 224,
-        'auto_augment': True,
-        'rand_aug_num_ops': 2,
-        'rand_aug_magnitude': 9,
-        'random_erasing_prob': 0.25,
-        'mixup_alpha': 0.8,
-        'cutmix_alpha': 1.0,
-        'num_classes': 1000,
+        "image_size": 224,
+        "auto_augment": True,
+        "rand_aug_num_ops": 2,
+        "rand_aug_magnitude": 9,
+        "random_erasing_prob": 0.25,
+        "mixup_alpha": 0.8,
+        "cutmix_alpha": 1.0,
+        "num_classes": 1000,
     }
 
 
@@ -184,10 +185,10 @@ def augmentation_config():
 def contrastive_config():
     """C-JEPA contrastive learning configuration."""
     return {
-        'use_contrastive': True,
-        'contrastive_weight': 0.1,
-        'contrastive_temperature': 0.1,
-        'use_cosine_similarity': True,
+        "use_contrastive": True,
+        "contrastive_weight": 0.1,
+        "contrastive_temperature": 0.1,
+        "use_cosine_similarity": True,
     }
 
 
@@ -195,11 +196,11 @@ def contrastive_config():
 def multicrop_config():
     """Multi-crop masking configuration."""
     return {
-        'global_crop_size': 224,
-        'local_crop_size': 96,
-        'num_global_crops': 2,
-        'num_local_crops': 6,
-        'masking_strategy': 'global_only',
+        "global_crop_size": 224,
+        "local_crop_size": 96,
+        "num_global_crops": 2,
+        "num_local_crops": 6,
+        "masking_strategy": "global_only",
     }
 
 
@@ -208,12 +209,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "cuda: marks tests that require CUDA"
-    )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
+    config.addinivalue_line("markers", "cuda: marks tests that require CUDA")
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
 
 
 def pytest_collection_modifyitems(config, items):

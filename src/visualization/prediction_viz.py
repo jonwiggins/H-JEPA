@@ -8,11 +8,11 @@ feature space embeddings, nearest neighbors, and reconstruction quality.
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from matplotlib.patches import Rectangle
 
 try:
     import seaborn as sns
@@ -22,6 +22,7 @@ except ImportError:
 try:
     from sklearn.decomposition import PCA
     from sklearn.manifold import TSNE
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -56,15 +57,15 @@ def visualize_predictions(
     with torch.no_grad():
         output = model(image, mask, return_all_levels=True)
 
-    predictions = output['predictions']
-    targets = output['targets']
+    predictions = output["predictions"]
+    targets = output["targets"]
 
     # Use finest hierarchy level
     pred = predictions[0][0]  # [num_masked, embed_dim]
     target = targets[0][0]  # [num_masked, embed_dim]
 
     # Compute prediction error
-    error = F.mse_loss(pred, target, reduction='none').mean(dim=-1)  # [num_masked]
+    error = F.mse_loss(pred, target, reduction="none").mean(dim=-1)  # [num_masked]
 
     # Create mask visualization
     mask_np = mask[0].cpu().numpy()
@@ -85,21 +86,21 @@ def visualize_predictions(
     # Plot 1: Original image (if available)
     if original_image is not None:
         axes[plot_idx].imshow(original_image)
-        axes[plot_idx].set_title('Original Image')
-        axes[plot_idx].axis('off')
+        axes[plot_idx].set_title("Original Image")
+        axes[plot_idx].axis("off")
         plot_idx += 1
 
     # Plot 2: Mask
     mask_2d = mask_np.reshape(grid_size, grid_size)
-    axes[plot_idx].imshow(mask_2d, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest')
-    axes[plot_idx].set_title(f'Mask\n({mask_np.mean():.1%} masked)')
-    axes[plot_idx].axis('off')
+    axes[plot_idx].imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
+    axes[plot_idx].set_title(f"Mask\n({mask_np.mean():.1%} masked)")
+    axes[plot_idx].axis("off")
     plot_idx += 1
 
     # Plot 3: Prediction error heatmap
-    im2 = axes[plot_idx].imshow(error_map_2d, cmap='hot', interpolation='bilinear')
-    axes[plot_idx].set_title('Prediction Error\n(MSE per patch)')
-    axes[plot_idx].axis('off')
+    im2 = axes[plot_idx].imshow(error_map_2d, cmap="hot", interpolation="bilinear")
+    axes[plot_idx].set_title("Prediction Error\n(MSE per patch)")
+    axes[plot_idx].axis("off")
     plt.colorbar(im2, ax=axes[plot_idx], fraction=0.046, pad=0.04)
     plot_idx += 1
 
@@ -109,9 +110,11 @@ def visualize_predictions(
     cos_sim_map[masked_indices] = cos_sim.cpu().numpy()
     cos_sim_map_2d = cos_sim_map.reshape(grid_size, grid_size)
 
-    im3 = axes[plot_idx].imshow(cos_sim_map_2d, cmap='RdYlGn', vmin=-1, vmax=1, interpolation='bilinear')
-    axes[plot_idx].set_title('Cosine Similarity\n(Prediction vs Target)')
-    axes[plot_idx].axis('off')
+    im3 = axes[plot_idx].imshow(
+        cos_sim_map_2d, cmap="RdYlGn", vmin=-1, vmax=1, interpolation="bilinear"
+    )
+    axes[plot_idx].set_title("Cosine Similarity\n(Prediction vs Target)")
+    axes[plot_idx].axis("off")
     plt.colorbar(im3, ax=axes[plot_idx], fraction=0.046, pad=0.04)
     plot_idx += 1
 
@@ -124,16 +127,23 @@ def visualize_predictions(
     stats_text += f"Min cos sim: {cos_sim.min().item():.4f}\n"
     stats_text += f"Max cos sim: {cos_sim.max().item():.4f}"
 
-    axes[plot_idx].text(0.1, 0.5, stats_text, fontsize=10, verticalalignment='center',
-                        family='monospace', bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3))
-    axes[plot_idx].axis('off')
-    axes[plot_idx].set_title('Statistics')
+    axes[plot_idx].text(
+        0.1,
+        0.5,
+        stats_text,
+        fontsize=10,
+        verticalalignment="center",
+        family="monospace",
+        bbox=dict(boxstyle="round", facecolor="lightblue", alpha=0.3),
+    )
+    axes[plot_idx].axis("off")
+    axes[plot_idx].set_title("Statistics")
 
-    plt.suptitle('H-JEPA Predictions vs Targets', fontsize=14)
+    plt.suptitle("H-JEPA Predictions vs Targets", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -163,8 +173,8 @@ def visualize_hierarchical_predictions(
     with torch.no_grad():
         output = model(image, mask, return_all_levels=True)
 
-    predictions = output['predictions']
-    targets = output['targets']
+    predictions = output["predictions"]
+    targets = output["targets"]
     num_levels = len(predictions)
 
     fig, axes = plt.subplots(num_levels, 3, figsize=figsize, squeeze=False)
@@ -174,22 +184,22 @@ def visualize_hierarchical_predictions(
         target = targets[level][0]  # [num_patches_level, embed_dim]
 
         # Compute metrics
-        mse_error = F.mse_loss(pred, target, reduction='none').mean(dim=-1)
+        mse_error = F.mse_loss(pred, target, reduction="none").mean(dim=-1)
         cos_sim = F.cosine_similarity(pred, target, dim=-1)
 
         # Plot 1: MSE error
-        axes[level, 0].plot(mse_error.cpu().numpy(), marker='o', markersize=3)
-        axes[level, 0].set_title(f'Level {level}: MSE Error')
-        axes[level, 0].set_xlabel('Patch Index')
-        axes[level, 0].set_ylabel('MSE')
+        axes[level, 0].plot(mse_error.cpu().numpy(), marker="o", markersize=3)
+        axes[level, 0].set_title(f"Level {level}: MSE Error")
+        axes[level, 0].set_xlabel("Patch Index")
+        axes[level, 0].set_ylabel("MSE")
         axes[level, 0].grid(alpha=0.3)
 
         # Plot 2: Cosine similarity
-        axes[level, 1].plot(cos_sim.cpu().numpy(), marker='o', markersize=3, color='green')
-        axes[level, 1].set_title(f'Level {level}: Cosine Similarity')
-        axes[level, 1].set_xlabel('Patch Index')
-        axes[level, 1].set_ylabel('Cosine Similarity')
-        axes[level, 1].axhline(y=0, color='r', linestyle='--', alpha=0.5)
+        axes[level, 1].plot(cos_sim.cpu().numpy(), marker="o", markersize=3, color="green")
+        axes[level, 1].set_title(f"Level {level}: Cosine Similarity")
+        axes[level, 1].set_xlabel("Patch Index")
+        axes[level, 1].set_ylabel("Cosine Similarity")
+        axes[level, 1].axhline(y=0, color="r", linestyle="--", alpha=0.5)
         axes[level, 1].grid(alpha=0.3)
 
         # Plot 3: Statistics
@@ -199,15 +209,22 @@ def visualize_hierarchical_predictions(
         stats_text += f"Mean MSE: {mse_error.mean().item():.4f}\n"
         stats_text += f"Mean cos sim: {cos_sim.mean().item():.4f}\n"
 
-        axes[level, 2].text(0.1, 0.5, stats_text, fontsize=9, verticalalignment='center',
-                            family='monospace', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
-        axes[level, 2].axis('off')
+        axes[level, 2].text(
+            0.1,
+            0.5,
+            stats_text,
+            fontsize=9,
+            verticalalignment="center",
+            family="monospace",
+            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
+        )
+        axes[level, 2].axis("off")
 
-    plt.suptitle('Hierarchical Predictions Analysis', fontsize=14)
+    plt.suptitle("Hierarchical Predictions Analysis", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -215,7 +232,7 @@ def visualize_hierarchical_predictions(
 def visualize_feature_space(
     features: torch.Tensor,
     labels: Optional[np.ndarray] = None,
-    method: str = 'tsne',
+    method: str = "tsne",
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 10),
     **kwargs,
@@ -235,8 +252,10 @@ def visualize_feature_space(
         Matplotlib figure
     """
     if not SKLEARN_AVAILABLE:
-        raise ImportError("scikit-learn is required for feature space visualization. "
-                        "Install with: pip install scikit-learn")
+        raise ImportError(
+            "scikit-learn is required for feature space visualization. "
+            "Install with: pip install scikit-learn"
+        )
 
     # Convert to numpy
     if isinstance(features, torch.Tensor):
@@ -245,25 +264,26 @@ def visualize_feature_space(
         features_np = features
 
     # Apply dimensionality reduction
-    if method.lower() == 'tsne':
+    if method.lower() == "tsne":
         reducer = TSNE(n_components=2, **kwargs)
         features_2d = reducer.fit_transform(features_np)
-        method_name = 't-SNE'
-    elif method.lower() == 'pca':
+        method_name = "t-SNE"
+    elif method.lower() == "pca":
         reducer = PCA(n_components=2, **kwargs)
         features_2d = reducer.fit_transform(features_np)
-        method_name = 'PCA'
-    elif method.lower() == 'umap':
+        method_name = "PCA"
+    elif method.lower() == "umap":
         try:
             from umap import UMAP
+
             reducer = UMAP(n_components=2, **kwargs)
             features_2d = reducer.fit_transform(features_np)
-            method_name = 'UMAP'
+            method_name = "UMAP"
         except ImportError:
             print("UMAP not installed, falling back to t-SNE")
             reducer = TSNE(n_components=2, **kwargs)
             features_2d = reducer.fit_transform(features_np)
-            method_name = 't-SNE'
+            method_name = "t-SNE"
     else:
         raise ValueError(f"Unknown method: {method}")
 
@@ -273,19 +293,15 @@ def visualize_feature_space(
     # Plot 1: Scatter plot
     if labels is not None:
         scatter = axes[0].scatter(
-            features_2d[:, 0], features_2d[:, 1],
-            c=labels, cmap='tab20', alpha=0.6, s=20
+            features_2d[:, 0], features_2d[:, 1], c=labels, cmap="tab20", alpha=0.6, s=20
         )
         plt.colorbar(scatter, ax=axes[0])
     else:
-        axes[0].scatter(
-            features_2d[:, 0], features_2d[:, 1],
-            alpha=0.6, s=20, c='blue'
-        )
+        axes[0].scatter(features_2d[:, 0], features_2d[:, 1], alpha=0.6, s=20, c="blue")
 
-    axes[0].set_title(f'{method_name} Visualization')
-    axes[0].set_xlabel(f'{method_name} Component 1')
-    axes[0].set_ylabel(f'{method_name} Component 2')
+    axes[0].set_title(f"{method_name} Visualization")
+    axes[0].set_xlabel(f"{method_name} Component 1")
+    axes[0].set_ylabel(f"{method_name} Component 2")
     axes[0].grid(alpha=0.3)
 
     # Plot 2: Density plot
@@ -296,19 +312,18 @@ def visualize_feature_space(
     z = gaussian_kde(xy)(xy)
 
     scatter2 = axes[1].scatter(
-        features_2d[:, 0], features_2d[:, 1],
-        c=z, s=20, cmap='viridis', alpha=0.6
+        features_2d[:, 0], features_2d[:, 1], c=z, s=20, cmap="viridis", alpha=0.6
     )
-    axes[1].set_title(f'{method_name} Density')
-    axes[1].set_xlabel(f'{method_name} Component 1')
-    axes[1].set_ylabel(f'{method_name} Component 2')
+    axes[1].set_title(f"{method_name} Density")
+    axes[1].set_xlabel(f"{method_name} Component 1")
+    axes[1].set_ylabel(f"{method_name} Component 2")
     axes[1].grid(alpha=0.3)
-    plt.colorbar(scatter2, ax=axes[1], label='Density')
+    plt.colorbar(scatter2, ax=axes[1], label="Density")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -365,10 +380,18 @@ def visualize_nearest_neighbors(
         query_img = query_img / 255.0
 
     axes[0].imshow(query_img)
-    axes[0].set_title('Query Image', fontsize=10, fontweight='bold')
-    axes[0].axis('off')
-    axes[0].add_patch(Rectangle((0, 0), query_img.shape[1]-1, query_img.shape[0]-1,
-                                 linewidth=3, edgecolor='red', facecolor='none'))
+    axes[0].set_title("Query Image", fontsize=10, fontweight="bold")
+    axes[0].axis("off")
+    axes[0].add_patch(
+        Rectangle(
+            (0, 0),
+            query_img.shape[1] - 1,
+            query_img.shape[0] - 1,
+            linewidth=3,
+            edgecolor="red",
+            facecolor="none",
+        )
+    )
 
     # Plot nearest neighbors
     for i in range(k):
@@ -381,18 +404,18 @@ def visualize_nearest_neighbors(
 
         axes[i + 1].imshow(img)
 
-        title = f'#{i + 1}: sim={sim:.3f}'
+        title = f"#{i + 1}: sim={sim:.3f}"
         if database_labels is not None:
-            title += f'\n{database_labels[idx]}'
+            title += f"\n{database_labels[idx]}"
 
         axes[i + 1].set_title(title, fontsize=9)
-        axes[i + 1].axis('off')
+        axes[i + 1].axis("off")
 
-    plt.suptitle(f'Nearest Neighbors (Level {level})', fontsize=12)
+    plt.suptitle(f"Nearest Neighbors (Level {level})", fontsize=12)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -450,45 +473,45 @@ def visualize_reconstruction(
     # Plot 1: Original image
     if original_image is not None:
         axes[0].imshow(original_image)
-        axes[0].set_title('Original')
-        axes[0].axis('off')
+        axes[0].set_title("Original")
+        axes[0].axis("off")
     else:
-        axes[0].text(0.5, 0.5, 'Original\nNot Available', ha='center', va='center', fontsize=12)
-        axes[0].axis('off')
+        axes[0].text(0.5, 0.5, "Original\nNot Available", ha="center", va="center", fontsize=12)
+        axes[0].axis("off")
 
     # Plot 2: Target
     if len(target_np.shape) == 3 and target_np.shape[0] in [1, 3]:  # Image
         target_img = np.transpose(target_np, (1, 2, 0))
         if target_img.shape[-1] == 1:
             target_img = target_img.squeeze(-1)
-        axes[1].imshow(target_img, cmap='gray' if len(target_img.shape) == 2 else None)
+        axes[1].imshow(target_img, cmap="gray" if len(target_img.shape) == 2 else None)
     else:  # Feature map
-        axes[1].text(0.5, 0.5, 'Target\nFeatures', ha='center', va='center', fontsize=12)
-    axes[1].set_title('Target')
-    axes[1].axis('off')
+        axes[1].text(0.5, 0.5, "Target\nFeatures", ha="center", va="center", fontsize=12)
+    axes[1].set_title("Target")
+    axes[1].axis("off")
 
     # Plot 3: Prediction
     if len(pred_np.shape) == 3 and pred_np.shape[0] in [1, 3]:  # Image
         pred_img = np.transpose(pred_np, (1, 2, 0))
         if pred_img.shape[-1] == 1:
             pred_img = pred_img.squeeze(-1)
-        axes[2].imshow(pred_img, cmap='gray' if len(pred_img.shape) == 2 else None)
+        axes[2].imshow(pred_img, cmap="gray" if len(pred_img.shape) == 2 else None)
     else:  # Feature map
-        axes[2].text(0.5, 0.5, 'Predicted\nFeatures', ha='center', va='center', fontsize=12)
-    axes[2].set_title('Prediction')
-    axes[2].axis('off')
+        axes[2].text(0.5, 0.5, "Predicted\nFeatures", ha="center", va="center", fontsize=12)
+    axes[2].set_title("Prediction")
+    axes[2].axis("off")
 
     # Plot 4: Error map
-    im = axes[3].imshow(error_2d, cmap='hot', interpolation='bilinear')
-    axes[3].set_title('Reconstruction Error')
-    axes[3].axis('off')
+    im = axes[3].imshow(error_2d, cmap="hot", interpolation="bilinear")
+    axes[3].set_title("Reconstruction Error")
+    axes[3].axis("off")
     plt.colorbar(im, ax=axes[3], fraction=0.046, pad=0.04)
 
-    plt.suptitle('Reconstruction Quality Analysis', fontsize=14)
+    plt.suptitle("Reconstruction Quality Analysis", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -518,21 +541,22 @@ def visualize_embedding_distribution(
 
     # Plot 1: Feature magnitude distribution
     magnitudes = np.linalg.norm(features_np, axis=-1)
-    axes[0].hist(magnitudes, bins=50, alpha=0.7, edgecolor='black')
-    axes[0].axvline(magnitudes.mean(), color='red', linestyle='--',
-                    label=f'Mean: {magnitudes.mean():.2f}')
-    axes[0].set_xlabel('Feature Magnitude')
-    axes[0].set_ylabel('Frequency')
-    axes[0].set_title('Embedding Magnitude Distribution')
+    axes[0].hist(magnitudes, bins=50, alpha=0.7, edgecolor="black")
+    axes[0].axvline(
+        magnitudes.mean(), color="red", linestyle="--", label=f"Mean: {magnitudes.mean():.2f}"
+    )
+    axes[0].set_xlabel("Feature Magnitude")
+    axes[0].set_ylabel("Frequency")
+    axes[0].set_title("Embedding Magnitude Distribution")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
     # Plot 2: Dimension-wise variance
     dim_variance = features_np.var(axis=0)
     axes[1].plot(dim_variance, alpha=0.7)
-    axes[1].set_xlabel('Dimension')
-    axes[1].set_ylabel('Variance')
-    axes[1].set_title('Variance per Dimension')
+    axes[1].set_xlabel("Dimension")
+    axes[1].set_ylabel("Variance")
+    axes[1].set_title("Variance per Dimension")
     axes[1].grid(alpha=0.3)
 
     # Plot 3: Correlation matrix (sample)
@@ -540,15 +564,15 @@ def visualize_embedding_distribution(
     sample_indices = np.random.choice(features_np.shape[-1], sample_size, replace=False)
     corr_matrix = np.corrcoef(features_np[:, sample_indices].T)
 
-    im = axes[2].imshow(corr_matrix, cmap='coolwarm', vmin=-1, vmax=1, aspect='auto')
-    axes[2].set_title(f'Correlation Matrix\n(sample {sample_size} dims)')
-    axes[2].set_xlabel('Dimension')
-    axes[2].set_ylabel('Dimension')
+    im = axes[2].imshow(corr_matrix, cmap="coolwarm", vmin=-1, vmax=1, aspect="auto")
+    axes[2].set_title(f"Correlation Matrix\n(sample {sample_size} dims)")
+    axes[2].set_xlabel("Dimension")
+    axes[2].set_ylabel("Dimension")
     plt.colorbar(im, ax=axes[2], fraction=0.046, pad=0.04)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig

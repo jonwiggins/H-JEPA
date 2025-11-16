@@ -15,13 +15,13 @@ import os
 import time
 from typing import Dict, List, Optional, Union
 
-import torch
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile, Query
+import torch
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
-from pydantic import BaseModel, Field
 from prometheus_client import Counter, Histogram, generate_latest
+from pydantic import BaseModel, Field
 from torchvision import transforms
 
 from ..models.hjepa import HJEPA, create_hjepa
@@ -29,15 +29,14 @@ from ..utils.checkpoint import load_checkpoint
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # Prometheus metrics
-REQUEST_COUNT = Counter('hjepa_requests_total', 'Total requests', ['endpoint', 'status'])
-REQUEST_LATENCY = Histogram('hjepa_request_duration_seconds', 'Request latency', ['endpoint'])
-INFERENCE_LATENCY = Histogram('hjepa_inference_duration_seconds', 'Inference latency')
+REQUEST_COUNT = Counter("hjepa_requests_total", "Total requests", ["endpoint", "status"])
+REQUEST_LATENCY = Histogram("hjepa_request_duration_seconds", "Request latency", ["endpoint"])
+INFERENCE_LATENCY = Histogram("hjepa_inference_duration_seconds", "Inference latency")
 
 # Create FastAPI app
 app = FastAPI(
@@ -51,12 +50,14 @@ app = FastAPI(
 
 class FeatureRequest(BaseModel):
     """Request model for feature extraction."""
+
     hierarchy_level: int = Field(default=0, ge=0, le=3, description="Hierarchy level (0-3)")
     return_numpy: bool = Field(default=True, description="Return features as numpy array")
 
 
 class FeatureResponse(BaseModel):
     """Response model for feature extraction."""
+
     features: Union[List[List[float]], str]
     shape: List[int]
     hierarchy_level: int
@@ -65,6 +66,7 @@ class FeatureResponse(BaseModel):
 
 class BatchFeatureResponse(BaseModel):
     """Response model for batch feature extraction."""
+
     features: List[Union[List[List[float]], str]]
     shapes: List[List[int]]
     hierarchy_level: int
@@ -75,6 +77,7 @@ class BatchFeatureResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Response model for health check."""
+
     status: str
     model_loaded: bool
     device: str
@@ -99,7 +102,7 @@ class ModelServer:
             img_size: Input image size
         """
         self.img_size = img_size
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model: Optional[HJEPA] = None
         self.transform = self._create_transform()
 
@@ -111,14 +114,13 @@ class ModelServer:
 
     def _create_transform(self) -> transforms.Compose:
         """Create image preprocessing transform."""
-        return transforms.Compose([
-            transforms.Resize((self.img_size, self.img_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-            ),
-        ])
+        return transforms.Compose(
+            [
+                transforms.Resize((self.img_size, self.img_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
 
     def load_model(self, model_path: str) -> None:
         """
@@ -134,21 +136,21 @@ class ModelServer:
             checkpoint = torch.load(model_path, map_location=self.device)
 
             # Get model config from checkpoint
-            config = checkpoint.get('config', {})
-            model_config = config.get('model', {})
+            config = checkpoint.get("config", {})
+            model_config = config.get("model", {})
 
             # Create model
             self.model = create_hjepa(
-                encoder_type=model_config.get('encoder_type', 'vit_base_patch16_224'),
+                encoder_type=model_config.get("encoder_type", "vit_base_patch16_224"),
                 img_size=self.img_size,
-                embed_dim=model_config.get('embed_dim', 768),
-                predictor_depth=model_config.get('predictor', {}).get('depth', 6),
-                predictor_num_heads=model_config.get('predictor', {}).get('num_heads', 12),
-                num_hierarchies=model_config.get('num_hierarchies', 3),
+                embed_dim=model_config.get("embed_dim", 768),
+                predictor_depth=model_config.get("predictor", {}).get("depth", 6),
+                predictor_num_heads=model_config.get("predictor", {}).get("num_heads", 12),
+                num_hierarchies=model_config.get("num_hierarchies", 3),
             )
 
             # Load weights
-            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.model.load_state_dict(checkpoint["model_state_dict"])
             self.model.to(self.device)
             self.model.eval()
 
@@ -169,8 +171,8 @@ class ModelServer:
             Preprocessed image tensor
         """
         # Convert to RGB if needed
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
+        if image.mode != "RGB":
+            image = image.convert("RGB")
 
         # Apply transform
         image_tensor = self.transform(image)
@@ -201,9 +203,7 @@ class ModelServer:
         # Extract features
         start_time = time.time()
         features = self.model.extract_features(
-            image,
-            level=hierarchy_level,
-            use_target_encoder=True
+            image, level=hierarchy_level, use_target_encoder=True
         )
         inference_time = (time.time() - start_time) * 1000
 
@@ -239,9 +239,7 @@ class ModelServer:
         # Extract features
         start_time = time.time()
         features = self.model.extract_features(
-            images,
-            level=hierarchy_level,
-            use_target_encoder=True
+            images, level=hierarchy_level, use_target_encoder=True
         )
         inference_time = (time.time() - start_time) * 1000
 
@@ -262,9 +260,9 @@ def get_model_server() -> ModelServer:
     global model_server
 
     if model_server is None:
-        model_path = os.getenv('MODEL_PATH')
-        device = os.getenv('DEVICE', 'cuda' if torch.cuda.is_available() else 'cpu')
-        img_size = int(os.getenv('IMAGE_SIZE', '224'))
+        model_path = os.getenv("MODEL_PATH")
+        device = os.getenv("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
+        img_size = int(os.getenv("IMAGE_SIZE", "224"))
 
         model_server = ModelServer(
             model_path=model_path,
@@ -314,13 +312,13 @@ async def health_check():
             version="1.0.0",
         )
 
-        REQUEST_COUNT.labels(endpoint='health', status='success').inc()
-        REQUEST_LATENCY.labels(endpoint='health').observe(time.time() - start_time)
+        REQUEST_COUNT.labels(endpoint="health", status="success").inc()
+        REQUEST_LATENCY.labels(endpoint="health").observe(time.time() - start_time)
 
         return response
 
     except Exception as e:
-        REQUEST_COUNT.labels(endpoint='health', status='error').inc()
+        REQUEST_COUNT.labels(endpoint="health", status="error").inc()
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -368,13 +366,13 @@ async def extract_features(
             inference_time_ms=inference_time,
         )
 
-        REQUEST_COUNT.labels(endpoint='extract', status='success').inc()
-        REQUEST_LATENCY.labels(endpoint='extract').observe(time.time() - start_time)
+        REQUEST_COUNT.labels(endpoint="extract", status="success").inc()
+        REQUEST_LATENCY.labels(endpoint="extract").observe(time.time() - start_time)
 
         return response
 
     except Exception as e:
-        REQUEST_COUNT.labels(endpoint='extract', status='error').inc()
+        REQUEST_COUNT.labels(endpoint="extract", status="error").inc()
         logger.error(f"Feature extraction failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -430,13 +428,13 @@ async def extract_features_batch(
             average_inference_time_ms=inference_time / len(files),
         )
 
-        REQUEST_COUNT.labels(endpoint='extract_batch', status='success').inc()
-        REQUEST_LATENCY.labels(endpoint='extract_batch').observe(time.time() - start_time)
+        REQUEST_COUNT.labels(endpoint="extract_batch", status="success").inc()
+        REQUEST_LATENCY.labels(endpoint="extract_batch").observe(time.time() - start_time)
 
         return response
 
     except Exception as e:
-        REQUEST_COUNT.labels(endpoint='extract_batch', status='error').inc()
+        REQUEST_COUNT.labels(endpoint="extract_batch", status="error").inc()
         logger.error(f"Batch feature extraction failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

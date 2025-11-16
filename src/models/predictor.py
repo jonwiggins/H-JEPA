@@ -152,16 +152,18 @@ class Predictor(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]
 
         # Predictor transformer blocks
-        self.blocks = nn.ModuleList([
-            PredictorBlock(
-                embed_dim=embed_dim,
-                num_heads=num_heads,
-                mlp_ratio=mlp_ratio,
-                dropout=dropout,
-                drop_path=dpr[i],
-            )
-            for i in range(depth)
-        ])
+        self.blocks = nn.ModuleList(
+            [
+                PredictorBlock(
+                    embed_dim=embed_dim,
+                    num_heads=num_heads,
+                    mlp_ratio=mlp_ratio,
+                    dropout=dropout,
+                    drop_path=dpr[i],
+                )
+                for i in range(depth)
+            ]
+        )
 
         # Final normalization
         self.norm = nn.LayerNorm(embed_dim)
@@ -202,7 +204,7 @@ class Predictor(nn.Module):
         N_mask = mask_indices.shape[1]
 
         # Create mask tokens for each masked position
-        mask_tokens = repeat(self.mask_token, '1 1 d -> b n d', b=B, n=N_mask)
+        mask_tokens = repeat(self.mask_token, "1 1 d -> b n d", b=B, n=N_mask)
 
         # Add positional embeddings to mask tokens if provided
         if pos_embed is not None:
@@ -226,9 +228,7 @@ class Predictor(nn.Module):
             for block in self.blocks:
                 # Use non-reentrant checkpointing for better compatibility with
                 # distributed training and edge cases
-                x = torch.utils.checkpoint.checkpoint(
-                    block, x, use_reentrant=False
-                )
+                x = torch.utils.checkpoint.checkpoint(block, x, use_reentrant=False)
         else:
             for block in self.blocks:
                 x = block(x)

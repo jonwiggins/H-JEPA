@@ -41,31 +41,31 @@ Example:
     ... )
 """
 
-from .hjepa_loss import HJEPALoss
-from .vicreg import VICRegLoss, AdaptiveVICRegLoss
-from .sigreg import SIGRegLoss, EppsPulleyTest, HybridVICRegSIGRegLoss
 from .combined import (
     CombinedLoss,
     HierarchicalCombinedLoss,
     create_loss_from_config,
 )
 from .contrastive import (
-    NTXentLoss,
     ContrastiveJEPALoss,
+    NTXentLoss,
     create_cjepa_loss_from_config,
 )
+from .hjepa_loss import HJEPALoss
+from .sigreg import EppsPulleyTest, HybridVICRegSIGRegLoss, SIGRegLoss
+from .vicreg import AdaptiveVICRegLoss, VICRegLoss
 
 __all__ = [
-    'HJEPALoss',
-    'VICRegLoss',
-    'AdaptiveVICRegLoss',
-    'SIGRegLoss',
-    'EppsPulleyTest',
-    'HybridVICRegSIGRegLoss',
-    'CombinedLoss',
-    'HierarchicalCombinedLoss',
-    'NTXentLoss',
-    'ContrastiveJEPALoss',
-    'create_loss_from_config',
-    'create_cjepa_loss_from_config',
+    "HJEPALoss",
+    "VICRegLoss",
+    "AdaptiveVICRegLoss",
+    "SIGRegLoss",
+    "EppsPulleyTest",
+    "HybridVICRegSIGRegLoss",
+    "CombinedLoss",
+    "HierarchicalCombinedLoss",
+    "NTXentLoss",
+    "ContrastiveJEPALoss",
+    "create_loss_from_config",
+    "create_cjepa_loss_from_config",
 ]

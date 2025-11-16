@@ -5,13 +5,13 @@ This module enables training on multiple datasets simultaneously,
 which is essential for building foundation models with broad capabilities.
 """
 
-from typing import List, Dict, Optional, Union
-from pathlib import Path
 import random
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
-import torch
-from torch.utils.data import Dataset, ConcatDataset, DataLoader
 import numpy as np
+import torch
+from torch.utils.data import ConcatDataset, DataLoader, Dataset
 
 
 class WeightedMultiDataset(Dataset):

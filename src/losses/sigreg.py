@@ -39,11 +39,12 @@ References:
     https://arxiv.org/abs/2105.04906
 """
 
+import math
+from typing import Dict, Optional, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Optional, Tuple
-import math
 
 
 class EppsPulleyTest(nn.Module):
@@ -80,7 +81,7 @@ class EppsPulleyTest(nn.Module):
         # Convert quantiles to Gaussian samples using inverse CDF
         # For standard normal: mean=0, std=1
         reference_points = torch.erfinv(2 * quantiles - 1) * math.sqrt(2)
-        self.register_buffer('reference_points', reference_points)
+        self.register_buffer("reference_points", reference_points)
 
     def _kernel(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
@@ -101,7 +102,7 @@ class EppsPulleyTest(nn.Module):
         # Compute pairwise differences
         diff = x.unsqueeze(-1) - y.unsqueeze(-2)  # [..., N, M]
         # Apply Gaussian kernel
-        return torch.exp(-0.5 * diff ** 2)
+        return torch.exp(-0.5 * diff**2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -139,7 +140,7 @@ class EppsPulleyTest(nn.Module):
 
         # 1. Self-interaction of empirical samples: (1/N^2) * Σ_{i,j} ψ(x_i - x_j)
         kernel_xx = self._kernel(x_standardized, x_standardized)  # [B, N, N]
-        term1 = kernel_xx.sum(dim=(-2, -1)) / (N ** 2)  # [B]
+        term1 = kernel_xx.sum(dim=(-2, -1)) / (N**2)  # [B]
 
         # 2. Cross-interaction with reference: -2/(N*K) * Σ_{i,k} ψ(x_i - g_k)
         kernel_xg = self._kernel(x_standardized, g)  # [B, N, K]
@@ -147,7 +148,7 @@ class EppsPulleyTest(nn.Module):
 
         # 3. Self-interaction of reference: (1/K^2) * Σ_{k,l} ψ(g_k - g_l)
         kernel_gg = self._kernel(g, g)  # [B, K, K]
-        term3 = kernel_gg.sum(dim=(-2, -1)) / (K ** 2)  # [B]
+        term3 = kernel_gg.sum(dim=(-2, -1)) / (K**2)  # [B]
 
         # Combine terms
         test_statistic = term1 + term2 + term3  # [B]
@@ -368,12 +369,12 @@ class SIGRegLoss(nn.Module):
 
         # Validate input shapes
         assert z_a.shape == z_b.shape, (
-            f"z_a and z_b must have the same shape. "
-            f"Got z_a: {z_a.shape}, z_b: {z_b.shape}"
+            f"z_a and z_b must have the same shape. " f"Got z_a: {z_a.shape}, z_b: {z_b.shape}"
         )
-        assert z_a.ndim in [2, 3], (
-            f"Inputs must be 2D [B, D] or 3D [B, N, D], got shape {z_a.shape}"
-        )
+        assert z_a.ndim in [
+            2,
+            3,
+        ], f"Inputs must be 2D [B, D] or 3D [B, N, D], got shape {z_a.shape}"
 
         # Flatten patch dimension if needed
         if z_a.ndim == 3 and self.flatten_patches:
@@ -394,18 +395,15 @@ class SIGRegLoss(nn.Module):
         sigreg_loss = (sigreg_loss_a + sigreg_loss_b) / 2
 
         # Compute weighted total loss
-        total_loss = (
-            self.invariance_weight * inv_loss +
-            self.sigreg_weight * sigreg_loss
-        )
+        total_loss = self.invariance_weight * inv_loss + self.sigreg_weight * sigreg_loss
 
         # Return detailed loss dictionary
         loss_dict = {
-            'loss': total_loss,
-            'invariance_loss': inv_loss,
-            'sigreg_loss': sigreg_loss,
-            'sigreg_loss_a': sigreg_loss_a,
-            'sigreg_loss_b': sigreg_loss_b,
+            "loss": total_loss,
+            "invariance_loss": inv_loss,
+            "sigreg_loss": sigreg_loss,
+            "sigreg_loss_a": sigreg_loss_a,
+            "sigreg_loss_b": sigreg_loss_b,
         }
 
         return loss_dict
@@ -510,26 +508,22 @@ class HybridVICRegSIGRegLoss(nn.Module):
 
         # Combine
         total_loss = (
-            self.vicreg_weight * vicreg_dict['loss'] +
-            self.sigreg_weight * sigreg_dict['loss']
+            self.vicreg_weight * vicreg_dict["loss"] + self.sigreg_weight * sigreg_dict["loss"]
         )
 
         # Merge dictionaries
         loss_dict = {
-            'loss': total_loss,
-            'vicreg_loss': vicreg_dict['loss'],
-            'sigreg_loss': sigreg_dict['loss'],
-            'invariance_loss': vicreg_dict['invariance_loss'],
-            'variance_loss': vicreg_dict['variance_loss'],
-            'covariance_loss': vicreg_dict['covariance_loss'],
-            'sigreg_regularization': sigreg_dict['sigreg_loss'],
+            "loss": total_loss,
+            "vicreg_loss": vicreg_dict["loss"],
+            "sigreg_loss": sigreg_dict["loss"],
+            "invariance_loss": vicreg_dict["invariance_loss"],
+            "variance_loss": vicreg_dict["variance_loss"],
+            "covariance_loss": vicreg_dict["covariance_loss"],
+            "sigreg_regularization": sigreg_dict["sigreg_loss"],
         }
 
         return loss_dict
 
     def extra_repr(self) -> str:
         """String representation for print/logging."""
-        return (
-            f"vicreg_weight={self.vicreg_weight}, "
-            f"sigreg_weight={self.sigreg_weight}"
-        )
+        return f"vicreg_weight={self.vicreg_weight}, " f"sigreg_weight={self.sigreg_weight}"

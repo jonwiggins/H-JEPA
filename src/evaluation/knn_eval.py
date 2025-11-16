@@ -6,17 +6,17 @@ feature quality without any training. It classifies test samples based on their
 nearest neighbors in the training set.
 """
 
-from typing import Dict, List, Optional, Tuple
 import warnings
+from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
-import numpy as np
-from tqdm import tqdm
-from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import accuracy_score, top_k_accuracy_score
+from sklearn.neighbors import NearestNeighbors
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
 class KNNEvaluator:
@@ -38,10 +38,10 @@ class KNNEvaluator:
         model: nn.Module,
         hierarchy_level: int = 0,
         k: int = 20,
-        distance_metric: str = 'cosine',
-        pooling: str = 'mean',
+        distance_metric: str = "cosine",
+        pooling: str = "mean",
         temperature: float = 0.07,
-        device: str = 'cuda',
+        device: str = "cuda",
     ):
         self.model = model
         self.hierarchy_level = hierarchy_level
@@ -74,19 +74,16 @@ class KNNEvaluator:
         if features.ndim == 2:
             return features
 
-        if self.pooling == 'mean':
+        if self.pooling == "mean":
             return features.mean(dim=1)
-        elif self.pooling == 'max':
+        elif self.pooling == "max":
             return features.max(dim=1)[0]
         else:
             raise ValueError(f"Unknown pooling method: {self.pooling}")
 
     @torch.no_grad()
     def extract_features(
-        self,
-        dataloader: DataLoader,
-        normalize: bool = True,
-        desc: str = "Extracting features"
+        self, dataloader: DataLoader, normalize: bool = True, desc: str = "Extracting features"
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Extract and pool features from dataset.
@@ -141,22 +138,20 @@ class KNNEvaluator:
         """
         # Extract training features
         self.train_features, self.train_labels = self.extract_features(
-            train_loader,
-            normalize=normalize,
-            desc="Building k-NN index"
+            train_loader, normalize=normalize, desc="Building k-NN index"
         )
 
         # Build k-NN index
         metric = self.distance_metric
-        if metric == 'cosine':
+        if metric == "cosine":
             # For cosine similarity with normalized features, use euclidean
             # distance (equivalent after normalization)
-            metric = 'euclidean' if normalize else 'cosine'
+            metric = "euclidean" if normalize else "cosine"
 
         self.knn_index = NearestNeighbors(
             n_neighbors=self.k,
             metric=metric,
-            algorithm='auto',
+            algorithm="auto",
             n_jobs=-1,  # Use all CPU cores
         )
         self.knn_index.fit(self.train_features)
@@ -189,7 +184,7 @@ class KNNEvaluator:
 
         # Weight by distance (closer neighbors have more weight)
         # Convert distances to similarities
-        if self.distance_metric == 'cosine' and self.temperature > 0:
+        if self.distance_metric == "cosine" and self.temperature > 0:
             # For cosine: similarity = 1 - distance
             # Then apply softmax with temperature
             similarities = 1 - distances
@@ -240,9 +235,7 @@ class KNNEvaluator:
 
         # Extract test features
         test_features, test_labels = self.extract_features(
-            test_loader,
-            normalize=normalize,
-            desc="Extracting test features"
+            test_loader, normalize=normalize, desc="Extracting test features"
         )
 
         # Predict
@@ -252,25 +245,23 @@ class KNNEvaluator:
         accuracy = accuracy_score(test_labels, predictions) * 100
 
         metrics = {
-            'accuracy': accuracy,
-            'top_1_accuracy': accuracy,  # Same as accuracy
+            "accuracy": accuracy,
+            "top_1_accuracy": accuracy,  # Same as accuracy
         }
 
         # Top-k accuracies
         for k in top_k_list:
             if k > 1:
-                top_k_acc = top_k_accuracy_score(
-                    test_labels,
-                    prediction_probs,
-                    k=min(k, num_classes)
-                ) * 100
-                metrics[f'top_{k}_accuracy'] = top_k_acc
+                top_k_acc = (
+                    top_k_accuracy_score(test_labels, prediction_probs, k=min(k, num_classes)) * 100
+                )
+                metrics[f"top_{k}_accuracy"] = top_k_acc
 
         if verbose:
             print(f"\nk-NN Evaluation Results (k={self.k}):")
             print(f"  Accuracy: {accuracy:.2f}%")
             for k in top_k_list:
-                if k > 1 and f'top_{k}_accuracy' in metrics:
+                if k > 1 and f"top_{k}_accuracy" in metrics:
                     print(f"  Top-{k} Accuracy: {metrics[f'top_{k}_accuracy']:.2f}%")
 
         return metrics
@@ -298,9 +289,7 @@ class KNNEvaluator:
         """
         # Extract test features once
         test_features, test_labels = self.extract_features(
-            test_loader,
-            normalize=normalize,
-            desc="Extracting test features"
+            test_loader, normalize=normalize, desc="Extracting test features"
         )
 
         results = {}
@@ -322,8 +311,8 @@ class KNNEvaluator:
             accuracy = accuracy_score(test_labels, predictions) * 100
 
             results[k] = {
-                'accuracy': accuracy,
-                'top_1_accuracy': accuracy,
+                "accuracy": accuracy,
+                "top_1_accuracy": accuracy,
             }
 
             if verbose:
@@ -339,9 +328,9 @@ def knn_eval(
     num_classes: int,
     hierarchy_level: int = 0,
     k: int = 20,
-    distance_metric: str = 'cosine',
+    distance_metric: str = "cosine",
     temperature: float = 0.07,
-    device: str = 'cuda',
+    device: str = "cuda",
     verbose: bool = True,
 ) -> Dict[str, float]:
     """
@@ -392,8 +381,8 @@ def sweep_knn_params(
     hierarchy_level: int = 0,
     k_values: List[int] = [10, 20, 50, 100, 200],
     temperatures: List[float] = [0.01, 0.05, 0.07, 0.1, 0.5],
-    distance_metrics: List[str] = ['cosine', 'euclidean'],
-    device: str = 'cuda',
+    distance_metrics: List[str] = ["cosine", "euclidean"],
+    device: str = "cuda",
 ) -> Dict[str, Dict]:
     """
     Sweep over k-NN hyperparameters to find best configuration.
@@ -447,15 +436,15 @@ def sweep_knn_params(
                     )
 
                     results[config_name] = {
-                        'config': {
-                            'k': k,
-                            'temperature': temp,
-                            'distance_metric': metric,
+                        "config": {
+                            "k": k,
+                            "temperature": temp,
+                            "distance_metric": metric,
                         },
-                        'metrics': metrics,
+                        "metrics": metrics,
                     }
 
-                    acc = metrics['accuracy']
+                    acc = metrics["accuracy"]
                     print(f"  Accuracy: {acc:.2f}%")
 
                     if acc > best_acc:

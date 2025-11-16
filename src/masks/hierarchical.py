@@ -5,10 +5,11 @@ This module implements hierarchical masking that generates different masks
 for different levels of the hierarchy, enabling multi-scale representation learning.
 """
 
+from typing import Dict, List, Optional, Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from typing import Tuple, List, Optional, Dict
-import matplotlib.pyplot as plt
 
 
 class HierarchicalMaskGenerator:
@@ -54,7 +55,7 @@ class HierarchicalMaskGenerator:
         patch_size: int = 16,
         num_hierarchies: int = 3,
         num_target_masks: int = 4,
-        scale_progression: str = 'geometric',
+        scale_progression: str = "geometric",
         base_scale: Tuple[float, float] = (0.05, 0.15),
         aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
@@ -91,9 +92,9 @@ class HierarchicalMaskGenerator:
         configs = []
 
         for level in range(self.num_hierarchies):
-            if self.scale_progression == 'geometric':
+            if self.scale_progression == "geometric":
                 # Geometric progression: each level doubles the scale
-                scale_factor = 2 ** level
+                scale_factor = 2**level
             else:  # linear
                 # Linear progression
                 scale_factor = 1 + level
@@ -109,19 +110,17 @@ class HierarchicalMaskGenerator:
             context_min = min(0.95, context_ratio)
             context_max = min(1.0, context_ratio + 0.15)
 
-            configs.append({
-                'target_scale': (target_min, target_max),
-                'context_scale': (context_min, context_max),
-                'level': level,
-            })
+            configs.append(
+                {
+                    "target_scale": (target_min, target_max),
+                    "context_scale": (context_min, context_max),
+                    "level": level,
+                }
+            )
 
         return configs
 
-    def __call__(
-        self,
-        batch_size: int,
-        device: str = 'cuda'
-    ) -> Dict[str, Dict[str, torch.Tensor]]:
+    def __call__(self, batch_size: int, device: str = "cuda") -> Dict[str, Dict[str, torch.Tensor]]:
         """
         Generate hierarchical masks for a batch.
 
@@ -155,9 +154,9 @@ class HierarchicalMaskGenerator:
             context_mask_batch = torch.stack(context_masks).to(device)
             target_mask_batch = torch.stack(target_masks_list).to(device)
 
-            hierarchical_masks[f'level_{level_idx}'] = {
-                'context': context_mask_batch,
-                'targets': target_mask_batch,
+            hierarchical_masks[f"level_{level_idx}"] = {
+                "context": context_mask_batch,
+                "targets": target_mask_batch,
             }
 
         return hierarchical_masks
@@ -175,9 +174,9 @@ class HierarchicalMaskGenerator:
         Returns:
             Tuple of (context_mask, target_masks) as boolean tensors.
         """
-        target_scale = config['target_scale']
-        context_scale = config['context_scale']
-        level = config['level']
+        target_scale = config["target_scale"]
+        context_scale = config["context_scale"]
+        level = config["level"]
 
         # Sample target blocks
         target_blocks = []
@@ -192,7 +191,7 @@ class HierarchicalMaskGenerator:
             if block is not None:
                 target_blocks.append(block)
                 top, left, height, width = block
-                occupied_patches[top:top+height, left:left+width] = True
+                occupied_patches[top : top + height, left : left + width] = True
 
         # Sample context block
         context_block = self._sample_block(
@@ -274,7 +273,7 @@ class HierarchicalMaskGenerator:
 
             # Check overlaps
             if occupied is not None:
-                block_area = occupied[top:top+height, left:left+width]
+                block_area = occupied[top : top + height, left : left + width]
                 if not block_area.any():
                     return (top, left, height, width)
             else:
@@ -300,7 +299,7 @@ class HierarchicalMaskGenerator:
         """
         top, left, height, width = block
         mask_2d = np.zeros((self.num_patches_h, self.num_patches_w), dtype=bool)
-        mask_2d[top:top+height, left:left+width] = True
+        mask_2d[top : top + height, left : left + width] = True
         mask_1d = mask_2d.reshape(-1)
         return torch.from_numpy(mask_1d)
 
@@ -330,19 +329,19 @@ class HierarchicalMaskGenerator:
             axes = axes.reshape(2, 1)
 
         for level_idx in range(num_levels):
-            level_key = f'level_{level_idx}'
+            level_key = f"level_{level_idx}"
             level_masks = masks[level_key]
 
-            context_mask = level_masks['context'][sample_idx].cpu().numpy()
-            target_masks = level_masks['targets'][sample_idx].cpu().numpy()
+            context_mask = level_masks["context"][sample_idx].cpu().numpy()
+            target_masks = level_masks["targets"][sample_idx].cpu().numpy()
 
             # Reshape to 2D
             context_2d = context_mask.reshape(self.num_patches_h, self.num_patches_w)
 
             # Visualize context
-            axes[0, level_idx].imshow(context_2d, cmap='Blues', vmin=0, vmax=1)
-            axes[0, level_idx].set_title(f'Level {level_idx} Context')
-            axes[0, level_idx].axis('off')
+            axes[0, level_idx].imshow(context_2d, cmap="Blues", vmin=0, vmax=1)
+            axes[0, level_idx].set_title(f"Level {level_idx} Context")
+            axes[0, level_idx].axis("off")
 
             # Visualize targets
             target_union = np.zeros((self.num_patches_h, self.num_patches_w))
@@ -350,19 +349,14 @@ class HierarchicalMaskGenerator:
                 tgt_2d = tgt_mask.reshape(self.num_patches_h, self.num_patches_w)
                 target_union = np.maximum(target_union, tgt_2d * (i + 1))
 
-            axes[1, level_idx].imshow(
-                target_union,
-                cmap='Set1',
-                vmin=0,
-                vmax=self.num_target_masks
-            )
-            axes[1, level_idx].set_title(f'Level {level_idx} Targets')
-            axes[1, level_idx].axis('off')
+            axes[1, level_idx].imshow(target_union, cmap="Set1", vmin=0, vmax=self.num_target_masks)
+            axes[1, level_idx].set_title(f"Level {level_idx} Targets")
+            axes[1, level_idx].axis("off")
 
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(save_path, dpi=150, bbox_inches='tight')
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
         return fig
 
@@ -392,11 +386,11 @@ class HierarchicalMaskGenerator:
             axes = [axes]
 
         for level_idx in range(num_levels):
-            level_key = f'level_{level_idx}'
+            level_key = f"level_{level_idx}"
             level_masks = masks[level_key]
 
-            context_mask = level_masks['context'][sample_idx].cpu().numpy()
-            target_masks = level_masks['targets'][sample_idx].cpu().numpy()
+            context_mask = level_masks["context"][sample_idx].cpu().numpy()
+            target_masks = level_masks["targets"][sample_idx].cpu().numpy()
 
             # Create combined RGB view
             context_2d = context_mask.reshape(self.num_patches_h, self.num_patches_w)
@@ -412,14 +406,14 @@ class HierarchicalMaskGenerator:
                 combined[tgt_2d > 0] = color
 
             axes[level_idx].imshow(combined)
-            axes[level_idx].set_title(f'Level {level_idx}')
-            axes[level_idx].axis('off')
+            axes[level_idx].set_title(f"Level {level_idx}")
+            axes[level_idx].axis("off")
 
-        plt.suptitle('Hierarchical Masking - Combined View', fontsize=14)
+        plt.suptitle("Hierarchical Masking - Combined View", fontsize=14)
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(save_path, dpi=150, bbox_inches='tight')
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
         return fig
 
@@ -439,8 +433,8 @@ class HierarchicalMaskGenerator:
         stats = {}
 
         for level_key, level_masks in masks.items():
-            context_mask = level_masks['context']
-            target_masks = level_masks['targets']
+            context_mask = level_masks["context"]
+            target_masks = level_masks["targets"]
 
             batch_size = context_mask.shape[0]
 
@@ -459,12 +453,12 @@ class HierarchicalMaskGenerator:
                         overlaps.append(overlap.item())
 
             level_stats = {
-                'context_coverage_mean': context_coverage.mean().item(),
-                'context_coverage_std': context_coverage.std().item(),
-                'target_coverage_mean': target_coverage.mean().item(),
-                'target_coverage_std': target_coverage.std().item(),
-                'overlap_mean': np.mean(overlaps) if overlaps else 0.0,
-                'overlap_max': np.max(overlaps) if overlaps else 0.0,
+                "context_coverage_mean": context_coverage.mean().item(),
+                "context_coverage_std": context_coverage.std().item(),
+                "target_coverage_mean": target_coverage.mean().item(),
+                "target_coverage_std": target_coverage.std().item(),
+                "overlap_mean": np.mean(overlaps) if overlaps else 0.0,
+                "overlap_max": np.max(overlaps) if overlaps else 0.0,
             }
 
             stats[level_key] = level_stats
@@ -483,12 +477,14 @@ def demo():
         patch_size=16,
         num_hierarchies=3,
         num_target_masks=4,
-        scale_progression='geometric',
+        scale_progression="geometric",
     )
 
     print(f"Input size: {mask_gen.input_size}")
     print(f"Patch size: {mask_gen.patch_size}")
-    print(f"Number of patches: {mask_gen.num_patches} ({mask_gen.num_patches_h}x{mask_gen.num_patches_w})")
+    print(
+        f"Number of patches: {mask_gen.num_patches} ({mask_gen.num_patches_h}x{mask_gen.num_patches_w})"
+    )
     print(f"Number of hierarchies: {mask_gen.num_hierarchies}")
     print(f"Number of target masks per level: {mask_gen.num_target_masks}")
     print()
@@ -503,7 +499,7 @@ def demo():
 
     # Generate masks
     batch_size = 4
-    masks = mask_gen(batch_size=batch_size, device='cpu')
+    masks = mask_gen(batch_size=batch_size, device="cpu")
 
     print(f"Generated masks for batch_size={batch_size}")
     for level_key, level_masks in masks.items():
@@ -524,17 +520,13 @@ def demo():
     # Visualize
     print("Generating visualizations...")
     fig1 = mask_gen.visualize_hierarchical_masks(
-        masks,
-        sample_idx=0,
-        save_path='/tmp/hierarchical_masks_demo.png'
+        masks, sample_idx=0, save_path="/tmp/hierarchical_masks_demo.png"
     )
     plt.close(fig1)
     print("Visualization saved to /tmp/hierarchical_masks_demo.png")
 
     fig2 = mask_gen.visualize_combined_view(
-        masks,
-        sample_idx=0,
-        save_path='/tmp/hierarchical_masks_combined_demo.png'
+        masks, sample_idx=0, save_path="/tmp/hierarchical_masks_combined_demo.png"
     )
     plt.close(fig2)
     print("Combined view saved to /tmp/hierarchical_masks_combined_demo.png")

@@ -73,7 +73,7 @@ class HJEPA(nn.Module):
         drop_path_rate: float = 0.0,
         use_fpn: bool = False,
         fpn_feature_dim: Optional[int] = None,
-        fpn_fusion_method: str = 'add',
+        fpn_fusion_method: str = "add",
         use_gradient_checkpointing: bool = False,
         use_layerscale: bool = False,
         layerscale_init: float = 1e-5,
@@ -84,8 +84,10 @@ class HJEPA(nn.Module):
         if not 2 <= num_hierarchies <= 4:
             raise ValueError(f"num_hierarchies must be between 2 and 4, got {num_hierarchies}")
 
-        if fpn_fusion_method not in ['add', 'concat']:
-            raise ValueError(f"fpn_fusion_method must be 'add' or 'concat', got {fpn_fusion_method}")
+        if fpn_fusion_method not in ["add", "concat"]:
+            raise ValueError(
+                f"fpn_fusion_method must be 'add' or 'concat', got {fpn_fusion_method}"
+            )
 
         self.num_hierarchies = num_hierarchies
         self.embed_dim = embed_dim
@@ -125,25 +127,26 @@ class HJEPA(nn.Module):
 
         # Hierarchical projection heads
         # Each level projects to different semantic granularity
-        if use_fpn and fpn_fusion_method == 'concat':
+        if use_fpn and fpn_fusion_method == "concat":
             # When using concat, final dimension is 2x fpn_feature_dim
             final_dim = 2 * self.fpn_feature_dim
         else:
             final_dim = embed_dim
 
-        self.hierarchy_projections = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(final_dim, embed_dim),
-                nn.LayerNorm(embed_dim),
-            )
-            for _ in range(num_hierarchies)
-        ])
+        self.hierarchy_projections = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(final_dim, embed_dim),
+                    nn.LayerNorm(embed_dim),
+                )
+                for _ in range(num_hierarchies)
+            ]
+        )
 
         # Pooling layers for hierarchical representations
-        self.hierarchy_pooling = nn.ModuleList([
-            self._create_pooling_layer(level)
-            for level in range(num_hierarchies)
-        ])
+        self.hierarchy_pooling = nn.ModuleList(
+            [self._create_pooling_layer(level) for level in range(num_hierarchies)]
+        )
 
         # Feature Pyramid Network components
         if use_fpn:
@@ -176,7 +179,7 @@ class HJEPA(nn.Module):
             return nn.Identity()
         else:
             # Coarser levels: average pooling with increasing kernel size
-            kernel_size = 2 ** level
+            kernel_size = 2**level
             return nn.AvgPool1d(kernel_size=kernel_size, stride=kernel_size)
 
     def _build_fpn(self):
@@ -196,35 +199,41 @@ class HJEPA(nn.Module):
         """
         # Lateral connections: 1x1 convolutions to project features to FPN dimension
         # These operate on features at each hierarchy level before pooling
-        self.fpn_lateral_convs = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(self.embed_dim, self.fpn_feature_dim),
-                nn.LayerNorm(self.fpn_feature_dim),
-            )
-            for _ in range(self.num_hierarchies)
-        ])
+        self.fpn_lateral_convs = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(self.embed_dim, self.fpn_feature_dim),
+                    nn.LayerNorm(self.fpn_feature_dim),
+                )
+                for _ in range(self.num_hierarchies)
+            ]
+        )
 
         # Top-down pathway: convolutions applied after upsampling
         # These smooth the upsampled features before fusion
-        self.fpn_top_down_convs = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(self.fpn_feature_dim, self.fpn_feature_dim),
-                nn.LayerNorm(self.fpn_feature_dim),
-            )
-            for _ in range(self.num_hierarchies - 1)  # No top-down for coarsest level
-        ])
+        self.fpn_top_down_convs = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(self.fpn_feature_dim, self.fpn_feature_dim),
+                    nn.LayerNorm(self.fpn_feature_dim),
+                )
+                for _ in range(self.num_hierarchies - 1)  # No top-down for coarsest level
+            ]
+        )
 
         # If using concatenation fusion, we need additional convolutions
         # to combine the concatenated features
-        if self.fpn_fusion_method == 'concat':
-            self.fpn_fusion_convs = nn.ModuleList([
-                nn.Sequential(
-                    nn.Linear(2 * self.fpn_feature_dim, self.fpn_feature_dim),
-                    nn.LayerNorm(self.fpn_feature_dim),
-                    nn.ReLU(inplace=True),
-                )
-                for _ in range(self.num_hierarchies - 1)
-            ])
+        if self.fpn_fusion_method == "concat":
+            self.fpn_fusion_convs = nn.ModuleList(
+                [
+                    nn.Sequential(
+                        nn.Linear(2 * self.fpn_feature_dim, self.fpn_feature_dim),
+                        nn.LayerNorm(self.fpn_feature_dim),
+                        nn.ReLU(inplace=True),
+                    )
+                    for _ in range(self.num_hierarchies - 1)
+                ]
+            )
 
     def _apply_fpn(
         self,
@@ -260,10 +269,10 @@ class HJEPA(nn.Module):
             # Apply pooling for coarser levels
             if level > 0:
                 # Rearrange for 1D pooling: [B, N, D] -> [B, D, N]
-                level_features = rearrange(level_features, 'b n d -> b d n')
+                level_features = rearrange(level_features, "b n d -> b d n")
                 level_features = self.hierarchy_pooling[level](level_features)
                 # Rearrange back: [B, D, N'] -> [B, N', D]
-                level_features = rearrange(level_features, 'b d n -> b n d')
+                level_features = rearrange(level_features, "b d n -> b n d")
 
             pyramid_features.append(level_features)
 
@@ -292,22 +301,22 @@ class HJEPA(nn.Module):
 
             if top_down_n != current_n:
                 # Rearrange for interpolation: [B, N, D] -> [B, D, N]
-                top_down = rearrange(top_down, 'b n d -> b d n')
+                top_down = rearrange(top_down, "b n d -> b d n")
                 # Upsample using linear interpolation
                 top_down = torch.nn.functional.interpolate(
                     top_down,
                     size=current_n,
-                    mode='linear',
+                    mode="linear",
                     align_corners=False,
                 )
                 # Rearrange back: [B, D, N] -> [B, N, D]
-                top_down = rearrange(top_down, 'b d n -> b n d')
+                top_down = rearrange(top_down, "b d n -> b n d")
 
             # Apply top-down convolution for smoothing
             top_down = self.fpn_top_down_convs[level](top_down)
 
             # Fuse lateral and top-down features
-            if self.fpn_fusion_method == 'add':
+            if self.fpn_fusion_method == "add":
                 # Element-wise addition
                 fpn_features[level] = lateral_features[level] + top_down
             else:  # concat
@@ -363,7 +372,7 @@ class HJEPA(nn.Module):
         # Fill in the actual mask indices for each sample
         for i in range(B):
             sample_mask_indices = mask_bool[i].nonzero(as_tuple=True)[0]
-            mask_indices[i, :len(sample_mask_indices)] = sample_mask_indices
+            mask_indices[i, : len(sample_mask_indices)] = sample_mask_indices
 
         # Get positional embeddings from context encoder
         # pos_embed is [1, N+1, D], we need to expand to [B, N, D] (excluding CLS)
@@ -379,18 +388,16 @@ class HJEPA(nn.Module):
         # Extract target features for masked positions
         mask_indices_expanded = mask_indices.unsqueeze(-1).expand(-1, -1, self.embed_dim)
         target_masked = torch.gather(
-            target_features[:, 1:, :],  # Exclude CLS token
-            1,
-            mask_indices_expanded
+            target_features[:, 1:, :], 1, mask_indices_expanded  # Exclude CLS token
         )
 
         if not return_all_levels:
             # Return only finest level
             return {
-                'predictions': [predicted_features],
-                'targets': [target_masked],
-                'context_features': context_features,
-                'target_features': target_features,
+                "predictions": [predicted_features],
+                "targets": [target_masked],
+                "context_features": context_features,
+                "target_features": target_features,
             }
 
         # Compute hierarchical predictions and targets
@@ -419,25 +426,25 @@ class HJEPA(nn.Module):
                 # Apply pooling for coarser levels
                 if level > 0:
                     # Rearrange for 1D pooling: [B, N, D] -> [B, D, N]
-                    pred_projected = rearrange(pred_projected, 'b n d -> b d n')
-                    target_projected = rearrange(target_projected, 'b n d -> b d n')
+                    pred_projected = rearrange(pred_projected, "b n d -> b d n")
+                    target_projected = rearrange(target_projected, "b n d -> b d n")
 
                     # Apply pooling
                     pred_projected = self.hierarchy_pooling[level](pred_projected)
                     target_projected = self.hierarchy_pooling[level](target_projected)
 
                     # Rearrange back: [B, D, N'] -> [B, N', D]
-                    pred_projected = rearrange(pred_projected, 'b d n -> b n d')
-                    target_projected = rearrange(target_projected, 'b d n -> b n d')
+                    pred_projected = rearrange(pred_projected, "b d n -> b n d")
+                    target_projected = rearrange(target_projected, "b d n -> b n d")
 
                 predictions_hierarchy.append(pred_projected)
                 targets_hierarchy.append(target_projected)
 
         return {
-            'predictions': predictions_hierarchy,
-            'targets': targets_hierarchy,
-            'context_features': context_features,
-            'target_features': target_features,
+            "predictions": predictions_hierarchy,
+            "targets": targets_hierarchy,
+            "context_features": context_features,
+            "target_features": target_features,
         }
 
     @torch.no_grad()
@@ -483,9 +490,9 @@ class HJEPA(nn.Module):
 
             # Apply pooling for coarser levels
             if level > 0:
-                features = rearrange(features, 'b n d -> b d n')
+                features = rearrange(features, "b n d -> b d n")
                 features = self.hierarchy_pooling[level](features)
-                features = rearrange(features, 'b d n -> b n d')
+                features = rearrange(features, "b d n -> b n d")
 
         return features
 
@@ -499,9 +506,7 @@ class HJEPA(nn.Module):
         Returns:
             Current EMA momentum value
         """
-        return self.target_encoder.update_from_context_encoder(
-            self.context_encoder, current_step
-        )
+        return self.target_encoder.update_from_context_encoder(self.context_encoder, current_step)
 
     def get_num_patches(self) -> int:
         """Get number of patches (excluding CLS token)."""
@@ -527,7 +532,7 @@ def create_hjepa(
     drop_path_rate: float = 0.0,
     use_fpn: bool = False,
     fpn_feature_dim: Optional[int] = None,
-    fpn_fusion_method: str = 'add',
+    fpn_fusion_method: str = "add",
     use_gradient_checkpointing: bool = False,
     use_layerscale: bool = False,
     layerscale_init: float = 1e-5,
@@ -593,44 +598,44 @@ def create_hjepa_from_config(config: Dict) -> HJEPA:
     Returns:
         H-JEPA model
     """
-    model_config = config.get('model', {})
-    training_config = config.get('training', {})
+    model_config = config.get("model", {})
+    training_config = config.get("training", {})
 
     # Calculate warmup steps from epochs
-    ema_warmup_epochs = model_config.get('ema', {}).get('momentum_warmup_epochs', 30)
+    ema_warmup_epochs = model_config.get("ema", {}).get("momentum_warmup_epochs", 30)
     # Assume ~1000 steps per epoch for step calculation (adjust based on dataset size)
     ema_warmup_steps = ema_warmup_epochs * 1000
 
     # Get FPN configuration
-    fpn_config = model_config.get('fpn', {})
-    use_fpn = fpn_config.get('use_fpn', False)
-    fpn_feature_dim = fpn_config.get('feature_dim', None)
-    fpn_fusion_method = fpn_config.get('fusion_method', 'add')
+    fpn_config = model_config.get("fpn", {})
+    use_fpn = fpn_config.get("use_fpn", False)
+    fpn_feature_dim = fpn_config.get("feature_dim", None)
+    fpn_fusion_method = fpn_config.get("fusion_method", "add")
 
     # Get gradient checkpointing configuration
-    use_gradient_checkpointing = training_config.get('use_gradient_checkpointing', False)
+    use_gradient_checkpointing = training_config.get("use_gradient_checkpointing", False)
 
     # Get LayerScale configuration
-    layerscale_config = model_config.get('layerscale', {})
-    use_layerscale = layerscale_config.get('use_layerscale', False)
-    layerscale_init = layerscale_config.get('init_value', 1e-5)
+    layerscale_config = model_config.get("layerscale", {})
+    use_layerscale = layerscale_config.get("use_layerscale", False)
+    layerscale_init = layerscale_config.get("init_value", 1e-5)
 
     # Get Flash Attention configuration
-    use_flash_attention = model_config.get('use_flash_attention', True)
+    use_flash_attention = model_config.get("use_flash_attention", True)
 
     return create_hjepa(
-        encoder_type=model_config.get('encoder_type', 'vit_base_patch16_224'),
-        img_size=config.get('data', {}).get('image_size', 224),
-        embed_dim=model_config.get('embed_dim', 768),
-        predictor_depth=model_config.get('predictor', {}).get('depth', 6),
-        predictor_num_heads=model_config.get('predictor', {}).get('num_heads', 12),
-        predictor_mlp_ratio=model_config.get('predictor', {}).get('mlp_ratio', 4.0),
-        num_hierarchies=model_config.get('num_hierarchies', 3),
-        ema_momentum=model_config.get('ema', {}).get('momentum', 0.996),
-        ema_momentum_end=model_config.get('ema', {}).get('momentum_end', 1.0),
+        encoder_type=model_config.get("encoder_type", "vit_base_patch16_224"),
+        img_size=config.get("data", {}).get("image_size", 224),
+        embed_dim=model_config.get("embed_dim", 768),
+        predictor_depth=model_config.get("predictor", {}).get("depth", 6),
+        predictor_num_heads=model_config.get("predictor", {}).get("num_heads", 12),
+        predictor_mlp_ratio=model_config.get("predictor", {}).get("mlp_ratio", 4.0),
+        num_hierarchies=model_config.get("num_hierarchies", 3),
+        ema_momentum=model_config.get("ema", {}).get("momentum", 0.996),
+        ema_momentum_end=model_config.get("ema", {}).get("momentum_end", 1.0),
         ema_warmup_steps=ema_warmup_steps,
         pretrained=False,
-        drop_path_rate=training_config.get('drop_path_rate', 0.0),
+        drop_path_rate=training_config.get("drop_path_rate", 0.0),
         use_fpn=use_fpn,
         fpn_feature_dim=fpn_feature_dim,
         fpn_fusion_method=fpn_fusion_method,

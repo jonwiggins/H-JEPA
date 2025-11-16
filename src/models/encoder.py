@@ -8,11 +8,11 @@ Includes support for Rotary Position Embeddings (RoPE) for improved positional e
 import math
 from typing import Optional, Tuple
 
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-import timm
 from einops import rearrange
 
 
@@ -83,7 +83,7 @@ class VisionRoPE2D(nn.Module):
         # Create meshgrid for 2D positions
         # y_grid shape: [num_patches_per_side, num_patches_per_side]
         # x_grid shape: [num_patches_per_side, num_patches_per_side]
-        y_grid, x_grid = torch.meshgrid(y_pos, x_pos, indexing='ij')
+        y_grid, x_grid = torch.meshgrid(y_pos, x_pos, indexing="ij")
 
         # Flatten to [num_patches, 1]
         y_grid = y_grid.flatten()[:, None]
@@ -95,8 +95,8 @@ class VisionRoPE2D(nn.Module):
         freqs_x = x_grid * freq_bands[None, :]
 
         # Register as buffers (not parameters, but part of state_dict)
-        self.register_buffer('freqs_h', freqs_y, persistent=False)
-        self.register_buffer('freqs_w', freqs_x, persistent=False)
+        self.register_buffer("freqs_h", freqs_y, persistent=False)
+        self.register_buffer("freqs_w", freqs_x, persistent=False)
 
     def _compute_rope_rotation(self, freqs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -175,8 +175,10 @@ class VisionRoPE2D(nn.Module):
         """
         # Handle dynamic resolution by recomputing frequencies if needed
         if num_patches_h is not None and num_patches_w is not None:
-            if (num_patches_h != self.num_patches_per_side or
-                num_patches_w != self.num_patches_per_side):
+            if (
+                num_patches_h != self.num_patches_per_side
+                or num_patches_w != self.num_patches_per_side
+            ):
                 freqs_h, freqs_w = self._compute_freqs_dynamic(num_patches_h, num_patches_w)
             else:
                 freqs_h, freqs_w = self.freqs_h, self.freqs_w
@@ -228,7 +230,7 @@ class VisionRoPE2D(nn.Module):
         y_pos = torch.arange(num_patches_h, dtype=torch.float32, device=self.freqs_h.device)
         x_pos = torch.arange(num_patches_w, dtype=torch.float32, device=self.freqs_w.device)
 
-        y_grid, x_grid = torch.meshgrid(y_pos, x_pos, indexing='ij')
+        y_grid, x_grid = torch.meshgrid(y_pos, x_pos, indexing="ij")
         y_grid = y_grid.flatten()[:, None]
         x_grid = x_grid.flatten()[:, None]
 
@@ -260,8 +262,17 @@ class RoPEAttentionWrapper(nn.Module):
         self.rope = rope_module
 
         # Copy all attributes from original attention
-        for attr in ['num_heads', 'head_dim', 'scale', 'qkv', 'q_norm', 'k_norm',
-                     'attn_drop', 'proj', 'proj_drop']:
+        for attr in [
+            "num_heads",
+            "head_dim",
+            "scale",
+            "qkv",
+            "q_norm",
+            "k_norm",
+            "attn_drop",
+            "proj",
+            "proj_drop",
+        ]:
             if hasattr(attn_module, attr):
                 setattr(self, attr, getattr(attn_module, attr))
 
@@ -282,9 +293,9 @@ class RoPEAttentionWrapper(nn.Module):
         q, k, v = qkv.unbind(0)  # Each is [batch, num_heads, seq_len, head_dim]
 
         # Apply Q and K normalization if present (used in some ViT variants)
-        if hasattr(self, 'q_norm') and self.q_norm is not None:
+        if hasattr(self, "q_norm") and self.q_norm is not None:
             q = self.q_norm(q)
-        if hasattr(self, 'k_norm') and self.k_norm is not None:
+        if hasattr(self, "k_norm") and self.k_norm is not None:
             k = self.k_norm(k)
 
         # Calculate grid dimensions (excluding CLS token)
@@ -298,9 +309,7 @@ class RoPEAttentionWrapper(nn.Module):
 
             # Apply RoPE only to patch tokens
             q_patches_rope, k_patches_rope = self.rope(
-                q_patches, k_patches,
-                num_patches_h=grid_size,
-                num_patches_w=grid_size
+                q_patches, k_patches, num_patches_h=grid_size, num_patches_w=grid_size
             )
 
             # Concatenate CLS token back
@@ -379,7 +388,7 @@ class ContextEncoder(nn.Module):
         self.grid_size = int(math.sqrt(self.num_patches))
 
         # Remove classification head (we don't need it for JEPA)
-        if hasattr(self.vit, 'head'):
+        if hasattr(self.vit, "head"):
             self.vit.head = nn.Identity()
 
         # Gradient checkpointing flag
@@ -440,15 +449,10 @@ class ContextEncoder(nn.Module):
         if mask is not None:
             # mask shape: [B, N], we need [B, N+1, 1] to account for cls token
             # Determine dtype for zeros tensor
-            zero_dtype = (
-                torch.bool if mask.dtype == torch.bool else mask.dtype
-            )
-            mask_with_cls = torch.cat([
-                torch.zeros(
-                    mask.shape[0], 1, device=mask.device, dtype=zero_dtype
-                ),
-                mask
-            ], dim=1).unsqueeze(-1)
+            zero_dtype = torch.bool if mask.dtype == torch.bool else mask.dtype
+            mask_with_cls = torch.cat(
+                [torch.zeros(mask.shape[0], 1, device=mask.device, dtype=zero_dtype), mask], dim=1
+            ).unsqueeze(-1)
             # Convert boolean mask to float for multiplication
             if mask_with_cls.dtype == torch.bool:
                 mask_with_cls = mask_with_cls.float()
@@ -461,9 +465,7 @@ class ContextEncoder(nn.Module):
             for block in self.vit.blocks:
                 # torch.utils.checkpoint requires use_reentrant=False for compatibility
                 # with distributed training and certain edge cases
-                x = torch.utils.checkpoint.checkpoint(
-                    block, x, use_reentrant=False
-                )
+                x = torch.utils.checkpoint.checkpoint(block, x, use_reentrant=False)
         else:
             x = self.vit.blocks(x)
 
@@ -538,7 +540,7 @@ class TargetEncoder(nn.Module):
         self.grid_size = int(math.sqrt(self.num_patches))
 
         # Remove classification head
-        if hasattr(self.vit, 'head'):
+        if hasattr(self.vit, "head"):
             self.vit.head = nn.Identity()
 
         # EMA parameters
@@ -624,9 +626,7 @@ class TargetEncoder(nn.Module):
         for param_target, param_context in zip(
             self.vit.parameters(), context_encoder.vit.parameters()
         ):
-            param_target.data.mul_(momentum).add_(
-                param_context.data, alpha=1 - momentum
-            )
+            param_target.data.mul_(momentum).add_(param_context.data, alpha=1 - momentum)
 
         return momentum
 

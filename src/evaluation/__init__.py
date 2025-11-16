@@ -36,11 +36,12 @@ Example usage:
     ... )
 """
 
-# Linear probe
-from .linear_probe import (
-    LinearProbe,
-    LinearProbeEvaluator,
-    linear_probe_eval,
+# Feature quality
+from .feature_quality import (
+    FeatureQualityAnalyzer,
+    analyze_feature_quality,
+    compare_hierarchy_levels,
+    print_quality_report,
 )
 
 # k-NN evaluation
@@ -50,21 +51,20 @@ from .knn_eval import (
     sweep_knn_params,
 )
 
-# Feature quality
-from .feature_quality import (
-    FeatureQualityAnalyzer,
-    analyze_feature_quality,
-    print_quality_report,
-    compare_hierarchy_levels,
+# Linear probe
+from .linear_probe import (
+    LinearProbe,
+    LinearProbeEvaluator,
+    linear_probe_eval,
 )
 
 # Transfer learning
 from .transfer import (
-    TransferHead,
-    FineTuneEvaluator,
     FewShotEvaluator,
-    fine_tune_eval,
+    FineTuneEvaluator,
+    TransferHead,
     few_shot_eval,
+    fine_tune_eval,
 )
 
 __all__ = [

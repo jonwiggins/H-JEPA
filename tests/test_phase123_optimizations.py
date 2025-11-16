@@ -14,47 +14,53 @@ This test suite validates all newly implemented features:
 Run with: pytest tests/test_phase123_optimizations.py -v
 """
 
+import sys
+from pathlib import Path
+
+import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-import numpy as np
 from PIL import Image
-import sys
-from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from models.encoder import VisionRoPE2D, RoPEAttentionWrapper, ContextEncoder, create_encoder
-from models.hjepa import HJEPA, create_hjepa
-from losses.contrastive import NTXentLoss, ContrastiveJEPALoss
-from losses.hjepa_loss import HJEPALoss
 from data.transforms import (
-    RandAugment, Mixup, CutMix, MixupCutmix, RandomErasing,
-    DeiTIIIAugmentation, build_deit3_transform
+    CutMix,
+    DeiTIIIAugmentation,
+    Mixup,
+    MixupCutmix,
+    RandAugment,
+    RandomErasing,
+    build_deit3_transform,
 )
+from losses.contrastive import ContrastiveJEPALoss, NTXentLoss
+from losses.hjepa_loss import HJEPALoss
 from masks.multicrop_masking import MultiCropMaskGenerator
-
+from models.encoder import ContextEncoder, RoPEAttentionWrapper, VisionRoPE2D, create_encoder
+from models.hjepa import HJEPA, create_hjepa
 
 # ============================================================================
 # Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def device():
     """Get available device (CUDA, MPS, or CPU)."""
     if torch.cuda.is_available():
-        return torch.device('cuda')
+        return torch.device("cuda")
     elif torch.backends.mps.is_available():
-        return torch.device('mps')
+        return torch.device("mps")
     else:
-        return torch.device('cpu')
+        return torch.device("cpu")
 
 
 @pytest.fixture
 def sample_image():
     """Create a sample PIL image for testing."""
-    return Image.new('RGB', (224, 224), color=(128, 128, 128))
+    return Image.new("RGB", (224, 224), color=(128, 128, 128))
 
 
 @pytest.fixture
@@ -70,19 +76,20 @@ def sample_batch(device):
 def small_hjepa_config():
     """Config for a small H-JEPA model for testing."""
     return {
-        'encoder_type': 'vit_tiny_patch16_224',
-        'img_size': 224,
-        'embed_dim': 192,
-        'predictor_depth': 2,
-        'predictor_num_heads': 3,
-        'num_hierarchies': 2,
-        'use_fpn': False,
+        "encoder_type": "vit_tiny_patch16_224",
+        "img_size": 224,
+        "embed_dim": 192,
+        "predictor_depth": 2,
+        "predictor_num_heads": 3,
+        "num_hierarchies": 2,
+        "use_fpn": False,
     }
 
 
 # ============================================================================
 # Test RoPE (Rotary Position Embeddings)
 # ============================================================================
+
 
 class TestRoPE:
     """Tests for Rotary Position Embeddings."""
@@ -154,13 +161,14 @@ class TestRoPE:
 # Test Gradient Checkpointing
 # ============================================================================
 
+
 class TestGradientCheckpointing:
     """Tests for gradient checkpointing."""
 
     def test_checkpointing_initialization(self, small_hjepa_config):
         """Test encoder with gradient checkpointing initializes."""
         encoder = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             use_gradient_checkpointing=True,
         )
@@ -169,7 +177,7 @@ class TestGradientCheckpointing:
     def test_checkpointing_forward_pass(self, device, small_hjepa_config):
         """Test forward pass works with gradient checkpointing."""
         encoder = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             use_gradient_checkpointing=True,
         ).to(device)
@@ -184,7 +192,7 @@ class TestGradientCheckpointing:
     def test_checkpointing_backward_pass(self, device):
         """Test gradients flow correctly with checkpointing."""
         encoder = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             use_gradient_checkpointing=True,
         ).to(device)
@@ -202,11 +210,11 @@ class TestGradientCheckpointing:
         # This is a behavioral test - memory reduction happens but we verify
         # that the feature can be toggled
         encoder_no_cp = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             use_gradient_checkpointing=False,
         )
         encoder_with_cp = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             use_gradient_checkpointing=True,
         )
 
@@ -217,6 +225,7 @@ class TestGradientCheckpointing:
 # ============================================================================
 # Test DeiT III Augmentation
 # ============================================================================
+
 
 class TestDeiTIIIAugmentation:
     """Tests for DeiT III augmentation pipeline."""
@@ -326,6 +335,7 @@ class TestDeiTIIIAugmentation:
 # Test C-JEPA Contrastive Loss
 # ============================================================================
 
+
 class TestCJEPA:
     """Tests for C-JEPA contrastive learning."""
 
@@ -344,10 +354,10 @@ class TestCJEPA:
 
         output = loss_fn(z_i, z_j)
 
-        assert 'loss' in output
-        assert 'accuracy' in output
-        assert 'logits' in output
-        assert output['loss'].item() > 0
+        assert "loss" in output
+        assert "accuracy" in output
+        assert "logits" in output
+        assert output["loss"].item() > 0
 
     def test_ntxent_forward_3d(self, device):
         """Test NT-Xent with 3D patch embeddings."""
@@ -358,8 +368,8 @@ class TestCJEPA:
 
         output = loss_fn(z_i, z_j)
 
-        assert 'loss' in output
-        assert output['loss'].item() > 0
+        assert "loss" in output
+        assert output["loss"].item() > 0
 
     def test_ntxent_temperature_scaling(self, device):
         """Test that temperature affects loss magnitude."""
@@ -373,7 +383,7 @@ class TestCJEPA:
         out_high = loss_high_temp(z_i, z_j)
 
         # Lower temperature generally leads to higher loss (sharper distribution)
-        assert out_low['loss'].item() != out_high['loss'].item()
+        assert out_low["loss"].item() != out_high["loss"].item()
 
     def test_ntxent_accuracy_computation(self, device):
         """Test accuracy is computed correctly."""
@@ -386,13 +396,13 @@ class TestCJEPA:
 
         output = loss_fn(z_i, z_j)
 
-        assert 0.0 <= output['accuracy'].item() <= 1.0
+        assert 0.0 <= output["accuracy"].item() <= 1.0
 
     def test_contrastive_jepa_loss(self, device):
         """Test combined C-JEPA loss."""
         # Create base JEPA loss
         jepa_loss = HJEPALoss(
-            loss_type='smoothl1',
+            loss_type="smoothl1",
             hierarchy_weights=[1.0, 0.5],
             num_hierarchies=2,
         )
@@ -419,20 +429,22 @@ class TestCJEPA:
         context_j = torch.randn(4, 197, 128, device=device)
 
         output = cjepa_loss(
-            predictions, targets,
+            predictions,
+            targets,
             context_features_i=context_i,
             context_features_j=context_j,
         )
 
-        assert 'loss' in output
-        assert 'jepa_loss' in output
-        assert 'contrastive_loss' in output
-        assert 'contrastive_accuracy' in output
+        assert "loss" in output
+        assert "jepa_loss" in output
+        assert "contrastive_loss" in output
+        assert "contrastive_accuracy" in output
 
 
 # ============================================================================
 # Test Multi-Crop
 # ============================================================================
+
 
 class TestMultiCrop:
     """Tests for multi-crop masking."""
@@ -454,44 +466,44 @@ class TestMultiCrop:
     def test_multicrop_global_only_strategy(self, device):
         """Test global-only masking strategy."""
         mask_gen = MultiCropMaskGenerator(
-            masking_strategy='global_only',
+            masking_strategy="global_only",
             num_global_crops=2,
             num_local_crops=4,
         )
 
         masks = mask_gen(batch_size=4, device=str(device))
 
-        assert 'global_masks' in masks
-        assert 'local_masks' in masks
-        assert masks['local_masks'] is None
-        assert len(masks['global_masks']) == 2
+        assert "global_masks" in masks
+        assert "local_masks" in masks
+        assert masks["local_masks"] is None
+        assert len(masks["global_masks"]) == 2
 
     def test_multicrop_global_with_local_strategy(self, device):
         """Test global-with-local-context masking strategy."""
         mask_gen = MultiCropMaskGenerator(
-            masking_strategy='global_with_local_context',
+            masking_strategy="global_with_local_context",
             num_global_crops=2,
             num_local_crops=4,
         )
 
         masks = mask_gen(batch_size=4, device=str(device))
 
-        assert masks['global_masks'] is not None
-        assert masks['local_masks'] is not None
-        assert len(masks['local_masks']) == 4
+        assert masks["global_masks"] is not None
+        assert masks["local_masks"] is not None
+        assert len(masks["local_masks"]) == 4
 
     def test_multicrop_cross_crop_strategy(self, device):
         """Test cross-crop prediction strategy."""
         mask_gen = MultiCropMaskGenerator(
-            masking_strategy='cross_crop_prediction',
+            masking_strategy="cross_crop_prediction",
             num_global_crops=2,
             num_local_crops=6,
         )
 
         masks = mask_gen(batch_size=4, device=str(device))
 
-        assert masks['global_masks'] is not None
-        assert masks['local_masks'] is not None
+        assert masks["global_masks"] is not None
+        assert masks["local_masks"] is not None
 
     def test_multicrop_crop_info(self):
         """Test crop information retrieval."""
@@ -502,15 +514,16 @@ class TestMultiCrop:
 
         info = mask_gen.get_crop_info()
 
-        assert info['global_crop_size'] == 224
-        assert info['local_crop_size'] == 96
-        assert 'global_num_patches' in info
-        assert 'local_num_patches' in info
+        assert info["global_crop_size"] == 224
+        assert info["local_crop_size"] == 96
+        assert "global_num_patches" in info
+        assert "local_num_patches" in info
 
 
 # ============================================================================
 # Test FPN (Feature Pyramid Network)
 # ============================================================================
+
 
 class TestFPN:
     """Tests for Feature Pyramid Network."""
@@ -518,25 +531,25 @@ class TestFPN:
     def test_fpn_initialization(self, small_hjepa_config):
         """Test H-JEPA with FPN initializes correctly."""
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             embed_dim=192,
             predictor_depth=2,
             num_hierarchies=3,
             use_fpn=True,
             fpn_feature_dim=192,
-            fpn_fusion_method='add',
+            fpn_fusion_method="add",
         )
 
         assert model.use_fpn is True
-        assert hasattr(model, 'fpn_lateral_convs')
-        assert hasattr(model, 'fpn_top_down_convs')
+        assert hasattr(model, "fpn_lateral_convs")
+        assert hasattr(model, "fpn_top_down_convs")
         assert len(model.fpn_lateral_convs) == 3
 
     def test_fpn_lateral_connections(self, device):
         """Test FPN lateral connections exist."""
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=3,
             use_fpn=True,
         ).to(device)
@@ -552,7 +565,7 @@ class TestFPN:
     def test_fpn_forward_pass(self, device):
         """Test forward pass with FPN."""
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             num_hierarchies=2,
             use_fpn=True,
@@ -564,37 +577,37 @@ class TestFPN:
 
         output = model(images, mask)
 
-        assert 'predictions' in output
-        assert 'targets' in output
-        assert len(output['predictions']) == 2  # num_hierarchies
+        assert "predictions" in output
+        assert "targets" in output
+        assert len(output["predictions"]) == 2  # num_hierarchies
 
     def test_fpn_fusion_methods(self, device):
         """Test both FPN fusion methods."""
         # Test 'add' fusion
         model_add = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=2,
             use_fpn=True,
-            fpn_fusion_method='add',
+            fpn_fusion_method="add",
         ).to(device)
 
-        assert model_add.fpn_fusion_method == 'add'
+        assert model_add.fpn_fusion_method == "add"
 
         # Test 'concat' fusion
         model_concat = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=2,
             use_fpn=True,
-            fpn_fusion_method='concat',
+            fpn_fusion_method="concat",
         ).to(device)
 
-        assert model_concat.fpn_fusion_method == 'concat'
-        assert hasattr(model_concat, 'fpn_fusion_convs')
+        assert model_concat.fpn_fusion_method == "concat"
+        assert hasattr(model_concat, "fpn_fusion_convs")
 
     def test_fpn_multiscale_features(self, device):
         """Test FPN produces multi-scale features."""
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=3,
             use_fpn=True,
         ).to(device)
@@ -604,7 +617,7 @@ class TestFPN:
         mask[:, :30] = 1
 
         output = model(images, mask, return_all_levels=True)
-        predictions = output['predictions']
+        predictions = output["predictions"]
 
         # Check we have different scales
         assert len(predictions) == 3
@@ -616,13 +629,14 @@ class TestFPN:
 # Integration Tests
 # ============================================================================
 
+
 class TestIntegration:
     """Integration tests combining multiple features."""
 
     def test_hjepa_with_all_features(self, device):
         """Test H-JEPA with all optimizations enabled."""
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             num_hierarchies=2,
             use_fpn=True,
@@ -638,16 +652,16 @@ class TestIntegration:
         output = model(images, mask)
 
         # Check output structure
-        assert 'predictions' in output
-        assert 'targets' in output
-        assert 'context_features' in output
-        assert 'target_features' in output
+        assert "predictions" in output
+        assert "targets" in output
+        assert "context_features" in output
+        assert "target_features" in output
 
     def test_training_step_simulation(self, device):
         """Simulate a complete training step with all features."""
         # Create model with FPN and gradient checkpointing
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             img_size=224,
             embed_dim=192,
             num_hierarchies=2,
@@ -658,7 +672,7 @@ class TestIntegration:
 
         # Create loss
         loss_fn = HJEPALoss(
-            loss_type='smoothl1',
+            loss_type="smoothl1",
             hierarchy_weights=[1.0, 0.5],
             num_hierarchies=2,
         )
@@ -672,8 +686,8 @@ class TestIntegration:
         output = model(images, mask)
 
         # Compute loss
-        loss_output = loss_fn(output['predictions'], output['targets'])
-        loss = loss_output['loss']
+        loss_output = loss_fn(output["predictions"], output["targets"])
+        loss = loss_output["loss"]
 
         # Backward pass
         loss.backward()
@@ -686,25 +700,26 @@ class TestIntegration:
     def test_config_based_creation(self):
         """Test creating model from configuration."""
         config = {
-            'model': {
-                'encoder_type': 'vit_tiny_patch16_224',
-                'embed_dim': 192,
-                'num_hierarchies': 2,
-                'fpn': {
-                    'use_fpn': True,
-                    'feature_dim': 192,
-                    'fusion_method': 'add',
+            "model": {
+                "encoder_type": "vit_tiny_patch16_224",
+                "embed_dim": 192,
+                "num_hierarchies": 2,
+                "fpn": {
+                    "use_fpn": True,
+                    "feature_dim": 192,
+                    "fusion_method": "add",
                 },
             },
-            'data': {
-                'image_size': 224,
+            "data": {
+                "image_size": 224,
             },
-            'training': {
-                'use_gradient_checkpointing': True,
+            "training": {
+                "use_gradient_checkpointing": True,
             },
         }
 
         from models.hjepa import create_hjepa_from_config
+
         model = create_hjepa_from_config(config)
 
         assert model.use_fpn is True
@@ -715,13 +730,14 @@ class TestIntegration:
 # Edge Cases and Error Handling
 # ============================================================================
 
+
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
     def test_empty_input_handling(self, device):
         """Test handling of edge case inputs."""
         model = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=2,
         ).to(device)
 
@@ -743,7 +759,7 @@ class TestEdgeCases:
 
         # Invalid FPN fusion method
         with pytest.raises(ValueError):
-            HJEPA(use_fpn=True, fpn_fusion_method='invalid')
+            HJEPA(use_fpn=True, fpn_fusion_method="invalid")
 
     def test_dimension_mismatches(self, device):
         """Test handling of dimension mismatches."""
@@ -765,41 +781,43 @@ class TestEdgeCases:
 # Performance and Memory Tests
 # ============================================================================
 
+
 class TestPerformance:
     """Performance and memory tests."""
 
     @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
     def test_gradient_checkpointing_memory(self):
         """Test gradient checkpointing reduces memory (CUDA only)."""
-        device = torch.device('cuda')
+        device = torch.device("cuda")
 
         # This is a qualitative test - we verify the feature works
         model_no_cp = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             use_gradient_checkpointing=False,
         ).to(device)
 
         model_with_cp = ContextEncoder(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             use_gradient_checkpointing=True,
         ).to(device)
 
         # Verify models have same parameters
-        assert sum(p.numel() for p in model_no_cp.parameters()) == \
-               sum(p.numel() for p in model_with_cp.parameters())
+        assert sum(p.numel() for p in model_no_cp.parameters()) == sum(
+            p.numel() for p in model_with_cp.parameters()
+        )
 
     def test_fpn_computational_overhead(self, device):
         """Test FPN adds acceptable computational overhead."""
         import time
 
         model_no_fpn = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=2,
             use_fpn=False,
         ).to(device)
 
         model_with_fpn = HJEPA(
-            encoder_type='vit_tiny_patch16_224',
+            encoder_type="vit_tiny_patch16_224",
             num_hierarchies=2,
             use_fpn=True,
         ).to(device)
@@ -820,5 +838,5 @@ class TestPerformance:
         assert output_with_fpn is not None
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

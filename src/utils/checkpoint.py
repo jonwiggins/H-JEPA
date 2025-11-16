@@ -8,13 +8,14 @@ Handles:
 - Checkpoint cleanup to manage disk space
 """
 
+import glob
+import logging
 import os
 import shutil
-import glob
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
 import torch
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class CheckpointManager:
 
         # Track best checkpoints
         self.best_checkpoints: List[Dict[str, Any]] = []
-        self.best_metric = float('inf') if mode == 'min' else float('-inf')
+        self.best_metric = float("inf") if mode == "min" else float("-inf")
 
         logger.info(f"CheckpointManager initialized: {checkpoint_dir}")
         logger.info(f"Tracking best {keep_best_n} checkpoints by {metric_name} ({mode})")
@@ -88,21 +89,21 @@ class CheckpointManager:
             Path to saved checkpoint file
         """
         # Handle DataParallel/DistributedDataParallel
-        model_state = model.module.state_dict() if hasattr(model, 'module') else model.state_dict()
+        model_state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
 
         # Prepare checkpoint dictionary
         checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': model_state,
-            'optimizer_state_dict': optimizer.state_dict(),
-            'scheduler_state_dict': scheduler if isinstance(scheduler, dict) else None,
-            'metrics': metrics or {},
-            'best_metric': self.best_metric,
+            "epoch": epoch,
+            "model_state_dict": model_state,
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler if isinstance(scheduler, dict) else None,
+            "metrics": metrics or {},
+            "best_metric": self.best_metric,
         }
 
         # Add scaler for mixed precision
         if scaler is not None:
-            checkpoint['scaler_state_dict'] = scaler.state_dict()
+            checkpoint["scaler_state_dict"] = scaler.state_dict()
 
         # Add any extra state
         if extra_state is not None:
@@ -164,32 +165,32 @@ class CheckpointManager:
         checkpoint = torch.load(checkpoint_path, map_location=device)
 
         # Load model state
-        if hasattr(model, 'module'):
-            model.module.load_state_dict(checkpoint['model_state_dict'])
+        if hasattr(model, "module"):
+            model.module.load_state_dict(checkpoint["model_state_dict"])
         else:
-            model.load_state_dict(checkpoint['model_state_dict'])
+            model.load_state_dict(checkpoint["model_state_dict"])
 
         # Load optimizer state
-        if optimizer is not None and 'optimizer_state_dict' in checkpoint:
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        if optimizer is not None and "optimizer_state_dict" in checkpoint:
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
             logger.info("Loaded optimizer state")
 
         # Load scheduler state
-        if scheduler is not None and 'scheduler_state_dict' in checkpoint:
-            if checkpoint['scheduler_state_dict'] is not None:
+        if scheduler is not None and "scheduler_state_dict" in checkpoint:
+            if checkpoint["scheduler_state_dict"] is not None:
                 # Scheduler state handling depends on implementation
                 logger.info("Scheduler state found in checkpoint")
 
         # Load scaler state
-        if scaler is not None and 'scaler_state_dict' in checkpoint:
-            scaler.load_state_dict(checkpoint['scaler_state_dict'])
+        if scaler is not None and "scaler_state_dict" in checkpoint:
+            scaler.load_state_dict(checkpoint["scaler_state_dict"])
             logger.info("Loaded GradScaler state")
 
         # Return metadata
         metadata = {
-            'epoch': checkpoint.get('epoch', 0),
-            'metrics': checkpoint.get('metrics', {}),
-            'best_metric': checkpoint.get('best_metric', None),
+            "epoch": checkpoint.get("epoch", 0),
+            "metrics": checkpoint.get("metrics", {}),
+            "best_metric": checkpoint.get("best_metric", None),
         }
 
         logger.info(f"Resumed from epoch {metadata['epoch']}")
@@ -217,7 +218,7 @@ class CheckpointManager:
         Returns:
             True if this is a better metric value
         """
-        if self.mode == 'min':
+        if self.mode == "min":
             return metric_value < self.best_metric
         else:
             return metric_value > self.best_metric
@@ -252,29 +253,31 @@ class CheckpointManager:
             metric_value: Metric value for this checkpoint
         """
         # Add new checkpoint to list
-        self.best_checkpoints.append({
-            'path': checkpoint_path,
-            'epoch': epoch,
-            'metric': metric_value,
-        })
+        self.best_checkpoints.append(
+            {
+                "path": checkpoint_path,
+                "epoch": epoch,
+                "metric": metric_value,
+            }
+        )
 
         # Sort by metric
-        if self.mode == 'min':
-            self.best_checkpoints.sort(key=lambda x: x['metric'])
+        if self.mode == "min":
+            self.best_checkpoints.sort(key=lambda x: x["metric"])
         else:
-            self.best_checkpoints.sort(key=lambda x: x['metric'], reverse=True)
+            self.best_checkpoints.sort(key=lambda x: x["metric"], reverse=True)
 
         # Keep only best N checkpoints
         if len(self.best_checkpoints) > self.keep_best_n:
             # Remove worst checkpoints
-            to_remove = self.best_checkpoints[self.keep_best_n:]
-            self.best_checkpoints = self.best_checkpoints[:self.keep_best_n]
+            to_remove = self.best_checkpoints[self.keep_best_n :]
+            self.best_checkpoints = self.best_checkpoints[: self.keep_best_n]
 
             # Delete checkpoint files
             for ckpt in to_remove:
                 try:
-                    if os.path.exists(ckpt['path']):
-                        os.remove(ckpt['path'])
+                    if os.path.exists(ckpt["path"]):
+                        os.remove(ckpt["path"])
                         logger.info(f"Removed old checkpoint: {ckpt['path']}")
                 except Exception as e:
                     logger.warning(f"Failed to remove checkpoint {ckpt['path']}: {e}")
@@ -298,7 +301,7 @@ class CheckpointManager:
             to_remove = checkpoints[:-keep_last_n]
             for ckpt_path in to_remove:
                 # Don't remove if it's in the best checkpoints list
-                is_best = any(ckpt['path'] == ckpt_path for ckpt in self.best_checkpoints)
+                is_best = any(ckpt["path"] == ckpt_path for ckpt in self.best_checkpoints)
                 if not is_best:
                     try:
                         os.remove(ckpt_path)
@@ -339,11 +342,7 @@ class CheckpointManager:
 
 
 def save_checkpoint(
-    filepath: str,
-    model: torch.nn.Module,
-    optimizer: torch.optim.Optimizer,
-    epoch: int,
-    **kwargs
+    filepath: str, model: torch.nn.Module, optimizer: torch.optim.Optimizer, epoch: int, **kwargs
 ):
     """
     Simple checkpoint saving utility function.
@@ -355,12 +354,12 @@ def save_checkpoint(
         epoch: Current epoch
         **kwargs: Additional state to save
     """
-    model_state = model.module.state_dict() if hasattr(model, 'module') else model.state_dict()
+    model_state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
 
     checkpoint = {
-        'epoch': epoch,
-        'model_state_dict': model_state,
-        'optimizer_state_dict': optimizer.state_dict(),
+        "epoch": epoch,
+        "model_state_dict": model_state,
+        "optimizer_state_dict": optimizer.state_dict(),
     }
     checkpoint.update(kwargs)
 
@@ -388,13 +387,13 @@ def load_checkpoint(
     """
     checkpoint = torch.load(filepath, map_location=device)
 
-    if hasattr(model, 'module'):
-        model.module.load_state_dict(checkpoint['model_state_dict'])
+    if hasattr(model, "module"):
+        model.module.load_state_dict(checkpoint["model_state_dict"])
     else:
-        model.load_state_dict(checkpoint['model_state_dict'])
+        model.load_state_dict(checkpoint["model_state_dict"])
 
-    if optimizer is not None and 'optimizer_state_dict' in checkpoint:
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if optimizer is not None and "optimizer_state_dict" in checkpoint:
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
     logger.info(f"Checkpoint loaded: {filepath}")
     return checkpoint

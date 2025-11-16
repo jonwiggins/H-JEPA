@@ -12,10 +12,11 @@ Tests cover:
 import pytest
 import torch
 import torch.nn as nn
+
 from src.losses import (
-    SIGRegLoss,
-    HybridVICRegSIGRegLoss,
     EppsPulleyTest,
+    HybridVICRegSIGRegLoss,
+    SIGRegLoss,
     VICRegLoss,
     create_loss_from_config,
 )
@@ -52,8 +53,7 @@ class TestEppsPulleyTest:
         gaussian = torch.randn(1000)
         stat_gaussian = test(gaussian)
 
-        assert stat_uniform > stat_gaussian, \
-            "Non-Gaussian should have higher EP statistic"
+        assert stat_uniform > stat_gaussian, "Non-Gaussian should have higher EP statistic"
 
     def test_batched_input(self):
         """Test EP test works with batched input"""
@@ -106,14 +106,14 @@ class TestSIGRegLoss:
         loss_dict = loss_fn(z_a, z_b)
 
         # Check outputs
-        assert 'loss' in loss_dict
-        assert 'invariance_loss' in loss_dict
-        assert 'sigreg_loss' in loss_dict
-        assert 'sigreg_loss_a' in loss_dict
-        assert 'sigreg_loss_b' in loss_dict
+        assert "loss" in loss_dict
+        assert "invariance_loss" in loss_dict
+        assert "sigreg_loss" in loss_dict
+        assert "sigreg_loss_a" in loss_dict
+        assert "sigreg_loss_b" in loss_dict
 
         # Check loss is positive
-        assert loss_dict['loss'] > 0
+        assert loss_dict["loss"] > 0
 
     def test_single_input(self):
         """Test SIGReg with single concatenated input"""
@@ -126,8 +126,8 @@ class TestSIGRegLoss:
         # Should split automatically
         loss_dict = loss_fn(z)
 
-        assert 'loss' in loss_dict
-        assert loss_dict['loss'] > 0
+        assert "loss" in loss_dict
+        assert loss_dict["loss"] > 0
 
     def test_2d_input(self):
         """Test SIGReg with 2D input [B, D]"""
@@ -140,8 +140,8 @@ class TestSIGRegLoss:
 
         loss_dict = loss_fn(z_a, z_b)
 
-        assert 'loss' in loss_dict
-        assert loss_dict['loss'] > 0
+        assert "loss" in loss_dict
+        assert loss_dict["loss"] > 0
 
     def test_backward_pass(self):
         """Test SIGReg loss backward pass"""
@@ -154,7 +154,7 @@ class TestSIGRegLoss:
 
         # Forward
         loss_dict = loss_fn(z_a, z_b)
-        total_loss = loss_dict['loss']
+        total_loss = loss_dict["loss"]
 
         # Backward
         total_loss.backward()
@@ -176,11 +176,10 @@ class TestSIGRegLoss:
         z_b = torch.randn(B, N, D)
 
         # Two forward passes should give same SIGReg loss
-        loss1 = loss_fn(z_a, z_b)['sigreg_loss']
-        loss2 = loss_fn(z_a, z_b)['sigreg_loss']
+        loss1 = loss_fn(z_a, z_b)["sigreg_loss"]
+        loss2 = loss_fn(z_a, z_b)["sigreg_loss"]
 
-        assert torch.allclose(loss1, loss2), \
-            "Fixed slices should be deterministic"
+        assert torch.allclose(loss1, loss2), "Fixed slices should be deterministic"
 
     def test_invariance_term(self):
         """Test invariance loss is MSE"""
@@ -197,7 +196,7 @@ class TestSIGRegLoss:
         loss_dict = loss_fn(z_a, z_b)
 
         # Should be near zero for identical inputs
-        assert loss_dict['invariance_loss'] < 1e-6
+        assert loss_dict["invariance_loss"] < 1e-6
 
     def test_different_num_slices(self):
         """Test different numbers of slices"""
@@ -209,8 +208,8 @@ class TestSIGRegLoss:
             loss_fn = SIGRegLoss(num_slices=num_slices)
             loss_dict = loss_fn(z_a, z_b)
 
-            assert loss_dict['loss'] > 0
-            assert not torch.isnan(loss_dict['loss'])
+            assert loss_dict["loss"] > 0
+            assert not torch.isnan(loss_dict["loss"])
 
     def test_shape_mismatch_error(self):
         """Test error on shape mismatch"""
@@ -260,13 +259,13 @@ class TestHybridVICRegSIGRegLoss:
         loss_dict = loss_fn(z_a, z_b)
 
         # Check all components present
-        assert 'loss' in loss_dict
-        assert 'vicreg_loss' in loss_dict
-        assert 'sigreg_loss' in loss_dict
-        assert 'invariance_loss' in loss_dict
-        assert 'variance_loss' in loss_dict
-        assert 'covariance_loss' in loss_dict
-        assert 'sigreg_regularization' in loss_dict
+        assert "loss" in loss_dict
+        assert "vicreg_loss" in loss_dict
+        assert "sigreg_loss" in loss_dict
+        assert "invariance_loss" in loss_dict
+        assert "variance_loss" in loss_dict
+        assert "covariance_loss" in loss_dict
+        assert "sigreg_regularization" in loss_dict
 
     def test_vicreg_only(self):
         """Test hybrid with only VICReg (no SIGReg)"""
@@ -283,8 +282,8 @@ class TestHybridVICRegSIGRegLoss:
         loss_dict = loss_fn(z_a, z_b)
 
         # Should be dominated by VICReg
-        assert loss_dict['vicreg_loss'] > 0
-        assert loss_dict['loss'] > 0
+        assert loss_dict["vicreg_loss"] > 0
+        assert loss_dict["loss"] > 0
 
     def test_sigreg_only(self):
         """Test hybrid with only SIGReg (no VICReg)"""
@@ -301,8 +300,8 @@ class TestHybridVICRegSIGRegLoss:
         loss_dict = loss_fn(z_a, z_b)
 
         # Should be dominated by SIGReg
-        assert loss_dict['sigreg_loss'] > 0
-        assert loss_dict['loss'] > 0
+        assert loss_dict["sigreg_loss"] > 0
+        assert loss_dict["loss"] > 0
 
     def test_weight_adjustment(self):
         """Test dynamic weight adjustment"""
@@ -317,14 +316,14 @@ class TestHybridVICRegSIGRegLoss:
         z_b = torch.randn(B, N, D)
 
         # Initial weights
-        loss1 = loss_fn(z_a, z_b)['loss']
+        loss1 = loss_fn(z_a, z_b)["loss"]
 
         # Adjust weights
         loss_fn.vicreg_weight = 0.5
         loss_fn.sigreg_weight = 0.5
 
         # Should give different total loss
-        loss2 = loss_fn(z_a, z_b)['loss']
+        loss2 = loss_fn(z_a, z_b)["loss"]
 
         # Losses should differ
         assert not torch.allclose(loss1, loss2)
@@ -336,10 +335,10 @@ class TestLossFactory:
     def test_create_sigreg_from_config(self):
         """Test creating SIGReg from config"""
         config = {
-            'type': 'sigreg',
-            'sigreg_num_slices': 512,
-            'sigreg_weight': 25.0,
-            'sigreg_invariance_weight': 25.0,
+            "type": "sigreg",
+            "sigreg_num_slices": 512,
+            "sigreg_weight": 25.0,
+            "sigreg_invariance_weight": 25.0,
         }
 
         loss_fn = create_loss_from_config(config)
@@ -350,7 +349,7 @@ class TestLossFactory:
     def test_create_sigreg_with_defaults(self):
         """Test creating SIGReg with default parameters"""
         config = {
-            'type': 'sigreg',
+            "type": "sigreg",
         }
 
         loss_fn = create_loss_from_config(config)
@@ -361,9 +360,9 @@ class TestLossFactory:
     def test_sigreg_config_variations(self):
         """Test various SIGReg configurations"""
         configs = [
-            {'type': 'sigreg', 'sigreg_num_slices': 256},
-            {'type': 'sigreg', 'sigreg_fixed_slices': True},
-            {'type': 'sigreg', 'sigreg_num_test_points': 11},
+            {"type": "sigreg", "sigreg_num_slices": 256},
+            {"type": "sigreg", "sigreg_fixed_slices": True},
+            {"type": "sigreg", "sigreg_num_test_points": 11},
         ]
 
         for config in configs:
@@ -387,12 +386,12 @@ class TestComparison:
         sigreg_dict = sigreg(z_a, z_b)
 
         # Both should have 'loss'
-        assert 'loss' in vicreg_dict
-        assert 'loss' in sigreg_dict
+        assert "loss" in vicreg_dict
+        assert "loss" in sigreg_dict
 
         # Both should have 'invariance_loss'
-        assert 'invariance_loss' in vicreg_dict
-        assert 'invariance_loss' in sigreg_dict
+        assert "invariance_loss" in vicreg_dict
+        assert "invariance_loss" in sigreg_dict
 
     def test_similar_invariance(self):
         """Test invariance terms are similar"""
@@ -411,8 +410,8 @@ class TestComparison:
         z_a = torch.randn(B, N, D)
         z_b = torch.randn(B, N, D)
 
-        vicreg_inv = vicreg(z_a, z_b)['invariance_loss']
-        sigreg_inv = sigreg(z_a, z_b)['invariance_loss']
+        vicreg_inv = vicreg(z_a, z_b)["invariance_loss"]
+        sigreg_inv = sigreg(z_a, z_b)["invariance_loss"]
 
         # Should be identical (both are MSE)
         assert torch.allclose(vicreg_inv, sigreg_inv)
@@ -430,7 +429,7 @@ class TestEdgeCases:
         z_b = torch.randn(1, 49, 192)
 
         loss_dict = loss_fn(z_a, z_b)
-        assert loss_dict['loss'] > 0
+        assert loss_dict["loss"] > 0
 
     def test_large_embedding_dim(self):
         """Test with large embedding dimension"""
@@ -441,7 +440,7 @@ class TestEdgeCases:
         z_b = torch.randn(4, 49, 2048)
 
         loss_dict = loss_fn(z_a, z_b)
-        assert loss_dict['loss'] > 0
+        assert loss_dict["loss"] > 0
 
     def test_zero_weights(self):
         """Test with zero weights"""
@@ -457,7 +456,7 @@ class TestEdgeCases:
         loss_dict = loss_fn(z_a, z_b)
 
         # Total loss should be zero
-        assert torch.allclose(loss_dict['loss'], torch.tensor(0.0))
+        assert torch.allclose(loss_dict["loss"], torch.tensor(0.0))
 
     def test_nan_handling(self):
         """Test behavior with NaN inputs"""
@@ -467,12 +466,12 @@ class TestEdgeCases:
         z_b = torch.randn(8, 49, 192)
 
         # Add some NaN
-        z_a[0, 0, 0] = float('nan')
+        z_a[0, 0, 0] = float("nan")
 
         loss_dict = loss_fn(z_a, z_b)
 
         # Loss should be NaN
-        assert torch.isnan(loss_dict['loss'])
+        assert torch.isnan(loss_dict["loss"])
 
 
 if __name__ == "__main__":

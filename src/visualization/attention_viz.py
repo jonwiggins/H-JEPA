@@ -7,8 +7,8 @@ and hierarchical attention across different levels.
 
 from typing import Dict, List, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,14 +16,16 @@ import torch.nn as nn
 try:
     from einops import rearrange
 except ImportError:
+
     def rearrange(tensor, pattern, **axes_lengths):
         """Fallback rearrange for basic patterns."""
-        if pattern == 'b n d -> b d n':
+        if pattern == "b n d -> b d n":
             return tensor.transpose(1, 2)
-        elif pattern == 'b d n -> b n d':
+        elif pattern == "b d n -> b n d":
             return tensor.transpose(1, 2)
         else:
             raise NotImplementedError(f"Pattern {pattern} not supported in fallback")
+
 
 try:
     import seaborn as sns
@@ -53,8 +55,9 @@ def extract_attention_maps(
     def get_attention_hook(name):
         def hook(module, input, output):
             # For timm ViT, attention weights are in attn_drop
-            if hasattr(module, 'attn'):
+            if hasattr(module, "attn"):
                 attention_maps[name] = module.attn.detach().cpu()
+
         return hook
 
     # Register hooks for transformer blocks
@@ -65,9 +68,7 @@ def extract_attention_maps(
         layer_indices = list(range(len(blocks)))
 
     for idx in layer_indices:
-        hook = blocks[idx].attn.register_forward_hook(
-            get_attention_hook(f'layer_{idx}')
-        )
+        hook = blocks[idx].attn.register_forward_hook(get_attention_hook(f"layer_{idx}"))
         hooks.append(hook)
 
     # Forward pass
@@ -117,14 +118,10 @@ def visualize_attention_maps(
 
     num_heads_viz = len(head_indices)
 
-    fig, axes = plt.subplots(
-        num_layers, num_heads_viz,
-        figsize=figsize,
-        squeeze=False
-    )
+    fig, axes = plt.subplots(num_layers, num_heads_viz, figsize=figsize, squeeze=False)
 
     for i, layer_idx in enumerate(layer_indices):
-        attn = attention_maps[f'layer_{layer_idx}'][0]  # First image in batch
+        attn = attention_maps[f"layer_{layer_idx}"][0]  # First image in batch
 
         for j, head_idx in enumerate(head_indices):
             ax = axes[i, j]
@@ -137,21 +134,21 @@ def visualize_attention_maps(
             attn_2d = attn_head.reshape(grid_size, grid_size).cpu().numpy()
 
             # Plot
-            im = ax.imshow(attn_2d, cmap='hot', interpolation='bilinear')
+            im = ax.imshow(attn_2d, cmap="hot", interpolation="bilinear")
 
             if i == 0:
-                ax.set_title(f'Head {head_idx}', fontsize=10)
+                ax.set_title(f"Head {head_idx}", fontsize=10)
             if j == 0:
-                ax.set_ylabel(f'Layer {layer_idx}', fontsize=10)
+                ax.set_ylabel(f"Layer {layer_idx}", fontsize=10)
 
-            ax.axis('off')
+            ax.axis("off")
             plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
-    plt.suptitle('Attention Maps: CLS Token to Patches', fontsize=14, y=0.995)
+    plt.suptitle("Attention Maps: CLS Token to Patches", fontsize=14, y=0.995)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -180,7 +177,11 @@ def visualize_multihead_attention(
     attention_maps = extract_attention_maps(model, image, [layer_idx])
 
     # Get attention for specified layer
-    attn_key = f'layer_{layer_idx}' if layer_idx >= 0 else f'layer_{len(model.context_encoder.vit.blocks) + layer_idx}'
+    attn_key = (
+        f"layer_{layer_idx}"
+        if layer_idx >= 0
+        else f"layer_{len(model.context_encoder.vit.blocks) + layer_idx}"
+    )
     attn = attention_maps[attn_key][0]  # [num_heads, seq_len, seq_len]
 
     num_heads = attn.shape[0]
@@ -202,22 +203,22 @@ def visualize_multihead_attention(
         attn_2d = attn_head.reshape(grid_size, grid_size).cpu().numpy()
 
         # Plot
-        im = ax.imshow(attn_2d, cmap='viridis', interpolation='bilinear')
-        ax.set_title(f'Head {head_idx}', fontsize=9)
-        ax.axis('off')
+        im = ax.imshow(attn_2d, cmap="viridis", interpolation="bilinear")
+        ax.set_title(f"Head {head_idx}", fontsize=9)
+        ax.axis("off")
         plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
     # Hide extra subplots
     for idx in range(num_heads, num_rows * num_cols):
         row = idx // num_cols
         col = idx % num_cols
-        axes[row, col].axis('off')
+        axes[row, col].axis("off")
 
-    plt.suptitle(f'Multi-Head Attention - Layer {layer_idx}', fontsize=14)
+    plt.suptitle(f"Multi-Head Attention - Layer {layer_idx}", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -252,7 +253,7 @@ def visualize_attention_rollout(
     # Compute attention rollout
     rollout = None
     for layer_idx in layer_indices:
-        attn = attention_maps[f'layer_{layer_idx}'][0]  # [num_heads, seq_len, seq_len]
+        attn = attention_maps[f"layer_{layer_idx}"][0]  # [num_heads, seq_len, seq_len]
 
         # Average across heads
         attn_avg = attn.mean(dim=0)  # [seq_len, seq_len]
@@ -281,36 +282,37 @@ def visualize_attention_rollout(
     fig, axes = plt.subplots(1, 3 if original_image is not None else 2, figsize=figsize)
 
     # Plot 1: Attention rollout
-    im0 = axes[0].imshow(rollout_2d, cmap='hot', interpolation='bilinear')
-    axes[0].set_title('Attention Rollout')
-    axes[0].axis('off')
+    im0 = axes[0].imshow(rollout_2d, cmap="hot", interpolation="bilinear")
+    axes[0].set_title("Attention Rollout")
+    axes[0].axis("off")
     plt.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
 
     # Plot 2: Upsampled rollout
     from scipy.ndimage import zoom
+
     if image.shape[-1] != rollout_2d.shape[0]:
         scale_factor = image.shape[-1] // rollout_2d.shape[0]
         rollout_upsampled = zoom(rollout_2d, scale_factor, order=1)
     else:
         rollout_upsampled = rollout_2d
 
-    im1 = axes[1].imshow(rollout_upsampled, cmap='hot', interpolation='bilinear')
-    axes[1].set_title('Upsampled Attention')
-    axes[1].axis('off')
+    im1 = axes[1].imshow(rollout_upsampled, cmap="hot", interpolation="bilinear")
+    axes[1].set_title("Upsampled Attention")
+    axes[1].axis("off")
     plt.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
 
     # Plot 3: Overlay on original image (if provided)
     if original_image is not None:
         axes[2].imshow(original_image)
-        axes[2].imshow(rollout_upsampled, cmap='hot', alpha=0.5, interpolation='bilinear')
-        axes[2].set_title('Attention Overlay')
-        axes[2].axis('off')
+        axes[2].imshow(rollout_upsampled, cmap="hot", alpha=0.5, interpolation="bilinear")
+        axes[2].set_title("Attention Overlay")
+        axes[2].axis("off")
 
-    plt.suptitle(f'Attention Rollout (Layers {start_layer}-{num_layers-1})', fontsize=14)
+    plt.suptitle(f"Attention Rollout (Layers {start_layer}-{num_layers-1})", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -340,10 +342,10 @@ def visualize_hierarchical_attention(
     # Select layers at different depths (early, middle, late)
     if num_layers >= 12:
         layer_indices = [2, num_layers // 2, num_layers - 2]
-        layer_names = ['Early (Local)', 'Middle (Mixed)', 'Late (Global)']
+        layer_names = ["Early (Local)", "Middle (Mixed)", "Late (Global)"]
     else:
         layer_indices = [0, num_layers // 2, num_layers - 1]
-        layer_names = ['Early', 'Middle', 'Late']
+        layer_names = ["Early", "Middle", "Late"]
 
     # Extract attention maps
     attention_maps = extract_attention_maps(model, image, layer_indices)
@@ -352,7 +354,7 @@ def visualize_hierarchical_attention(
     fig, axes = plt.subplots(2, num_levels, figsize=figsize)
 
     for i, (layer_idx, layer_name) in enumerate(zip(layer_indices, layer_names)):
-        attn = attention_maps[f'layer_{layer_idx}'][0]  # [num_heads, seq_len, seq_len]
+        attn = attention_maps[f"layer_{layer_idx}"][0]  # [num_heads, seq_len, seq_len]
 
         # Average across heads
         attn_avg = attn.mean(dim=0)  # [seq_len, seq_len]
@@ -365,33 +367,34 @@ def visualize_hierarchical_attention(
         attn_2d = attn_cls.reshape(grid_size, grid_size)
 
         # Plot attention map
-        im0 = axes[0, i].imshow(attn_2d, cmap='hot', interpolation='bilinear')
-        axes[0, i].set_title(f'{layer_name}\nLayer {layer_idx}', fontsize=10)
-        axes[0, i].axis('off')
+        im0 = axes[0, i].imshow(attn_2d, cmap="hot", interpolation="bilinear")
+        axes[0, i].set_title(f"{layer_name}\nLayer {layer_idx}", fontsize=10)
+        axes[0, i].axis("off")
         plt.colorbar(im0, ax=axes[0, i], fraction=0.046, pad=0.04)
 
         # Plot overlay if original image provided
         if original_image is not None:
             from scipy.ndimage import zoom
+
             scale_factor = original_image.shape[0] // attn_2d.shape[0]
             attn_upsampled = zoom(attn_2d, scale_factor, order=1)
 
             axes[1, i].imshow(original_image)
-            axes[1, i].imshow(attn_upsampled, cmap='hot', alpha=0.5, interpolation='bilinear')
-            axes[1, i].set_title('Overlay', fontsize=10)
-            axes[1, i].axis('off')
+            axes[1, i].imshow(attn_upsampled, cmap="hot", alpha=0.5, interpolation="bilinear")
+            axes[1, i].set_title("Overlay", fontsize=10)
+            axes[1, i].axis("off")
         else:
             # Show attention distribution
-            axes[1, i].hist(attn_cls, bins=50, alpha=0.7, edgecolor='black')
-            axes[1, i].set_title('Attention Distribution', fontsize=10)
-            axes[1, i].set_xlabel('Attention Weight')
-            axes[1, i].set_ylabel('Frequency')
+            axes[1, i].hist(attn_cls, bins=50, alpha=0.7, edgecolor="black")
+            axes[1, i].set_title("Attention Distribution", fontsize=10)
+            axes[1, i].set_xlabel("Attention Weight")
+            axes[1, i].set_ylabel("Frequency")
 
-    plt.suptitle('Hierarchical Attention Patterns', fontsize=14)
+    plt.suptitle("Hierarchical Attention Patterns", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -425,7 +428,7 @@ def visualize_patch_to_patch_attention(
         layer_idx = len(model.context_encoder.vit.blocks) + layer_idx
 
     attention_maps = extract_attention_maps(model, image, [layer_idx])
-    attn = attention_maps[f'layer_{layer_idx}'][0]  # [num_heads, seq_len, seq_len]
+    attn = attention_maps[f"layer_{layer_idx}"][0]  # [num_heads, seq_len, seq_len]
 
     # Average across heads
     attn_avg = attn.mean(dim=0)  # [seq_len, seq_len]
@@ -445,48 +448,51 @@ def visualize_patch_to_patch_attention(
     fig, axes = plt.subplots(1, 2, figsize=figsize)
 
     # Plot attention map
-    im0 = axes[0].imshow(attn_2d, cmap='hot', interpolation='bilinear')
+    im0 = axes[0].imshow(attn_2d, cmap="hot", interpolation="bilinear")
 
     # Mark source patch
     rect = patches.Rectangle(
-        (patch_col - 0.5, patch_row - 0.5), 1, 1,
-        linewidth=2, edgecolor='cyan', facecolor='none'
+        (patch_col - 0.5, patch_row - 0.5), 1, 1, linewidth=2, edgecolor="cyan", facecolor="none"
     )
     axes[0].add_patch(rect)
 
-    axes[0].set_title(f'Attention from Patch {patch_idx}\n(Layer {layer_idx})')
-    axes[0].axis('off')
+    axes[0].set_title(f"Attention from Patch {patch_idx}\n(Layer {layer_idx})")
+    axes[0].axis("off")
     plt.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
 
     # Plot overlay on original image
     if original_image is not None:
         from scipy.ndimage import zoom
+
         scale_factor = original_image.shape[0] // attn_2d.shape[0]
         attn_upsampled = zoom(attn_2d, scale_factor, order=1)
 
         axes[1].imshow(original_image)
-        axes[1].imshow(attn_upsampled, cmap='hot', alpha=0.5, interpolation='bilinear')
+        axes[1].imshow(attn_upsampled, cmap="hot", alpha=0.5, interpolation="bilinear")
 
         # Mark source patch on original image
         patch_size = original_image.shape[0] // grid_size
         rect_orig = patches.Rectangle(
             (patch_col * patch_size, patch_row * patch_size),
-            patch_size, patch_size,
-            linewidth=3, edgecolor='cyan', facecolor='none'
+            patch_size,
+            patch_size,
+            linewidth=3,
+            edgecolor="cyan",
+            facecolor="none",
         )
         axes[1].add_patch(rect_orig)
 
-        axes[1].set_title('Overlay on Original Image')
-        axes[1].axis('off')
+        axes[1].set_title("Overlay on Original Image")
+        axes[1].axis("off")
     else:
-        axes[1].hist(patch_attn, bins=50, alpha=0.7, edgecolor='black')
-        axes[1].set_title('Attention Distribution')
-        axes[1].set_xlabel('Attention Weight')
-        axes[1].set_ylabel('Frequency')
+        axes[1].hist(patch_attn, bins=50, alpha=0.7, edgecolor="black")
+        axes[1].set_title("Attention Distribution")
+        axes[1].set_xlabel("Attention Weight")
+        axes[1].set_ylabel("Frequency")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig

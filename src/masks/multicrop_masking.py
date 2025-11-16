@@ -11,10 +11,11 @@ This combines the benefits of multi-crop augmentation with H-JEPA's
 hierarchical predictive learning.
 """
 
+from typing import Dict, List, Literal, Optional, Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from typing import Tuple, List, Optional, Dict, Literal
-import matplotlib.pyplot as plt
 
 from .hierarchical import HierarchicalMaskGenerator
 
@@ -65,7 +66,9 @@ class MultiCropMaskGenerator:
         patch_size: int = 16,
         num_hierarchies: int = 3,
         num_target_masks: int = 4,
-        masking_strategy: Literal['global_only', 'global_with_local_context', 'cross_crop_prediction'] = 'global_only',
+        masking_strategy: Literal[
+            "global_only", "global_with_local_context", "cross_crop_prediction"
+        ] = "global_only",
         base_scale: Tuple[float, float] = (0.05, 0.15),
         aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
@@ -101,7 +104,7 @@ class MultiCropMaskGenerator:
         )
 
         # Create mask generator for local crops if needed
-        if masking_strategy == 'cross_crop_prediction':
+        if masking_strategy == "cross_crop_prediction":
             self.local_mask_gen = HierarchicalMaskGenerator(
                 input_size=local_crop_size,
                 patch_size=patch_size,
@@ -114,11 +117,7 @@ class MultiCropMaskGenerator:
         else:
             self.local_mask_gen = None
 
-    def __call__(
-        self,
-        batch_size: int,
-        device: str = 'cuda'
-    ) -> Dict[str, Dict]:
+    def __call__(self, batch_size: int, device: str = "cuda") -> Dict[str, Dict]:
         """
         Generate masks for multi-crop inputs.
 
@@ -138,27 +137,23 @@ class MultiCropMaskGenerator:
             }
         """
         masks = {
-            'strategy': self.masking_strategy,
-            'num_global_crops': self.num_global_crops,
-            'num_local_crops': self.num_local_crops,
+            "strategy": self.masking_strategy,
+            "num_global_crops": self.num_global_crops,
+            "num_local_crops": self.num_local_crops,
         }
 
-        if self.masking_strategy == 'global_only':
+        if self.masking_strategy == "global_only":
             masks.update(self._generate_global_only_masks(batch_size, device))
-        elif self.masking_strategy == 'global_with_local_context':
+        elif self.masking_strategy == "global_with_local_context":
             masks.update(self._generate_global_with_local_masks(batch_size, device))
-        elif self.masking_strategy == 'cross_crop_prediction':
+        elif self.masking_strategy == "cross_crop_prediction":
             masks.update(self._generate_cross_crop_masks(batch_size, device))
         else:
             raise ValueError(f"Unknown masking strategy: {self.masking_strategy}")
 
         return masks
 
-    def _generate_global_only_masks(
-        self,
-        batch_size: int,
-        device: str
-    ) -> Dict[str, Dict]:
+    def _generate_global_only_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
         """
         Generate masks only for global crops.
 
@@ -169,18 +164,14 @@ class MultiCropMaskGenerator:
         for crop_idx in range(self.num_global_crops):
             # Generate hierarchical masks for this global crop
             crop_masks = self.global_mask_gen(batch_size=batch_size, device=device)
-            global_masks[f'crop_{crop_idx}'] = crop_masks
+            global_masks[f"crop_{crop_idx}"] = crop_masks
 
         return {
-            'global_masks': global_masks,
-            'local_masks': None,
+            "global_masks": global_masks,
+            "local_masks": None,
         }
 
-    def _generate_global_with_local_masks(
-        self,
-        batch_size: int,
-        device: str
-    ) -> Dict[str, Dict]:
+    def _generate_global_with_local_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
         """
         Generate masks for global crops, treat local crops as context.
 
@@ -191,31 +182,26 @@ class MultiCropMaskGenerator:
 
         for crop_idx in range(self.num_global_crops):
             crop_masks = self.global_mask_gen(batch_size=batch_size, device=device)
-            global_masks[f'crop_{crop_idx}'] = crop_masks
+            global_masks[f"crop_{crop_idx}"] = crop_masks
 
         # Create simple "all-visible" masks for local crops
         local_masks = {}
         for crop_idx in range(self.num_local_crops):
             # All patches visible (no masking)
             local_context = torch.ones(
-                batch_size, self.local_num_patches,
-                dtype=torch.bool, device=device
+                batch_size, self.local_num_patches, dtype=torch.bool, device=device
             )
-            local_masks[f'crop_{crop_idx}'] = {
-                'context': local_context,
-                'targets': None,  # No prediction targets for local crops
+            local_masks[f"crop_{crop_idx}"] = {
+                "context": local_context,
+                "targets": None,  # No prediction targets for local crops
             }
 
         return {
-            'global_masks': global_masks,
-            'local_masks': local_masks,
+            "global_masks": global_masks,
+            "local_masks": local_masks,
         }
 
-    def _generate_cross_crop_masks(
-        self,
-        batch_size: int,
-        device: str
-    ) -> Dict[str, Dict]:
+    def _generate_cross_crop_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
         """
         Generate masks for cross-crop prediction.
 
@@ -228,7 +214,7 @@ class MultiCropMaskGenerator:
         # Mask all global crops
         for crop_idx in range(self.num_global_crops):
             crop_masks = self.global_mask_gen(batch_size=batch_size, device=device)
-            global_masks[f'crop_{crop_idx}'] = crop_masks
+            global_masks[f"crop_{crop_idx}"] = crop_masks
 
         # Mask subset of local crops for cross-prediction
         # Strategy: Mask first half, leave second half for context
@@ -238,21 +224,20 @@ class MultiCropMaskGenerator:
             if crop_idx < num_masked_local:
                 # Apply masking to this local crop
                 crop_masks = self.local_mask_gen(batch_size=batch_size, device=device)
-                local_masks[f'crop_{crop_idx}'] = crop_masks
+                local_masks[f"crop_{crop_idx}"] = crop_masks
             else:
                 # No masking - pure context
                 local_context = torch.ones(
-                    batch_size, self.local_num_patches,
-                    dtype=torch.bool, device=device
+                    batch_size, self.local_num_patches, dtype=torch.bool, device=device
                 )
-                local_masks[f'crop_{crop_idx}'] = {
-                    'context': local_context,
-                    'targets': None,
+                local_masks[f"crop_{crop_idx}"] = {
+                    "context": local_context,
+                    "targets": None,
                 }
 
         return {
-            'global_masks': global_masks,
-            'local_masks': local_masks,
+            "global_masks": global_masks,
+            "local_masks": local_masks,
         }
 
     def get_crop_info(self) -> Dict[str, int]:
@@ -263,13 +248,13 @@ class MultiCropMaskGenerator:
             Dictionary with crop and patch information
         """
         return {
-            'global_crop_size': self.global_crop_size,
-            'local_crop_size': self.local_crop_size,
-            'global_num_patches': self.global_num_patches,
-            'local_num_patches': self.local_num_patches,
-            'num_global_crops': self.num_global_crops,
-            'num_local_crops': self.num_local_crops,
-            'total_crops': self.num_global_crops + self.num_local_crops,
+            "global_crop_size": self.global_crop_size,
+            "local_crop_size": self.local_crop_size,
+            "global_num_patches": self.global_num_patches,
+            "local_num_patches": self.local_num_patches,
+            "num_global_crops": self.num_global_crops,
+            "num_local_crops": self.num_local_crops,
+            "total_crops": self.num_global_crops + self.num_local_crops,
         }
 
     def visualize_multicrop_masks(
@@ -291,8 +276,8 @@ class MultiCropMaskGenerator:
         Returns:
             Matplotlib figure
         """
-        global_masks = masks['global_masks']
-        local_masks = masks.get('local_masks', None)
+        global_masks = masks["global_masks"]
+        local_masks = masks.get("local_masks", None)
 
         num_global = len(global_masks)
         num_local = len(local_masks) if local_masks else 0
@@ -302,7 +287,7 @@ class MultiCropMaskGenerator:
         fig, axes = plt.subplots(
             num_levels * 2,  # context + targets for each level
             num_global + num_local,
-            figsize=figsize
+            figsize=figsize,
         )
 
         if num_global + num_local == 1:
@@ -310,132 +295,104 @@ class MultiCropMaskGenerator:
 
         # Plot global crops
         for crop_idx in range(num_global):
-            crop_key = f'crop_{crop_idx}'
+            crop_key = f"crop_{crop_idx}"
             crop_masks = global_masks[crop_key]
 
             for level_idx in range(num_levels):
-                level_key = f'level_{level_idx}'
+                level_key = f"level_{level_idx}"
                 level_masks = crop_masks[level_key]
 
-                context_mask = level_masks['context'][sample_idx].cpu().numpy()
-                target_masks = level_masks['targets'][sample_idx].cpu().numpy()
+                context_mask = level_masks["context"][sample_idx].cpu().numpy()
+                target_masks = level_masks["targets"][sample_idx].cpu().numpy()
 
                 # Reshape to 2D
                 context_2d = context_mask.reshape(
-                    self.global_num_patches_h,
-                    self.global_num_patches_w
+                    self.global_num_patches_h, self.global_num_patches_w
                 )
 
                 # Plot context
                 row_ctx = level_idx * 2
-                axes[row_ctx, crop_idx].imshow(context_2d, cmap='Blues', vmin=0, vmax=1)
-                axes[row_ctx, crop_idx].set_title(
-                    f'G{crop_idx} L{level_idx} Context',
-                    fontsize=8
-                )
-                axes[row_ctx, crop_idx].axis('off')
+                axes[row_ctx, crop_idx].imshow(context_2d, cmap="Blues", vmin=0, vmax=1)
+                axes[row_ctx, crop_idx].set_title(f"G{crop_idx} L{level_idx} Context", fontsize=8)
+                axes[row_ctx, crop_idx].axis("off")
 
                 # Plot targets
-                target_union = np.zeros((
-                    self.global_num_patches_h,
-                    self.global_num_patches_w
-                ))
+                target_union = np.zeros((self.global_num_patches_h, self.global_num_patches_w))
                 for i, tgt_mask in enumerate(target_masks):
-                    tgt_2d = tgt_mask.reshape(
-                        self.global_num_patches_h,
-                        self.global_num_patches_w
-                    )
+                    tgt_2d = tgt_mask.reshape(self.global_num_patches_h, self.global_num_patches_w)
                     target_union = np.maximum(target_union, tgt_2d * (i + 1))
 
                 row_tgt = level_idx * 2 + 1
                 axes[row_tgt, crop_idx].imshow(
-                    target_union,
-                    cmap='Set1',
-                    vmin=0,
-                    vmax=self.num_target_masks
+                    target_union, cmap="Set1", vmin=0, vmax=self.num_target_masks
                 )
-                axes[row_tgt, crop_idx].set_title(
-                    f'G{crop_idx} L{level_idx} Targets',
-                    fontsize=8
-                )
-                axes[row_tgt, crop_idx].axis('off')
+                axes[row_tgt, crop_idx].set_title(f"G{crop_idx} L{level_idx} Targets", fontsize=8)
+                axes[row_tgt, crop_idx].axis("off")
 
         # Plot local crops if available
         if local_masks:
             for crop_idx in range(num_local):
                 col_idx = num_global + crop_idx
-                crop_key = f'crop_{crop_idx}'
+                crop_key = f"crop_{crop_idx}"
                 crop_masks = local_masks[crop_key]
 
-                if 'level_0' in crop_masks:
+                if "level_0" in crop_masks:
                     # Masked local crop
                     for level_idx in range(num_levels):
-                        level_key = f'level_{level_idx}'
+                        level_key = f"level_{level_idx}"
                         level_masks = crop_masks[level_key]
 
-                        context_mask = level_masks['context'][sample_idx].cpu().numpy()
+                        context_mask = level_masks["context"][sample_idx].cpu().numpy()
                         context_2d = context_mask.reshape(
-                            self.local_num_patches_h,
-                            self.local_num_patches_w
+                            self.local_num_patches_h, self.local_num_patches_w
                         )
 
                         row_ctx = level_idx * 2
-                        axes[row_ctx, col_idx].imshow(context_2d, cmap='Blues', vmin=0, vmax=1)
-                        axes[row_ctx, col_idx].set_title(f'L{crop_idx} Context', fontsize=8)
-                        axes[row_ctx, col_idx].axis('off')
+                        axes[row_ctx, col_idx].imshow(context_2d, cmap="Blues", vmin=0, vmax=1)
+                        axes[row_ctx, col_idx].set_title(f"L{crop_idx} Context", fontsize=8)
+                        axes[row_ctx, col_idx].axis("off")
 
                         # Targets
-                        target_masks = level_masks['targets'][sample_idx].cpu().numpy()
-                        target_union = np.zeros((
-                            self.local_num_patches_h,
-                            self.local_num_patches_w
-                        ))
+                        target_masks = level_masks["targets"][sample_idx].cpu().numpy()
+                        target_union = np.zeros(
+                            (self.local_num_patches_h, self.local_num_patches_w)
+                        )
                         for i, tgt_mask in enumerate(target_masks):
                             tgt_2d = tgt_mask.reshape(
-                                self.local_num_patches_h,
-                                self.local_num_patches_w
+                                self.local_num_patches_h, self.local_num_patches_w
                             )
                             target_union = np.maximum(target_union, tgt_2d * (i + 1))
 
                         row_tgt = level_idx * 2 + 1
                         axes[row_tgt, col_idx].imshow(
-                            target_union,
-                            cmap='Set1',
-                            vmin=0,
-                            vmax=self.num_target_masks
+                            target_union, cmap="Set1", vmin=0, vmax=self.num_target_masks
                         )
-                        axes[row_tgt, col_idx].set_title(f'L{crop_idx} Targets', fontsize=8)
-                        axes[row_tgt, col_idx].axis('off')
+                        axes[row_tgt, col_idx].set_title(f"L{crop_idx} Targets", fontsize=8)
+                        axes[row_tgt, col_idx].axis("off")
                 else:
                     # Unmasked local crop (pure context)
-                    context_mask = crop_masks['context'][sample_idx].cpu().numpy()
+                    context_mask = crop_masks["context"][sample_idx].cpu().numpy()
                     context_2d = context_mask.reshape(
-                        self.local_num_patches_h,
-                        self.local_num_patches_w
+                        self.local_num_patches_h, self.local_num_patches_w
                     )
 
                     for level_idx in range(num_levels):
                         row_ctx = level_idx * 2
-                        axes[row_ctx, col_idx].imshow(context_2d, cmap='Greens', vmin=0, vmax=1)
-                        axes[row_ctx, col_idx].set_title(f'L{crop_idx} Context', fontsize=8)
-                        axes[row_ctx, col_idx].axis('off')
+                        axes[row_ctx, col_idx].imshow(context_2d, cmap="Greens", vmin=0, vmax=1)
+                        axes[row_ctx, col_idx].set_title(f"L{crop_idx} Context", fontsize=8)
+                        axes[row_ctx, col_idx].axis("off")
 
                         row_tgt = level_idx * 2 + 1
                         axes[row_tgt, col_idx].text(
-                            0.5, 0.5, 'No Targets',
-                            ha='center', va='center',
-                            fontsize=8
+                            0.5, 0.5, "No Targets", ha="center", va="center", fontsize=8
                         )
-                        axes[row_tgt, col_idx].axis('off')
+                        axes[row_tgt, col_idx].axis("off")
 
-        plt.suptitle(
-            f'Multi-Crop Masking Strategy: {self.masking_strategy}',
-            fontsize=14
-        )
+        plt.suptitle(f"Multi-Crop Masking Strategy: {self.masking_strategy}", fontsize=14)
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(save_path, dpi=150, bbox_inches='tight')
+            plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
         return fig
 
@@ -445,7 +402,7 @@ def demo():
     print("Multi-Crop Mask Generator Demo")
     print("=" * 70)
 
-    strategies = ['global_only', 'global_with_local_context', 'cross_crop_prediction']
+    strategies = ["global_only", "global_with_local_context", "cross_crop_prediction"]
 
     for strategy in strategies:
         print(f"\nStrategy: {strategy}")
@@ -468,26 +425,22 @@ def demo():
 
         # Generate masks
         batch_size = 4
-        masks = mask_gen(batch_size=batch_size, device='cpu')
+        masks = mask_gen(batch_size=batch_size, device="cpu")
 
         print(f"\nGenerated masks for batch_size={batch_size}:")
         print(f"  Strategy: {masks['strategy']}")
         print(f"  Global crops: {masks['num_global_crops']}")
         print(f"  Local crops: {masks['num_local_crops']}")
 
-        if masks['global_masks']:
+        if masks["global_masks"]:
             print(f"  Global mask structure: {list(masks['global_masks'].keys())}")
 
-        if masks['local_masks']:
+        if masks["local_masks"]:
             print(f"  Local mask structure: {list(masks['local_masks'].keys())}")
 
         # Visualize
-        save_path = f'/tmp/multicrop_masks_{strategy}.png'
-        fig = mask_gen.visualize_multicrop_masks(
-            masks,
-            sample_idx=0,
-            save_path=save_path
-        )
+        save_path = f"/tmp/multicrop_masks_{strategy}.png"
+        fig = mask_gen.visualize_multicrop_masks(masks, sample_idx=0, save_path=save_path)
         plt.close(fig)
         print(f"  Visualization saved to {save_path}")
 

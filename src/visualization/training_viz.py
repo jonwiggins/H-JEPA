@@ -5,14 +5,14 @@ Provides functions to visualize training curves, loss landscapes,
 gradient flow, and collapse monitoring.
 """
 
+import json
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
-from pathlib import Path
-import json
 
 try:
     import seaborn as sns
@@ -39,8 +39,8 @@ def plot_training_curves(
         Matplotlib figure
     """
     # Separate metrics by type
-    loss_metrics = {k: v for k, v in metrics.items() if 'loss' in k.lower()}
-    other_metrics = {k: v for k, v in metrics.items() if 'loss' not in k.lower()}
+    loss_metrics = {k: v for k, v in metrics.items() if "loss" in k.lower()}
+    other_metrics = {k: v for k, v in metrics.items() if "loss" not in k.lower()}
 
     num_plots = 2 if other_metrics else 1
     fig, axes = plt.subplots(1, num_plots, figsize=figsize)
@@ -57,16 +57,16 @@ def plot_training_curves(
 
         # Plot smoothed curve
         if len(values) >= smooth_window:
-            smoothed = np.convolve(values, np.ones(smooth_window)/smooth_window, mode='valid')
+            smoothed = np.convolve(values, np.ones(smooth_window) / smooth_window, mode="valid")
             smooth_epochs = list(range(len(smoothed)))
-            axes[0].plot(smooth_epochs, smoothed, label=f'{name} (smoothed)', linewidth=2)
+            axes[0].plot(smooth_epochs, smoothed, label=f"{name} (smoothed)", linewidth=2)
 
-    axes[0].set_xlabel('Epoch')
-    axes[0].set_ylabel('Loss')
-    axes[0].set_title('Training Loss Curves')
+    axes[0].set_xlabel("Epoch")
+    axes[0].set_ylabel("Loss")
+    axes[0].set_title("Training Loss Curves")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
-    axes[0].set_yscale('log')  # Log scale often better for loss
+    axes[0].set_yscale("log")  # Log scale often better for loss
 
     # Plot 2: Other metrics
     if other_metrics:
@@ -75,18 +75,20 @@ def plot_training_curves(
                 continue
 
             epochs = list(range(len(values)))
-            axes[1].plot(epochs, values, label=name, alpha=0.7, linewidth=2, marker='o', markersize=3)
+            axes[1].plot(
+                epochs, values, label=name, alpha=0.7, linewidth=2, marker="o", markersize=3
+            )
 
-        axes[1].set_xlabel('Epoch')
-        axes[1].set_ylabel('Value')
-        axes[1].set_title('Training Metrics')
+        axes[1].set_xlabel("Epoch")
+        axes[1].set_ylabel("Value")
+        axes[1].set_title("Training Metrics")
         axes[1].legend()
         axes[1].grid(alpha=0.3)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -112,32 +114,32 @@ def plot_hierarchical_losses(
     # Plot 1: All levels over time
     for level, losses in hierarchical_losses.items():
         epochs = list(range(len(losses)))
-        axes[0].plot(epochs, losses, label=f'Level {level}', linewidth=2, marker='o', markersize=3)
+        axes[0].plot(epochs, losses, label=f"Level {level}", linewidth=2, marker="o", markersize=3)
 
-    axes[0].set_xlabel('Epoch')
-    axes[0].set_ylabel('Loss')
-    axes[0].set_title('Hierarchical Losses Over Time')
+    axes[0].set_xlabel("Epoch")
+    axes[0].set_ylabel("Loss")
+    axes[0].set_title("Hierarchical Losses Over Time")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
-    axes[0].set_yscale('log')
+    axes[0].set_yscale("log")
 
     # Plot 2: Final loss per level
     final_losses = [losses[-1] if len(losses) > 0 else 0 for losses in hierarchical_losses.values()]
     levels = list(hierarchical_losses.keys())
 
-    axes[1].bar(levels, final_losses, alpha=0.7, edgecolor='black')
-    axes[1].set_xlabel('Hierarchy Level')
-    axes[1].set_ylabel('Final Loss')
-    axes[1].set_title('Final Loss by Hierarchy Level')
-    axes[1].grid(alpha=0.3, axis='y')
+    axes[1].bar(levels, final_losses, alpha=0.7, edgecolor="black")
+    axes[1].set_xlabel("Hierarchy Level")
+    axes[1].set_ylabel("Final Loss")
+    axes[1].set_title("Final Loss by Hierarchy Level")
+    axes[1].grid(alpha=0.3, axis="y")
 
     for i, (level, loss) in enumerate(zip(levels, final_losses)):
-        axes[1].text(level, loss, f'{loss:.4f}', ha='center', va='bottom', fontsize=9)
+        axes[1].text(level, loss, f"{loss:.4f}", ha="center", va="bottom", fontsize=9)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -222,7 +224,11 @@ def visualize_loss_landscape(
                     if batch_idx >= 10:  # Limit to 10 batches for speed
                         break
 
-                    images = batch[0].to(device) if isinstance(batch, (list, tuple)) else batch.to(device)
+                    images = (
+                        batch[0].to(device)
+                        if isinstance(batch, (list, tuple))
+                        else batch.to(device)
+                    )
 
                     # Generate mask (simplified)
                     B = images.shape[0]
@@ -239,7 +245,7 @@ def visualize_loss_landscape(
                     output = model(images, mask, return_all_levels=False)
 
                     # Compute loss
-                    loss = criterion(output['predictions'][0], output['targets'][0])
+                    loss = criterion(output["predictions"][0], output["targets"][0])
                     total_loss += loss.item()
                     num_batches += 1
 
@@ -253,35 +259,37 @@ def visualize_loss_landscape(
             param_idx += 1
 
     # Visualize
-    fig, axes = plt.subplots(1, 2, figsize=figsize, subplot_kw={'projection': '3d'} if True else None)
+    fig, axes = plt.subplots(
+        1, 2, figsize=figsize, subplot_kw={"projection": "3d"} if True else None
+    )
 
     # Plot 1: Contour plot
     X, Y = np.meshgrid(alpha_vals, beta_vals)
 
     axes[0] = plt.subplot(1, 2, 1)
-    contour = axes[0].contourf(X, Y, losses.T, levels=20, cmap='viridis')
-    axes[0].contour(X, Y, losses.T, levels=10, colors='black', alpha=0.3, linewidths=0.5)
-    axes[0].plot(0, 0, 'r*', markersize=15, label='Current Position')
-    axes[0].set_xlabel('Direction 1')
-    axes[0].set_ylabel('Direction 2')
-    axes[0].set_title('Loss Landscape (Contour)')
+    contour = axes[0].contourf(X, Y, losses.T, levels=20, cmap="viridis")
+    axes[0].contour(X, Y, losses.T, levels=10, colors="black", alpha=0.3, linewidths=0.5)
+    axes[0].plot(0, 0, "r*", markersize=15, label="Current Position")
+    axes[0].set_xlabel("Direction 1")
+    axes[0].set_ylabel("Direction 2")
+    axes[0].set_title("Loss Landscape (Contour)")
     axes[0].legend()
-    plt.colorbar(contour, ax=axes[0], label='Loss')
+    plt.colorbar(contour, ax=axes[0], label="Loss")
 
     # Plot 2: 3D surface
-    axes[1] = plt.subplot(1, 2, 2, projection='3d')
-    surf = axes[1].plot_surface(X, Y, losses.T, cmap='viridis', alpha=0.8)
-    axes[1].scatter([0], [0], [losses[steps//2, steps//2]], color='red', s=100, label='Current')
-    axes[1].set_xlabel('Direction 1')
-    axes[1].set_ylabel('Direction 2')
-    axes[1].set_zlabel('Loss')
-    axes[1].set_title('Loss Landscape (3D)')
-    plt.colorbar(surf, ax=axes[1], label='Loss', shrink=0.5)
+    axes[1] = plt.subplot(1, 2, 2, projection="3d")
+    surf = axes[1].plot_surface(X, Y, losses.T, cmap="viridis", alpha=0.8)
+    axes[1].scatter([0], [0], [losses[steps // 2, steps // 2]], color="red", s=100, label="Current")
+    axes[1].set_xlabel("Direction 1")
+    axes[1].set_ylabel("Direction 2")
+    axes[1].set_zlabel("Loss")
+    axes[1].set_title("Loss Landscape (3D)")
+    plt.colorbar(surf, ax=axes[1], label="Loss", shrink=0.5)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -322,22 +330,24 @@ def visualize_gradient_flow(
     fig, axes = plt.subplots(2, 2, figsize=figsize)
 
     # Plot 1: Mean gradient per layer
-    axes[0, 0].barh(range(len(layer_names)), mean_grads, alpha=0.7, edgecolor='black')
+    axes[0, 0].barh(range(len(layer_names)), mean_grads, alpha=0.7, edgecolor="black")
     axes[0, 0].set_yticks(range(len(layer_names)))
-    axes[0, 0].set_yticklabels([name.split('.')[-1] for name in layer_names], fontsize=7)
-    axes[0, 0].set_xlabel('Mean Absolute Gradient')
-    axes[0, 0].set_title('Mean Gradient per Layer')
-    axes[0, 0].grid(alpha=0.3, axis='x')
-    axes[0, 0].set_xscale('log')
+    axes[0, 0].set_yticklabels([name.split(".")[-1] for name in layer_names], fontsize=7)
+    axes[0, 0].set_xlabel("Mean Absolute Gradient")
+    axes[0, 0].set_title("Mean Gradient per Layer")
+    axes[0, 0].grid(alpha=0.3, axis="x")
+    axes[0, 0].set_xscale("log")
 
     # Plot 2: Max gradient per layer
-    axes[0, 1].barh(range(len(layer_names)), max_grads, alpha=0.7, edgecolor='black', color='orange')
+    axes[0, 1].barh(
+        range(len(layer_names)), max_grads, alpha=0.7, edgecolor="black", color="orange"
+    )
     axes[0, 1].set_yticks(range(len(layer_names)))
-    axes[0, 1].set_yticklabels([name.split('.')[-1] for name in layer_names], fontsize=7)
-    axes[0, 1].set_xlabel('Max Absolute Gradient')
-    axes[0, 1].set_title('Max Gradient per Layer')
-    axes[0, 1].grid(alpha=0.3, axis='x')
-    axes[0, 1].set_xscale('log')
+    axes[0, 1].set_yticklabels([name.split(".")[-1] for name in layer_names], fontsize=7)
+    axes[0, 1].set_xlabel("Max Absolute Gradient")
+    axes[0, 1].set_title("Max Gradient per Layer")
+    axes[0, 1].grid(alpha=0.3, axis="x")
+    axes[0, 1].set_xscale("log")
 
     # Plot 3: Gradient distribution (first few layers)
     sample_layers = min(5, len(layer_names))
@@ -349,30 +359,30 @@ def visualize_gradient_flow(
             # Sample if too large
             if len(grads) > 10000:
                 grads = np.random.choice(grads, 10000, replace=False)
-            axes[1, 0].hist(grads, bins=50, alpha=0.5, label=name.split('.')[-1])
+            axes[1, 0].hist(grads, bins=50, alpha=0.5, label=name.split(".")[-1])
 
-    axes[1, 0].set_xlabel('Gradient Value')
-    axes[1, 0].set_ylabel('Frequency')
-    axes[1, 0].set_title('Gradient Distribution (Sample Layers)')
+    axes[1, 0].set_xlabel("Gradient Value")
+    axes[1, 0].set_ylabel("Frequency")
+    axes[1, 0].set_title("Gradient Distribution (Sample Layers)")
     axes[1, 0].legend(fontsize=7)
     axes[1, 0].grid(alpha=0.3)
 
     # Plot 4: Gradient norm ratio (consecutive layers)
     if len(mean_grads) > 1:
-        ratios = [mean_grads[i+1] / (mean_grads[i] + 1e-10) for i in range(len(mean_grads)-1)]
-        axes[1, 1].plot(ratios, marker='o', markersize=4)
-        axes[1, 1].axhline(y=1.0, color='r', linestyle='--', label='No change')
-        axes[1, 1].set_xlabel('Layer Index')
-        axes[1, 1].set_ylabel('Gradient Ratio')
-        axes[1, 1].set_title('Gradient Flow Ratio (layer[i+1] / layer[i])')
+        ratios = [mean_grads[i + 1] / (mean_grads[i] + 1e-10) for i in range(len(mean_grads) - 1)]
+        axes[1, 1].plot(ratios, marker="o", markersize=4)
+        axes[1, 1].axhline(y=1.0, color="r", linestyle="--", label="No change")
+        axes[1, 1].set_xlabel("Layer Index")
+        axes[1, 1].set_ylabel("Gradient Ratio")
+        axes[1, 1].set_title("Gradient Flow Ratio (layer[i+1] / layer[i])")
         axes[1, 1].legend()
         axes[1, 1].grid(alpha=0.3)
-        axes[1, 1].set_yscale('log')
+        axes[1, 1].set_yscale("log")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -406,14 +416,14 @@ def plot_collapse_metrics(
     # Metric 1: Standard deviation collapse
     std_per_dim = features_norm.std(axis=0)
 
-    axes[0].hist(std_per_dim, bins=50, alpha=0.7, edgecolor='black')
-    axes[0].axvline(std_per_dim.mean(), color='red', linestyle='--',
-                    label=f'Mean: {std_per_dim.mean():.4f}')
-    axes[0].axvline(0.01, color='orange', linestyle='--',
-                    label='Collapse Threshold')
-    axes[0].set_xlabel('Standard Deviation')
-    axes[0].set_ylabel('Frequency')
-    axes[0].set_title('Dimension-wise Std Dev\n(Low std = potential collapse)')
+    axes[0].hist(std_per_dim, bins=50, alpha=0.7, edgecolor="black")
+    axes[0].axvline(
+        std_per_dim.mean(), color="red", linestyle="--", label=f"Mean: {std_per_dim.mean():.4f}"
+    )
+    axes[0].axvline(0.01, color="orange", linestyle="--", label="Collapse Threshold")
+    axes[0].set_xlabel("Standard Deviation")
+    axes[0].set_ylabel("Frequency")
+    axes[0].set_title("Dimension-wise Std Dev\n(Low std = potential collapse)")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
@@ -426,12 +436,14 @@ def plot_collapse_metrics(
     eigenvalues_norm = eigenvalues / eigenvalues.sum()
     effective_rank = np.exp(-np.sum(eigenvalues_norm * np.log(eigenvalues_norm + 1e-10)))
 
-    axes[1].plot(eigenvalues, marker='o', markersize=3)
-    axes[1].set_xlabel('Eigenvalue Index')
-    axes[1].set_ylabel('Eigenvalue')
-    axes[1].set_title(f'Eigenvalue Spectrum\nEffective Rank: {effective_rank:.1f}/{len(eigenvalues)}')
+    axes[1].plot(eigenvalues, marker="o", markersize=3)
+    axes[1].set_xlabel("Eigenvalue Index")
+    axes[1].set_ylabel("Eigenvalue")
+    axes[1].set_title(
+        f"Eigenvalue Spectrum\nEffective Rank: {effective_rank:.1f}/{len(eigenvalues)}"
+    )
     axes[1].grid(alpha=0.3)
-    axes[1].set_yscale('log')
+    axes[1].set_yscale("log")
 
     # Metric 3: Pairwise cosine similarity
     # Sample for efficiency
@@ -445,14 +457,14 @@ def plot_collapse_metrics(
     triu_indices = np.triu_indices(sample_size, k=1)
     similarities = similarity_matrix[triu_indices]
 
-    axes[2].hist(similarities, bins=50, alpha=0.7, edgecolor='black')
-    axes[2].axvline(similarities.mean(), color='red', linestyle='--',
-                    label=f'Mean: {similarities.mean():.4f}')
-    axes[2].axvline(0.9, color='orange', linestyle='--',
-                    label='High Similarity Threshold')
-    axes[2].set_xlabel('Cosine Similarity')
-    axes[2].set_ylabel('Frequency')
-    axes[2].set_title('Pairwise Similarity Distribution\n(High sim = potential collapse)')
+    axes[2].hist(similarities, bins=50, alpha=0.7, edgecolor="black")
+    axes[2].axvline(
+        similarities.mean(), color="red", linestyle="--", label=f"Mean: {similarities.mean():.4f}"
+    )
+    axes[2].axvline(0.9, color="orange", linestyle="--", label="High Similarity Threshold")
+    axes[2].set_xlabel("Cosine Similarity")
+    axes[2].set_ylabel("Frequency")
+    axes[2].set_title("Pairwise Similarity Distribution\n(High sim = potential collapse)")
     axes[2].legend()
     axes[2].grid(alpha=0.3)
 
@@ -467,13 +479,19 @@ def plot_collapse_metrics(
 
     if collapse_indicators:
         warning_text = "⚠ Collapse Warning: " + ", ".join(collapse_indicators)
-        fig.text(0.5, 0.02, warning_text, ha='center', fontsize=11,
-                 bbox=dict(boxstyle='round', facecolor='red', alpha=0.3))
+        fig.text(
+            0.5,
+            0.02,
+            warning_text,
+            ha="center",
+            fontsize=11,
+            bbox=dict(boxstyle="round", facecolor="red", alpha=0.3),
+        )
 
     plt.tight_layout(rect=[0, 0.05, 1, 1])
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -499,23 +517,33 @@ def plot_ema_momentum(
     steps = list(range(len(momentum_history)))
     ax.plot(steps, momentum_history, linewidth=2)
 
-    ax.set_xlabel('Training Step')
-    ax.set_ylabel('EMA Momentum')
-    ax.set_title('Target Encoder EMA Momentum Schedule')
+    ax.set_xlabel("Training Step")
+    ax.set_ylabel("EMA Momentum")
+    ax.set_title("Target Encoder EMA Momentum Schedule")
     ax.grid(alpha=0.3)
 
     # Add annotations
     if len(momentum_history) > 0:
-        ax.axhline(y=momentum_history[0], color='g', linestyle='--',
-                   alpha=0.5, label=f'Initial: {momentum_history[0]:.4f}')
-        ax.axhline(y=momentum_history[-1], color='r', linestyle='--',
-                   alpha=0.5, label=f'Final: {momentum_history[-1]:.4f}')
+        ax.axhline(
+            y=momentum_history[0],
+            color="g",
+            linestyle="--",
+            alpha=0.5,
+            label=f"Initial: {momentum_history[0]:.4f}",
+        )
+        ax.axhline(
+            y=momentum_history[-1],
+            color="r",
+            linestyle="--",
+            alpha=0.5,
+            label=f"Final: {momentum_history[-1]:.4f}",
+        )
         ax.legend()
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -535,16 +563,16 @@ def load_training_logs(log_dir: Union[str, Path]) -> Dict:
     metrics = {}
 
     # Try to load JSON logs
-    for json_file in log_dir.glob('*.json'):
+    for json_file in log_dir.glob("*.json"):
         try:
-            with open(json_file, 'r') as f:
+            with open(json_file, "r") as f:
                 data = json.load(f)
                 metrics[json_file.stem] = data
         except Exception as e:
             print(f"Error loading {json_file}: {e}")
 
     # Try to load numpy files
-    for npy_file in log_dir.glob('*.npy'):
+    for npy_file in log_dir.glob("*.npy"):
         try:
             data = np.load(npy_file, allow_pickle=True)
             metrics[npy_file.stem] = data.tolist() if isinstance(data, np.ndarray) else data

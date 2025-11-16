@@ -5,21 +5,22 @@ This module implements various metrics to assess the quality of learned
 representations, including rank analysis, variance measures, and isotropy.
 """
 
-from typing import Dict, List, Optional, Tuple
 import warnings
+from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
-import numpy as np
 from scipy.linalg import svd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 try:
     import umap
+
     UMAP_AVAILABLE = True
 except ImportError:
     UMAP_AVAILABLE = False
@@ -39,7 +40,7 @@ class FeatureQualityAnalyzer:
         self,
         model: nn.Module,
         hierarchy_level: int = 0,
-        device: str = 'cuda',
+        device: str = "cuda",
     ):
         self.model = model
         self.hierarchy_level = hierarchy_level
@@ -57,7 +58,7 @@ class FeatureQualityAnalyzer:
         max_samples: Optional[int] = None,
         pool: bool = True,
         normalize: bool = False,
-        desc: str = "Extracting features"
+        desc: str = "Extracting features",
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Extract features from dataset.
@@ -149,9 +150,7 @@ class FeatureQualityAnalyzer:
         return effective_rank
 
     def compute_rank_analysis(
-        self,
-        features: np.ndarray,
-        variance_threshold: float = 0.99
+        self, features: np.ndarray, variance_threshold: float = 0.99
     ) -> Dict[str, float]:
         """
         Compute comprehensive rank analysis.
@@ -172,7 +171,7 @@ class FeatureQualityAnalyzer:
         _, singular_values, _ = svd(features_centered, full_matrices=False)
 
         # Normalize to get explained variance
-        explained_variance = singular_values ** 2
+        explained_variance = singular_values**2
         explained_variance = explained_variance / explained_variance.sum()
 
         # Cumulative variance
@@ -188,14 +187,14 @@ class FeatureQualityAnalyzer:
         rank_ratio = effective_rank / D
 
         metrics = {
-            'effective_rank': effective_rank,
-            'rank_ratio': rank_ratio,
-            'feature_dim': D,
-            'n_components_99': n_components,
-            'variance_first_component': explained_variance[0],
-            'variance_first_10': explained_variance[:10].sum(),
-            'singular_value_max': singular_values[0],
-            'singular_value_mean': singular_values.mean(),
+            "effective_rank": effective_rank,
+            "rank_ratio": rank_ratio,
+            "feature_dim": D,
+            "n_components_99": n_components,
+            "variance_first_component": explained_variance[0],
+            "variance_first_10": explained_variance[:10].sum(),
+            "singular_value_max": singular_values[0],
+            "singular_value_mean": singular_values.mean(),
         }
 
         return metrics
@@ -223,14 +222,16 @@ class FeatureQualityAnalyzer:
         corr_matrix = np.corrcoef(features_centered.T)
 
         metrics = {
-            'mean_variance': variances.mean(),
-            'std_variance': variances.std(),
-            'min_variance': variances.min(),
-            'max_variance': variances.max(),
-            'mean_feature': features.mean(),
-            'std_feature': features.std(),
-            'mean_covariance_off_diag': (cov_matrix - np.diag(np.diag(cov_matrix))).mean(),
-            'mean_abs_correlation_off_diag': np.abs(corr_matrix - np.eye(corr_matrix.shape[0])).mean(),
+            "mean_variance": variances.mean(),
+            "std_variance": variances.std(),
+            "min_variance": variances.min(),
+            "max_variance": variances.max(),
+            "mean_feature": features.mean(),
+            "std_feature": features.std(),
+            "mean_covariance_off_diag": (cov_matrix - np.diag(np.diag(cov_matrix))).mean(),
+            "mean_abs_correlation_off_diag": np.abs(
+                corr_matrix - np.eye(corr_matrix.shape[0])
+            ).mean(),
         }
 
         return metrics
@@ -260,21 +261,21 @@ class FeatureQualityAnalyzer:
 
         # Isotropy metrics
         metrics = {
-            'mean_similarity': similarities.mean(),
-            'std_similarity': similarities.std(),
-            'max_similarity': similarities.max(),
-            'min_similarity': similarities.min(),
+            "mean_similarity": similarities.mean(),
+            "std_similarity": similarities.std(),
+            "max_similarity": similarities.max(),
+            "min_similarity": similarities.min(),
         }
 
         # Self-similarity (should be 1 for normalized features)
         self_similarities = np.diag(similarity_matrix)
-        metrics['mean_self_similarity'] = self_similarities.mean()
+        metrics["mean_self_similarity"] = self_similarities.mean()
 
         # Alignment and uniformity (from Wang & Isola, 2020)
         # Uniformity: how uniformly distributed features are
         # Lower is better (features spread out on hypersphere)
         uniformity = np.log(np.exp(2 * similarities).mean())
-        metrics['uniformity'] = uniformity
+        metrics["uniformity"] = uniformity
 
         return metrics
 
@@ -306,13 +307,13 @@ class FeatureQualityAnalyzer:
 
         # Check for collapse
         collapse_indicators = {
-            'rank_collapse': rank_metrics['rank_ratio'] < threshold_rank_ratio,
-            'variance_collapse': feature_stats['mean_variance'] < threshold_variance,
-            'dimension_collapse': rank_metrics['n_components_99'] < features.shape[1] * 0.1,
+            "rank_collapse": rank_metrics["rank_ratio"] < threshold_rank_ratio,
+            "variance_collapse": feature_stats["mean_variance"] < threshold_variance,
+            "dimension_collapse": rank_metrics["n_components_99"] < features.shape[1] * 0.1,
         }
 
         # Overall collapse
-        collapse_indicators['any_collapse'] = any(collapse_indicators.values())
+        collapse_indicators["any_collapse"] = any(collapse_indicators.values())
 
         return collapse_indicators
 
@@ -337,7 +338,7 @@ class FeatureQualityAnalyzer:
             max_samples=max_samples,
             pool=True,
             normalize=False,
-            desc="Extracting features for analysis"
+            desc="Extracting features for analysis",
         )
 
         print(f"Analyzing {len(features)} samples with {features.shape[1]} dimensions")
@@ -349,12 +350,12 @@ class FeatureQualityAnalyzer:
         collapse_indicators = self.detect_collapse(features)
 
         results = {
-            'rank': rank_metrics,
-            'statistics': feature_stats,
-            'isotropy': isotropy_metrics,
-            'collapse': collapse_indicators,
-            'num_samples': len(features),
-            'feature_dim': features.shape[1],
+            "rank": rank_metrics,
+            "statistics": feature_stats,
+            "isotropy": isotropy_metrics,
+            "collapse": collapse_indicators,
+            "num_samples": len(features),
+            "feature_dim": features.shape[1],
         }
 
         return results
@@ -464,7 +465,7 @@ def analyze_feature_quality(
     dataloader: DataLoader,
     hierarchy_level: int = 0,
     max_samples: int = 10000,
-    device: str = 'cuda',
+    device: str = "cuda",
 ) -> Dict[str, Dict]:
     """
     Convenience function for feature quality analysis.
@@ -501,16 +502,16 @@ def print_quality_report(metrics: Dict[str, Dict], verbose: bool = True):
         metrics: Metrics dictionary from compute_all_metrics
         verbose: Whether to print detailed metrics
     """
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("FEATURE QUALITY REPORT")
-    print("="*60)
+    print("=" * 60)
 
     # Basic info
     print(f"\nDataset: {metrics['num_samples']} samples, {metrics['feature_dim']} dimensions")
 
     # Rank analysis
     print("\n--- Rank Analysis ---")
-    rank = metrics['rank']
+    rank = metrics["rank"]
     print(f"Effective Rank: {rank['effective_rank']:.2f}")
     print(f"Rank Ratio: {rank['rank_ratio']:.4f}")
     print(f"Components for 99% variance: {rank['n_components_99']}")
@@ -518,28 +519,28 @@ def print_quality_report(metrics: Dict[str, Dict], verbose: bool = True):
 
     # Feature statistics
     print("\n--- Feature Statistics ---")
-    stats = metrics['statistics']
+    stats = metrics["statistics"]
     print(f"Mean variance: {stats['mean_variance']:.6f}")
     print(f"Std variance: {stats['std_variance']:.6f}")
     print(f"Mean |correlation|: {stats['mean_abs_correlation_off_diag']:.6f}")
 
     # Isotropy
     print("\n--- Isotropy ---")
-    iso = metrics['isotropy']
+    iso = metrics["isotropy"]
     print(f"Mean similarity: {iso['mean_similarity']:.6f}")
     print(f"Std similarity: {iso['std_similarity']:.6f}")
     print(f"Uniformity (lower is better): {iso['uniformity']:.6f}")
 
     # Collapse detection
     print("\n--- Collapse Detection ---")
-    collapse = metrics['collapse']
-    if collapse['any_collapse']:
+    collapse = metrics["collapse"]
+    if collapse["any_collapse"]:
         print("WARNING: Potential representation collapse detected!")
-        if collapse['rank_collapse']:
+        if collapse["rank_collapse"]:
             print("  - Rank collapse: effective rank is too low")
-        if collapse['variance_collapse']:
+        if collapse["variance_collapse"]:
             print("  - Variance collapse: feature variance is too low")
-        if collapse['dimension_collapse']:
+        if collapse["dimension_collapse"]:
             print("  - Dimension collapse: too few dimensions used")
     else:
         print("No collapse detected - representations look healthy!")
@@ -550,7 +551,7 @@ def print_quality_report(metrics: Dict[str, Dict], verbose: bool = True):
         print("Statistics:", stats)
         print("Isotropy:", iso)
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
 
 
 def compare_hierarchy_levels(
@@ -558,7 +559,7 @@ def compare_hierarchy_levels(
     dataloader: DataLoader,
     num_levels: Optional[int] = None,
     max_samples: int = 10000,
-    device: str = 'cuda',
+    device: str = "cuda",
 ) -> Dict[int, Dict]:
     """
     Compare feature quality across hierarchy levels.

@@ -7,20 +7,21 @@ context/target regions, and compare different masking approaches.
 
 from typing import Dict, List, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import matplotlib.animation as animation
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
 try:
     from einops import rearrange
 except ImportError:
+
     def rearrange(tensor, pattern, **axes_lengths):
         """Fallback rearrange for basic patterns."""
-        if pattern == 'b n d -> b d n':
+        if pattern == "b n d -> b d n":
             return tensor.transpose(1, 2)
-        elif pattern == 'b d n -> b n d':
+        elif pattern == "b d n -> b n d":
             return tensor.transpose(1, 2)
         else:
             raise NotImplementedError(f"Pattern {pattern} not supported in fallback")
@@ -61,14 +62,14 @@ def visualize_masking_strategy(
     fig, axes = plt.subplots(1, num_plots, figsize=figsize)
 
     # Plot 1: Mask visualization
-    im0 = axes[0].imshow(mask_2d, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest')
-    axes[0].set_title('Mask Pattern\n(Red=Masked, Green=Visible)')
-    axes[0].axis('off')
+    im0 = axes[0].imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
+    axes[0].set_title("Mask Pattern\n(Red=Masked, Green=Visible)")
+    axes[0].axis("off")
 
     # Add grid
     for i in range(grid_size + 1):
-        axes[0].axhline(i - 0.5, color='gray', linewidth=0.5, alpha=0.3)
-        axes[0].axvline(i - 0.5, color='gray', linewidth=0.5, alpha=0.3)
+        axes[0].axhline(i - 0.5, color="gray", linewidth=0.5, alpha=0.3)
+        axes[0].axvline(i - 0.5, color="gray", linewidth=0.5, alpha=0.3)
 
     plt.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
 
@@ -83,10 +84,17 @@ def visualize_masking_strategy(
     stats_text += f"Visible patches: {num_visible}\n"
     stats_text += f"Mask ratio: {mask_ratio:.2%}"
 
-    axes[1].text(0.1, 0.5, stats_text, fontsize=11, verticalalignment='center',
-                 family='monospace', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
-    axes[1].axis('off')
-    axes[1].set_title('Statistics')
+    axes[1].text(
+        0.1,
+        0.5,
+        stats_text,
+        fontsize=11,
+        verticalalignment="center",
+        family="monospace",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
+    )
+    axes[1].axis("off")
+    axes[1].set_title("Statistics")
 
     # Plot 3: Overlay on image (if provided)
     if image is not None:
@@ -95,25 +103,25 @@ def visualize_masking_strategy(
 
         # Ensure mask matches image size
         if mask_upsampled.shape[0] > image.shape[0]:
-            mask_upsampled = mask_upsampled[:image.shape[0], :image.shape[1]]
+            mask_upsampled = mask_upsampled[: image.shape[0], : image.shape[1]]
 
         # Create masked image (darken masked regions)
         masked_image = image.copy()
         masked_image[mask_upsampled > 0.5] = masked_image[mask_upsampled > 0.5] * 0.3
 
         axes[2].imshow(masked_image)
-        axes[2].set_title('Masked Image\n(Darkened=Masked)')
-        axes[2].axis('off')
+        axes[2].set_title("Masked Image\n(Darkened=Masked)")
+        axes[2].axis("off")
 
     if title:
         plt.suptitle(title, fontsize=14, y=1.02)
     else:
-        plt.suptitle('H-JEPA Masking Strategy', fontsize=14, y=1.02)
+        plt.suptitle("H-JEPA Masking Strategy", fontsize=14, y=1.02)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -174,23 +182,23 @@ def visualize_masked_image(
 
     # Original image
     axes[0].imshow(image)
-    axes[0].set_title('Original Image')
-    axes[0].axis('off')
+    axes[0].set_title("Original Image")
+    axes[0].axis("off")
 
     # Mask pattern
-    axes[1].imshow(mask_2d, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest')
-    axes[1].set_title(f'Mask ({mask.mean():.1%} masked)')
-    axes[1].axis('off')
+    axes[1].imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
+    axes[1].set_title(f"Mask ({mask.mean():.1%} masked)")
+    axes[1].axis("off")
 
     # Masked image
     axes[2].imshow(masked_image)
-    axes[2].set_title('Masked Image')
-    axes[2].axis('off')
+    axes[2].set_title("Masked Image")
+    axes[2].axis("off")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -226,38 +234,45 @@ def visualize_context_target_regions(
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 
     # Plot 1: Full mask with target blocks highlighted
-    im0 = axes[0].imshow(mask_2d, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest', alpha=0.7)
-    axes[0].set_title('Masking Strategy\n(Red=Masked, Green=Context)')
+    im0 = axes[0].imshow(
+        mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest", alpha=0.7
+    )
+    axes[0].set_title("Masking Strategy\n(Red=Masked, Green=Context)")
 
     # Draw target blocks if provided
     if target_blocks is not None:
         for block in target_blocks:
             row, col, height, width = block
             rect = patches.Rectangle(
-                (col - 0.5, row - 0.5), width, height,
-                linewidth=2, edgecolor='blue', facecolor='none', linestyle='--'
+                (col - 0.5, row - 0.5),
+                width,
+                height,
+                linewidth=2,
+                edgecolor="blue",
+                facecolor="none",
+                linestyle="--",
             )
             axes[0].add_patch(rect)
 
-    axes[0].axis('off')
+    axes[0].axis("off")
     plt.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
 
     # Plot 2: Context regions only
     context_mask = 1 - mask_2d
-    axes[1].imshow(context_mask, cmap='Greens', vmin=0, vmax=1, interpolation='nearest')
-    axes[1].set_title(f'Context Regions\n({(1-mask.mean()):.1%} visible)')
-    axes[1].axis('off')
+    axes[1].imshow(context_mask, cmap="Greens", vmin=0, vmax=1, interpolation="nearest")
+    axes[1].set_title(f"Context Regions\n({(1-mask.mean()):.1%} visible)")
+    axes[1].axis("off")
 
     # Plot 3: Target regions only
-    axes[2].imshow(mask_2d, cmap='Reds', vmin=0, vmax=1, interpolation='nearest')
-    axes[2].set_title(f'Target Regions\n({mask.mean():.1%} masked)')
-    axes[2].axis('off')
+    axes[2].imshow(mask_2d, cmap="Reds", vmin=0, vmax=1, interpolation="nearest")
+    axes[2].set_title(f"Target Regions\n({mask.mean():.1%} masked)")
+    axes[2].axis("off")
 
-    plt.suptitle('Context and Target Regions', fontsize=14)
+    plt.suptitle("Context and Target Regions", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -304,28 +319,28 @@ def compare_masking_strategies(
         mask_2d = mask_np.reshape(grid_size, grid_size)
 
         # Plot mask
-        im = ax.imshow(mask_2d, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest')
+        im = ax.imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
 
         mask_ratio = mask_np.mean()
-        ax.set_title(f'{label}\n({mask_ratio:.1%} masked)', fontsize=10)
-        ax.axis('off')
+        ax.set_title(f"{label}\n({mask_ratio:.1%} masked)", fontsize=10)
+        ax.axis("off")
 
         # Add grid
         for i in range(grid_size + 1):
-            ax.axhline(i - 0.5, color='gray', linewidth=0.5, alpha=0.2)
-            ax.axvline(i - 0.5, color='gray', linewidth=0.5, alpha=0.2)
+            ax.axhline(i - 0.5, color="gray", linewidth=0.5, alpha=0.2)
+            ax.axvline(i - 0.5, color="gray", linewidth=0.5, alpha=0.2)
 
     # Hide extra subplots
     for idx in range(num_masks, num_rows * num_cols):
         row = idx // num_cols
         col = idx % num_cols
-        axes[row, col].axis('off')
+        axes[row, col].axis("off")
 
-    plt.suptitle('Comparison of Masking Strategies', fontsize=14)
+    plt.suptitle("Comparison of Masking Strategies", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -358,29 +373,29 @@ def animate_masking_process(
     grid_size = int(np.sqrt(len(masks[0])))
     mask_2d = masks[0].cpu().numpy().reshape(grid_size, grid_size)
 
-    im0 = axes[0].imshow(mask_2d, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest')
-    axes[0].set_title('Mask Evolution')
-    axes[0].axis('off')
+    im0 = axes[0].imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
+    axes[0].set_title("Mask Evolution")
+    axes[0].axis("off")
 
     if image is not None:
         masked_img = image.copy()
         im1 = axes[1].imshow(masked_img)
-        axes[1].set_title('Masked Image')
-        axes[1].axis('off')
+        axes[1].set_title("Masked Image")
+        axes[1].axis("off")
 
     def update(frame):
         mask = masks[frame].cpu().numpy()
         mask_2d = mask.reshape(grid_size, grid_size)
 
         im0.set_array(mask_2d)
-        axes[0].set_title(f'Mask Evolution (Frame {frame + 1}/{len(masks)})')
+        axes[0].set_title(f"Mask Evolution (Frame {frame + 1}/{len(masks)})")
 
         if image is not None:
             masked_img = image.copy()
             mask_upsampled = np.repeat(np.repeat(mask_2d, patch_size, axis=0), patch_size, axis=1)
 
             if mask_upsampled.shape[0] > image.shape[0]:
-                mask_upsampled = mask_upsampled[:image.shape[0], :image.shape[1]]
+                mask_upsampled = mask_upsampled[: image.shape[0], : image.shape[1]]
 
             masked_img[mask_upsampled > 0.5] = masked_img[mask_upsampled > 0.5] * 0.3
             im1.set_array(masked_img)
@@ -392,10 +407,10 @@ def animate_masking_process(
     )
 
     if save_path:
-        if save_path.endswith('.gif'):
-            anim.save(save_path, writer='pillow', fps=1000//interval)
-        elif save_path.endswith('.mp4'):
-            anim.save(save_path, writer='ffmpeg', fps=1000//interval)
+        if save_path.endswith(".gif"):
+            anim.save(save_path, writer="pillow", fps=1000 // interval)
+        elif save_path.endswith(".mp4"):
+            anim.save(save_path, writer="ffmpeg", fps=1000 // interval)
 
     return anim
 
@@ -453,31 +468,31 @@ def visualize_multi_block_masking(
             col_start = np.random.randint(0, grid_size - block_w + 1)
 
             # Apply mask
-            mask[row_start:row_start + block_h, col_start:col_start + block_w] = 1
+            mask[row_start : row_start + block_h, col_start : col_start + block_w] = 1
 
         # Plot
-        im = ax.imshow(mask, cmap='RdYlGn_r', vmin=0, vmax=1, interpolation='nearest')
+        im = ax.imshow(mask, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
 
         mask_ratio = mask.mean()
-        ax.set_title(f'Sample {idx + 1}\n({mask_ratio:.1%} masked)', fontsize=9)
-        ax.axis('off')
+        ax.set_title(f"Sample {idx + 1}\n({mask_ratio:.1%} masked)", fontsize=9)
+        ax.axis("off")
 
         # Add grid
         for i in range(grid_size + 1):
-            ax.axhline(i - 0.5, color='gray', linewidth=0.3, alpha=0.3)
-            ax.axvline(i - 0.5, color='gray', linewidth=0.3, alpha=0.3)
+            ax.axhline(i - 0.5, color="gray", linewidth=0.3, alpha=0.3)
+            ax.axvline(i - 0.5, color="gray", linewidth=0.3, alpha=0.3)
 
     # Hide extra subplots
     for idx in range(num_samples, num_rows * num_cols):
         row = idx // num_cols
         col = idx % num_cols
-        axes[row, col].axis('off')
+        axes[row, col].axis("off")
 
-    plt.suptitle('Multi-Block Masking Strategy - Random Samples', fontsize=14)
+    plt.suptitle("Multi-Block Masking Strategy - Random Samples", fontsize=14)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig
 
@@ -508,19 +523,20 @@ def plot_masking_statistics(
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 
     # Plot 1: Mask ratio distribution
-    axes[0].hist(mask_ratios, bins=30, alpha=0.7, edgecolor='black')
-    axes[0].axvline(np.mean(mask_ratios), color='red', linestyle='--',
-                    label=f'Mean: {np.mean(mask_ratios):.2%}')
-    axes[0].set_xlabel('Mask Ratio')
-    axes[0].set_ylabel('Frequency')
-    axes[0].set_title('Mask Ratio Distribution')
+    axes[0].hist(mask_ratios, bins=30, alpha=0.7, edgecolor="black")
+    axes[0].axvline(
+        np.mean(mask_ratios), color="red", linestyle="--", label=f"Mean: {np.mean(mask_ratios):.2%}"
+    )
+    axes[0].set_xlabel("Mask Ratio")
+    axes[0].set_ylabel("Frequency")
+    axes[0].set_title("Mask Ratio Distribution")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
     # Plot 2: Spatial distribution
-    im1 = axes[1].imshow(spatial_avg.cpu().numpy(), cmap='hot', interpolation='bilinear')
-    axes[1].set_title('Average Spatial Distribution\n(Hotter = More Often Masked)')
-    axes[1].axis('off')
+    im1 = axes[1].imshow(spatial_avg.cpu().numpy(), cmap="hot", interpolation="bilinear")
+    axes[1].set_title("Average Spatial Distribution\n(Hotter = More Often Masked)")
+    axes[1].axis("off")
     plt.colorbar(im1, ax=axes[1], fraction=0.046, pad=0.04)
 
     # Plot 3: Summary statistics
@@ -531,14 +547,21 @@ def plot_masking_statistics(
     stats_text += f"Min ratio: {np.min(mask_ratios):.2%}\n"
     stats_text += f"Max ratio: {np.max(mask_ratios):.2%}\n"
 
-    axes[2].text(0.1, 0.5, stats_text, fontsize=11, verticalalignment='center',
-                 family='monospace', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
-    axes[2].axis('off')
-    axes[2].set_title('Summary Statistics')
+    axes[2].text(
+        0.1,
+        0.5,
+        stats_text,
+        fontsize=11,
+        verticalalignment="center",
+        family="monospace",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
+    )
+    axes[2].axis("off")
+    axes[2].set_title("Summary Statistics")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     return fig

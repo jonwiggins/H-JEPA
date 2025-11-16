@@ -2,21 +2,22 @@
 Tests for data loading and dataset functionality.
 """
 
+import shutil
+import tempfile
+from pathlib import Path
+
 import pytest
 import torch
-from pathlib import Path
-import tempfile
-import shutil
 
 from src.data import (
-    JEPATransform,
-    JEPAEvalTransform,
+    DATASET_INFO,
     CIFAR10Dataset,
     CIFAR100Dataset,
-    build_dataset,
+    JEPAEvalTransform,
+    JEPATransform,
     build_dataloader,
+    build_dataset,
     verify_dataset,
-    DATASET_INFO,
 )
 
 
@@ -25,8 +26,8 @@ class TestTransforms:
 
     def test_jepa_transform(self):
         """Test JEPATransform output."""
-        from PIL import Image
         import numpy as np
+        from PIL import Image
 
         # Create dummy image
         img = Image.fromarray(np.random.randint(0, 255, (32, 32, 3), dtype=np.uint8))
@@ -42,8 +43,8 @@ class TestTransforms:
 
     def test_jepa_eval_transform(self):
         """Test JEPAEvalTransform output."""
-        from PIL import Image
         import numpy as np
+        from PIL import Image
 
         # Create dummy image
         img = Image.fromarray(np.random.randint(0, 255, (32, 32, 3), dtype=np.uint8))
@@ -59,8 +60,8 @@ class TestTransforms:
 
     def test_transform_consistency(self):
         """Test that transforms produce consistent output shapes."""
-        from PIL import Image
         import numpy as np
+        from PIL import Image
 
         # Test with different image sizes
         for size in [32, 64, 128, 256]:
@@ -363,11 +364,13 @@ class TestEdgeCases:
         """Test dataset with custom transform."""
         from torchvision import transforms
 
-        custom_transform = transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-        ])
+        custom_transform = transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+            ]
+        )
 
         dataset = CIFAR10Dataset(
             data_path=temp_data_dir / "cifar10",

@@ -13,9 +13,9 @@ import logging
 import os
 from typing import Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 from ..models.hjepa import HJEPA
 
@@ -178,8 +178,8 @@ def export_to_onnx(
     dynamic_axes_dict = None
     if dynamic_axes:
         dynamic_axes_dict = {
-            'images': {0: 'batch_size'},
-            'features': {0: 'batch_size'},
+            "images": {0: "batch_size"},
+            "features": {0: "batch_size"},
         }
 
     try:
@@ -188,8 +188,8 @@ def export_to_onnx(
             model,
             example_input,
             output_path,
-            input_names=['images'],
-            output_names=['features'],
+            input_names=["images"],
+            output_names=["features"],
             dynamic_axes=dynamic_axes_dict,
             opset_version=opset_version,
             do_constant_folding=True,
@@ -208,7 +208,7 @@ def quantize_model(
     model: Union[HJEPA, OptimizedHJEPA],
     output_path: str,
     hierarchy_level: int = 0,
-    quantization_type: str = 'dynamic',
+    quantization_type: str = "dynamic",
     calibration_data: Optional[torch.Tensor] = None,
 ) -> nn.Module:
     """
@@ -234,21 +234,19 @@ def quantize_model(
     model.cpu()  # Quantization requires CPU
 
     try:
-        if quantization_type == 'dynamic':
+        if quantization_type == "dynamic":
             # Dynamic quantization (weights only)
             quantized_model = torch.quantization.quantize_dynamic(
-                model,
-                {nn.Linear},
-                dtype=torch.qint8
+                model, {nn.Linear}, dtype=torch.qint8
             )
 
-        elif quantization_type == 'static':
+        elif quantization_type == "static":
             # Static quantization (requires calibration)
             if calibration_data is None:
                 raise ValueError("Static quantization requires calibration data")
 
             # Prepare model for quantization
-            model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+            model.qconfig = torch.quantization.get_default_qconfig("fbgemm")
             torch.quantization.prepare(model, inplace=True)
 
             # Calibrate
@@ -282,7 +280,7 @@ class BatchInference:
     def __init__(
         self,
         model: Union[HJEPA, OptimizedHJEPA, torch.jit.ScriptModule],
-        device: str = 'cuda',
+        device: str = "cuda",
         batch_size: int = 32,
         hierarchy_level: int = 0,
     ):
@@ -334,7 +332,7 @@ class BatchInference:
         num_images = images.shape[0]
 
         for i in range(0, num_images, self.batch_size):
-            batch = images[i:i + self.batch_size]
+            batch = images[i : i + self.batch_size]
             features = self.model(batch)
             all_features.append(features)
 
@@ -373,7 +371,7 @@ class BatchInference:
             _ = self.extract_features(dummy_images, return_numpy=False)
 
         # Synchronize for accurate timing
-        if self.device == 'cuda':
+        if self.device == "cuda":
             torch.cuda.synchronize()
 
         # Benchmark
@@ -384,7 +382,7 @@ class BatchInference:
             start_time = time.time()
             _ = self.extract_features(dummy_images, return_numpy=False)
 
-            if self.device == 'cuda':
+            if self.device == "cuda":
                 torch.cuda.synchronize()
 
             times.append(time.time() - start_time)
@@ -392,12 +390,12 @@ class BatchInference:
         # Calculate statistics
         times = np.array(times)
         results = {
-            'mean_time': float(np.mean(times)),
-            'std_time': float(np.std(times)),
-            'min_time': float(np.min(times)),
-            'max_time': float(np.max(times)),
-            'throughput_images_per_sec': num_images / np.mean(times),
-            'latency_per_image_ms': (np.mean(times) / num_images) * 1000,
+            "mean_time": float(np.mean(times)),
+            "std_time": float(np.std(times)),
+            "min_time": float(np.min(times)),
+            "max_time": float(np.max(times)),
+            "throughput_images_per_sec": num_images / np.mean(times),
+            "latency_per_image_ms": (np.mean(times) / num_images) * 1000,
         }
 
         logger.info(f"Benchmark results: {results}")
@@ -406,10 +404,10 @@ class BatchInference:
 
 def create_inference_config(
     checkpoint_path: str,
-    export_formats: List[str] = ['torchscript', 'onnx'],
+    export_formats: List[str] = ["torchscript", "onnx"],
     quantize: bool = True,
     hierarchy_level: int = 0,
-    output_dir: str = './exported_models',
+    output_dir: str = "./exported_models",
 ) -> Dict[str, str]:
     """
     Create optimized inference models from checkpoint.
@@ -425,6 +423,7 @@ def create_inference_config(
         Dictionary mapping format to output path
     """
     import os
+
     from ..models.hjepa import create_hjepa
     from ..utils.checkpoint import load_checkpoint
 
@@ -433,36 +432,36 @@ def create_inference_config(
 
     # Load checkpoint
     logger.info(f"Loading checkpoint from: {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
-    config = checkpoint.get('config', {})
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    config = checkpoint.get("config", {})
 
     # Create model
-    model = create_hjepa(**config.get('model', {}))
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model = create_hjepa(**config.get("model", {}))
+    model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
 
     exported_paths = {}
 
     # Export to TorchScript
-    if 'torchscript' in export_formats:
-        ts_path = os.path.join(output_dir, 'model.torchscript.pt')
+    if "torchscript" in export_formats:
+        ts_path = os.path.join(output_dir, "model.torchscript.pt")
         export_to_torchscript(model, ts_path, hierarchy_level=hierarchy_level)
-        exported_paths['torchscript'] = ts_path
+        exported_paths["torchscript"] = ts_path
 
     # Export to ONNX
-    if 'onnx' in export_formats:
-        onnx_path = os.path.join(output_dir, 'model.onnx')
+    if "onnx" in export_formats:
+        onnx_path = os.path.join(output_dir, "model.onnx")
         try:
             export_to_onnx(model, onnx_path, hierarchy_level=hierarchy_level)
-            exported_paths['onnx'] = onnx_path
+            exported_paths["onnx"] = onnx_path
         except Exception as e:
             logger.warning(f"ONNX export failed: {e}")
 
     # Quantize model
     if quantize:
-        quant_path = os.path.join(output_dir, 'model.quantized.pt')
+        quant_path = os.path.join(output_dir, "model.quantized.pt")
         quantize_model(model, quant_path, hierarchy_level=hierarchy_level)
-        exported_paths['quantized'] = quant_path
+        exported_paths["quantized"] = quant_path
 
     logger.info(f"Exported models: {exported_paths}")
     return exported_paths

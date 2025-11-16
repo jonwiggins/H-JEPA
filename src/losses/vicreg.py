@@ -22,10 +22,11 @@ References:
     https://arxiv.org/abs/2105.04906
 """
 
+from typing import Dict, Optional, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Optional, Tuple
 
 
 class VICRegLoss(nn.Module):
@@ -120,9 +121,7 @@ class VICRegLoss(nn.Module):
         std = torch.sqrt(z.var(dim=0) + self.eps)  # [D]
 
         # Hinge loss: penalize if std < threshold
-        variance_loss = torch.mean(
-            F.relu(self.variance_threshold - std)
-        )
+        variance_loss = torch.mean(F.relu(self.variance_threshold - std))
 
         return variance_loss
 
@@ -156,7 +155,7 @@ class VICRegLoss(nn.Module):
         off_diagonal_cov = cov[off_diagonal_mask]
 
         # Mean of squared off-diagonal elements
-        covariance_loss = (off_diagonal_cov ** 2).mean()
+        covariance_loss = (off_diagonal_cov**2).mean()
 
         return covariance_loss
 
@@ -197,12 +196,12 @@ class VICRegLoss(nn.Module):
 
         # Validate input shapes
         assert z_a.shape == z_b.shape, (
-            f"z_a and z_b must have the same shape. "
-            f"Got z_a: {z_a.shape}, z_b: {z_b.shape}"
+            f"z_a and z_b must have the same shape. " f"Got z_a: {z_a.shape}, z_b: {z_b.shape}"
         )
-        assert z_a.ndim in [2, 3], (
-            f"Inputs must be 2D [B, D] or 3D [B, N, D], got shape {z_a.shape}"
-        )
+        assert z_a.ndim in [
+            2,
+            3,
+        ], f"Inputs must be 2D [B, D] or 3D [B, N, D], got shape {z_a.shape}"
 
         # Flatten patch dimension if needed
         if z_a.ndim == 3 and self.flatten_patches:
@@ -229,21 +228,21 @@ class VICRegLoss(nn.Module):
 
         # Compute weighted total loss
         total_loss = (
-            self.invariance_weight * inv_loss +
-            self.variance_weight * var_loss +
-            self.covariance_weight * cov_loss
+            self.invariance_weight * inv_loss
+            + self.variance_weight * var_loss
+            + self.covariance_weight * cov_loss
         )
 
         # Return detailed loss dictionary
         loss_dict = {
-            'loss': total_loss,
-            'invariance_loss': inv_loss,
-            'variance_loss': var_loss,
-            'covariance_loss': cov_loss,
-            'variance_loss_a': var_loss_a,
-            'variance_loss_b': var_loss_b,
-            'covariance_loss_a': cov_loss_a,
-            'covariance_loss_b': cov_loss_b,
+            "loss": total_loss,
+            "invariance_loss": inv_loss,
+            "variance_loss": var_loss,
+            "covariance_loss": cov_loss,
+            "variance_loss_a": var_loss_a,
+            "variance_loss_b": var_loss_b,
+            "covariance_loss_a": cov_loss_a,
+            "covariance_loss_b": cov_loss_b,
         }
 
         return loss_dict
@@ -300,9 +299,7 @@ class AdaptiveVICRegLoss(VICRegLoss):
             self.invariance_weight = nn.Parameter(
                 torch.tensor(invariance_weight, dtype=torch.float32)
             )
-            self.variance_weight = nn.Parameter(
-                torch.tensor(variance_weight, dtype=torch.float32)
-            )
+            self.variance_weight = nn.Parameter(torch.tensor(variance_weight, dtype=torch.float32))
             self.covariance_weight = nn.Parameter(
                 torch.tensor(covariance_weight, dtype=torch.float32)
             )
@@ -324,9 +321,9 @@ class AdaptiveVICRegLoss(VICRegLoss):
 
         with torch.no_grad():
             # Get current loss magnitudes
-            inv = loss_dict['invariance_loss'].item()
-            var = loss_dict['variance_loss'].item()
-            cov = loss_dict['covariance_loss'].item()
+            inv = loss_dict["invariance_loss"].item()
+            var = loss_dict["variance_loss"].item()
+            cov = loss_dict["covariance_loss"].item()
 
             # Compute target weights (inverse of loss magnitude)
             total = inv + var + cov + self.eps
@@ -336,14 +333,14 @@ class AdaptiveVICRegLoss(VICRegLoss):
 
             # EMA update
             self.invariance_weight.data = (
-                self.weight_momentum * self.invariance_weight.data +
-                (1 - self.weight_momentum) * target_inv
+                self.weight_momentum * self.invariance_weight.data
+                + (1 - self.weight_momentum) * target_inv
             )
             self.variance_weight.data = (
-                self.weight_momentum * self.variance_weight.data +
-                (1 - self.weight_momentum) * target_var
+                self.weight_momentum * self.variance_weight.data
+                + (1 - self.weight_momentum) * target_var
             )
             self.covariance_weight.data = (
-                self.weight_momentum * self.covariance_weight.data +
-                (1 - self.weight_momentum) * target_cov
+                self.weight_momentum * self.covariance_weight.data
+                + (1 - self.weight_momentum) * target_cov
             )

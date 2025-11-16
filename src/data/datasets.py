@@ -7,16 +7,16 @@ Unlike traditional contrastive learning, JEPA does not require heavy augmentatio
 """
 
 import os
-from pathlib import Path
-from typing import Callable, Optional, Tuple, List, Union
 import warnings
+from pathlib import Path
+from typing import Callable, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from torchvision.datasets.utils import check_integrity, download_and_extract_archive
-from PIL import Image
-import numpy as np
 
 
 class JEPATransform:

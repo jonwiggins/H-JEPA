@@ -25,10 +25,11 @@ References:
     - C-JEPA concept from recent self-supervised learning literature
 """
 
+from typing import Dict, Literal, Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, Optional, Literal
 
 
 class NTXentLoss(nn.Module):
@@ -58,7 +59,7 @@ class NTXentLoss(nn.Module):
         self,
         temperature: float = 0.1,
         use_cosine_similarity: bool = True,
-        reduction: Literal['mean', 'sum', 'none'] = 'mean',
+        reduction: Literal["mean", "sum", "none"] = "mean",
         eps: float = 1e-8,
     ):
         super().__init__()
@@ -132,9 +133,9 @@ class NTXentLoss(nn.Module):
         batch_size = z_i.shape[0]
 
         # Ensure same batch size
-        assert z_i.shape == z_j.shape, (
-            f"z_i and z_j must have the same shape, got {z_i.shape} and {z_j.shape}"
-        )
+        assert (
+            z_i.shape == z_j.shape
+        ), f"z_i and z_j must have the same shape, got {z_i.shape} and {z_j.shape}"
 
         # Compute similarity matrices
         # sim_ii: similarity between view1 and view1 [B, B]
@@ -188,8 +189,8 @@ class NTXentLoss(nn.Module):
 
         # Negative logits: sim_ii (masked) + sim_ij (masked)
         # Mask out diagonal elements
-        sim_ii_masked = sim_ii.masked_fill(mask_ii, float('-inf'))
-        sim_ij_masked = sim_ij.masked_fill(mask_ii, float('-inf'))
+        sim_ii_masked = sim_ii.masked_fill(mask_ii, float("-inf"))
+        sim_ij_masked = sim_ij.masked_fill(mask_ii, float("-inf"))
 
         # Concatenate negatives
         neg_i = torch.cat([sim_ii_masked, sim_ij_masked], dim=1)  # [B, 2B]
@@ -199,8 +200,8 @@ class NTXentLoss(nn.Module):
 
         # Similarly for j -> i direction
         pos_ji = torch.diagonal(sim_ji).unsqueeze(1)  # [B, 1]
-        sim_jj_masked = sim_jj.masked_fill(mask_ii, float('-inf'))
-        sim_ji_masked = sim_ji.masked_fill(mask_ii, float('-inf'))
+        sim_jj_masked = sim_jj.masked_fill(mask_ii, float("-inf"))
+        sim_ji_masked = sim_ji.masked_fill(mask_ii, float("-inf"))
         neg_j = torch.cat([sim_jj_masked, sim_ji_masked], dim=1)  # [B, 2B]
         logits_j = torch.cat([pos_ji, neg_j], dim=1)  # [B, 2B+1]
 
@@ -219,11 +220,11 @@ class NTXentLoss(nn.Module):
             accuracy = (predictions == labels).float().mean()
 
         return {
-            'loss': loss,
-            'logits': logits.detach(),
-            'accuracy': accuracy,
-            'positive_similarity': pos_ij.mean().detach(),
-            'negative_similarity': neg_i.mean().detach(),
+            "loss": loss,
+            "logits": logits.detach(),
+            "accuracy": accuracy,
+            "positive_similarity": pos_ij.mean().detach(),
+            "negative_similarity": neg_i.mean().detach(),
         }
 
     def extra_repr(self) -> str:
@@ -292,7 +293,7 @@ class ContrastiveJEPALoss(nn.Module):
         contrastive_temperature: float = 0.1,
         use_cosine_similarity: bool = True,
         contrastive_on_context: bool = False,
-        reduction: Literal['mean', 'sum', 'none'] = 'mean',
+        reduction: Literal["mean", "sum", "none"] = "mean",
         eps: float = 1e-8,
     ):
         super().__init__()
@@ -312,8 +313,8 @@ class ContrastiveJEPALoss(nn.Module):
         )
 
         # Register weights as buffers
-        self.register_buffer('_jepa_weight', torch.tensor(jepa_weight))
-        self.register_buffer('_contrastive_weight', torch.tensor(contrastive_weight))
+        self.register_buffer("_jepa_weight", torch.tensor(jepa_weight))
+        self.register_buffer("_contrastive_weight", torch.tensor(contrastive_weight))
 
     def forward(
         self,
@@ -351,10 +352,13 @@ class ContrastiveJEPALoss(nn.Module):
         """
         # 1. Compute JEPA prediction loss
         jepa_dict = self.jepa_loss(predictions, targets, masks)
-        jepa_loss = jepa_dict['loss']
+        jepa_loss = jepa_dict["loss"]
 
         # 2. Compute contrastive loss
-        contrastive_loss = torch.tensor(0.0, device=predictions[0].device if isinstance(predictions, list) else predictions.device)
+        contrastive_loss = torch.tensor(
+            0.0,
+            device=predictions[0].device if isinstance(predictions, list) else predictions.device,
+        )
         contrastive_dict = {}
 
         # Determine which features to use for contrastive learning
@@ -363,9 +367,7 @@ class ContrastiveJEPALoss(nn.Module):
                 features_i = context_features_i
                 features_j = context_features_j
             else:
-                raise ValueError(
-                    "contrastive_on_context=True but context_features not provided"
-                )
+                raise ValueError("contrastive_on_context=True but context_features not provided")
         else:
             if target_features_i is not None and target_features_j is not None:
                 features_i = target_features_i
@@ -386,22 +388,19 @@ class ContrastiveJEPALoss(nn.Module):
 
         # Compute contrastive loss
         contrastive_dict = self.contrastive(z_i, z_j)
-        contrastive_loss = contrastive_dict['loss']
+        contrastive_loss = contrastive_dict["loss"]
 
         # 3. Combine losses
-        total_loss = (
-            self._jepa_weight * jepa_loss +
-            self._contrastive_weight * contrastive_loss
-        )
+        total_loss = self._jepa_weight * jepa_loss + self._contrastive_weight * contrastive_loss
 
         # Build output dictionary
         loss_dict = {
-            'loss': total_loss,
-            'jepa_loss': jepa_loss,
-            'contrastive_loss': contrastive_loss,
-            'contrastive_accuracy': contrastive_dict['accuracy'],
-            'contrastive_pos_sim': contrastive_dict['positive_similarity'],
-            'contrastive_neg_sim': contrastive_dict['negative_similarity'],
+            "loss": total_loss,
+            "jepa_loss": jepa_loss,
+            "contrastive_loss": contrastive_loss,
+            "contrastive_accuracy": contrastive_dict["accuracy"],
+            "contrastive_pos_sim": contrastive_dict["positive_similarity"],
+            "contrastive_neg_sim": contrastive_dict["negative_similarity"],
         }
 
         # Add all JEPA components
@@ -426,17 +425,21 @@ class ContrastiveJEPALoss(nn.Module):
         """
         lines = ["C-JEPA Loss Summary:"]
         lines.append(f"  Total Loss: {loss_dict['loss'].item():.6f}")
-        lines.append(f"  JEPA Loss (weight={self.jepa_weight:.3f}): {loss_dict['jepa_loss'].item():.6f}")
-        lines.append(f"  Contrastive Loss (weight={self.contrastive_weight:.3f}): {loss_dict['contrastive_loss'].item():.6f}")
+        lines.append(
+            f"  JEPA Loss (weight={self.jepa_weight:.3f}): {loss_dict['jepa_loss'].item():.6f}"
+        )
+        lines.append(
+            f"  Contrastive Loss (weight={self.contrastive_weight:.3f}): {loss_dict['contrastive_loss'].item():.6f}"
+        )
         lines.append(f"  Contrastive Accuracy: {loss_dict['contrastive_accuracy'].item():.4f}")
         lines.append(f"  Positive Similarity: {loss_dict['contrastive_pos_sim'].item():.4f}")
         lines.append(f"  Negative Similarity: {loss_dict['contrastive_neg_sim'].item():.4f}")
 
         # Add hierarchical breakdown if available
-        if 'loss_h0' in loss_dict:
+        if "loss_h0" in loss_dict:
             lines.append("\nJEPA Hierarchical Breakdown:")
             i = 0
-            while f'loss_h{i}' in loss_dict:
+            while f"loss_h{i}" in loss_dict:
                 lines.append(f"  Level {i}: {loss_dict[f'loss_h{i}'].item():.6f}")
                 i += 1
 
@@ -474,13 +477,13 @@ def create_cjepa_loss_from_config(config: Dict, jepa_loss: nn.Module) -> Contras
         >>> jepa_loss = HJEPALoss(...)
         >>> cjepa_loss = create_cjepa_loss_from_config(config, jepa_loss)
     """
-    loss_config = config.get('loss', {})
+    loss_config = config.get("loss", {})
 
     return ContrastiveJEPALoss(
         jepa_loss=jepa_loss,
-        jepa_weight=loss_config.get('jepa_weight', 1.0),
-        contrastive_weight=loss_config.get('contrastive_weight', 0.1),
-        contrastive_temperature=loss_config.get('contrastive_temperature', 0.1),
-        use_cosine_similarity=loss_config.get('use_cosine_similarity', True),
-        contrastive_on_context=loss_config.get('contrastive_on_context', False),
+        jepa_weight=loss_config.get("jepa_weight", 1.0),
+        contrastive_weight=loss_config.get("contrastive_weight", 0.1),
+        contrastive_temperature=loss_config.get("contrastive_temperature", 0.1),
+        use_cosine_similarity=loss_config.get("use_cosine_similarity", True),
+        contrastive_on_context=loss_config.get("contrastive_on_context", False),
     )
