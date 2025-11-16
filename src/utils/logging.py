@@ -349,10 +349,15 @@ class MetricsLogger:
             return
 
         # Compute averages
-        averaged_metrics = {
-            name: np.mean(values)
-            for name, values in self.metrics_buffer.items()
-        }
+        averaged_metrics = {}
+        for name, values in self.metrics_buffer.items():
+            # Convert to CPU if tensors, then to numpy array
+            import torch
+            cpu_values = [
+                v.cpu().item() if isinstance(v, torch.Tensor) else v
+                for v in values
+            ]
+            averaged_metrics[name] = np.mean(cpu_values)
 
         # Log the averaged metrics
         self.log_metrics(averaged_metrics, step=step, prefix=prefix)
