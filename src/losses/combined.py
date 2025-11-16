@@ -445,8 +445,14 @@ def create_loss_from_config(config: Dict) -> nn.Module:
             )
 
     if loss_type == 'hjepa' or loss_type == 'jepa' or loss_type == 'smoothl1':
+        # Determine jepa_loss_type with fallback logic
+        if loss_type in ['smoothl1', 'mse', 'cosine']:
+            default_loss_type = loss_type
+        else:
+            default_loss_type = 'smoothl1'
+
         return HJEPALoss(
-            loss_type=loss_config.get('jepa_loss_type', loss_type if loss_type in ['smoothl1', 'mse', 'cosine'] else 'smoothl1'),
+            loss_type=loss_config.get('jepa_loss_type', default_loss_type),
             hierarchy_weights=loss_config.get('hierarchy_weights', 1.0),
             num_hierarchies=num_hierarchies,
             normalize_embeddings=loss_config.get('normalize_embeddings', True),

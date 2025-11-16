@@ -206,7 +206,12 @@ class HJEPATrainer:
                 self.metrics_logger.log_system_metrics(step=self.global_step)
 
             # Print epoch summary
-            self._print_epoch_summary(epoch, train_metrics, val_metrics if self.val_loader else None)
+            val_metrics_to_print = (
+                val_metrics if self.val_loader else None
+            )
+            self._print_epoch_summary(
+                epoch, train_metrics, val_metrics_to_print
+            )
 
         logger.info("Training completed!")
         self.metrics_logger.finish()

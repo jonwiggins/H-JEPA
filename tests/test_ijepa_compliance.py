@@ -11,13 +11,14 @@ have been properly implemented:
 5. VICReg validation warnings work
 """
 
-import sys
-import os
-import warnings
 import math
+import os
+import sys
+import warnings
+from pathlib import Path
+
 import torch
 import yaml
-from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -234,11 +235,12 @@ def test_vicreg_validation_warning():
         'vicreg_weight': 0.1,
         'hierarchy_weights': [1.0, 0.5, 0.25],
         'normalize_embeddings': False,
+        'num_hierarchies': 3,
     }
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        loss = create_loss_from_config(test_config, num_hierarchies=3)
+        loss = create_loss_from_config(test_config)
 
         if len(w) > 0 and 'VICReg' in str(w[0].message):
             print("✓ Warning correctly triggered for smoothl1 + vicreg_weight")
@@ -257,11 +259,12 @@ def test_vicreg_validation_warning():
         'vicreg': {'sim_coeff': 25.0},
         'hierarchy_weights': [1.0],
         'normalize_embeddings': False,
+        'num_hierarchies': 1,
     }
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        loss = create_loss_from_config(test_config, num_hierarchies=1)
+        loss = create_loss_from_config(test_config)
 
         if len(w) > 0 and 'VICReg' in str(w[0].message):
             print("✓ Warning correctly triggered for mse + use_vicreg")
@@ -279,11 +282,12 @@ def test_vicreg_validation_warning():
         'vicreg_weight': 0.1,
         'hierarchy_weights': [1.0],
         'normalize_embeddings': False,
+        'num_hierarchies': 1,
     }
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        loss = create_loss_from_config(test_config, num_hierarchies=1)
+        loss = create_loss_from_config(test_config)
 
         vicreg_warnings = [warning for warning in w if 'VICReg' in str(warning.message)]
 

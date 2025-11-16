@@ -87,8 +87,14 @@ class ContextEncoder(nn.Module):
         # Apply mask if provided (set masked patches to zero)
         if mask is not None:
             # mask shape: [B, N], we need [B, N+1, 1] to account for cls token
+            # Determine dtype for zeros tensor
+            zero_dtype = (
+                torch.bool if mask.dtype == torch.bool else mask.dtype
+            )
             mask_with_cls = torch.cat([
-                torch.zeros(mask.shape[0], 1, device=mask.device, dtype=torch.bool if mask.dtype == torch.bool else mask.dtype),
+                torch.zeros(
+                    mask.shape[0], 1, device=mask.device, dtype=zero_dtype
+                ),
                 mask
             ], dim=1).unsqueeze(-1)
             # Convert boolean mask to float for multiplication
