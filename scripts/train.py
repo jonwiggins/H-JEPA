@@ -24,29 +24,25 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import numpy as np
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 import yaml
-import numpy as np
+
+from src.data import build_dataloader, build_dataset
+from src.losses import create_loss_from_config
+from src.masks import HierarchicalMaskGenerator, MultiBlockMaskGenerator
 
 # Import H-JEPA components
 from src.models import create_hjepa_from_config
-from src.losses import create_loss_from_config
-from src.masks import MultiBlockMaskGenerator, HierarchicalMaskGenerator
-from src.data import build_dataset, build_dataloader
 from src.trainers import HJEPATrainer, create_optimizer
-from src.utils import (
-    setup_logging,
-    CheckpointManager,
-    MetricsLogger,
-    ProgressTracker,
-)
+from src.utils import CheckpointManager, MetricsLogger, ProgressTracker, setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -69,35 +65,27 @@ Examples:
 
   # Multi-GPU training
   python scripts/train.py --config configs/default.yaml --distributed
-        """
+        """,
     )
 
     # Required arguments
-    parser.add_argument(
-        "--config",
-        type=str,
-        required=True,
-        help="Path to configuration YAML file"
-    )
+    parser.add_argument("--config", type=str, required=True, help="Path to configuration YAML file")
 
     # Optional arguments
     parser.add_argument(
-        "--resume",
-        type=str,
-        default=None,
-        help="Path to checkpoint to resume from"
+        "--resume", type=str, default=None, help="Path to checkpoint to resume from"
     )
     parser.add_argument(
         "--device",
         type=str,
         default=None,
-        help="Device to use (e.g., 'cuda', 'cuda:0', 'cpu'). Overrides config."
+        help="Device to use (e.g., 'cuda', 'cuda:0', 'cpu'). Overrides config.",
     )
     parser.add_argument(
         "--output_dir",
         type=str,
         default=None,
-        help="Output directory for checkpoints and logs. Overrides config."
+        help="Output directory for checkpoints and logs. Overrides config.",
     )
 
     # Training overrides
@@ -113,33 +101,22 @@ Examples:
 
     # Distributed training
     parser.add_argument(
-        "--distributed",
-        action="store_true",
-        help="Enable distributed data parallel training"
+        "--distributed", action="store_true", help="Enable distributed data parallel training"
     )
     parser.add_argument(
         "--local_rank",
         type=int,
         default=0,
-        help="Local rank for distributed training (set by torch.distributed.launch)"
+        help="Local rank for distributed training (set by torch.distributed.launch)",
     )
     parser.add_argument(
-        "--world_size",
-        type=int,
-        default=1,
-        help="Number of processes for distributed training"
+        "--world_size", type=int, default=1, help="Number of processes for distributed training"
     )
 
     # Logging
+    parser.add_argument("--no_wandb", action="store_true", help="Disable Weights & Biases logging")
     parser.add_argument(
-        "--no_wandb",
-        action="store_true",
-        help="Disable Weights & Biases logging"
-    )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug mode with verbose logging"
+        "--debug", action="store_true", help="Enable debug mode with verbose logging"
     )
 
     return parser.parse_args()
@@ -164,7 +141,7 @@ def load_config(config_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         logger.info(f"Loaded configuration from {config_path}")
         return config
@@ -185,54 +162,54 @@ def apply_config_overrides(config: Dict[str, Any], args: argparse.Namespace) -> 
     """
     # Training overrides
     if args.batch_size is not None:
-        config['data']['batch_size'] = args.batch_size
+        config["data"]["batch_size"] = args.batch_size
         logger.info(f"Override: batch_size = {args.batch_size}")
 
     if args.epochs is not None:
-        config['training']['epochs'] = args.epochs
+        config["training"]["epochs"] = args.epochs
         logger.info(f"Override: epochs = {args.epochs}")
 
     if args.lr is not None:
-        config['training']['lr'] = args.lr
+        config["training"]["lr"] = args.lr
         logger.info(f"Override: lr = {args.lr}")
 
     if args.weight_decay is not None:
-        config['training']['weight_decay'] = args.weight_decay
+        config["training"]["weight_decay"] = args.weight_decay
         logger.info(f"Override: weight_decay = {args.weight_decay}")
 
     if args.warmup_epochs is not None:
-        config['training']['warmup_epochs'] = args.warmup_epochs
+        config["training"]["warmup_epochs"] = args.warmup_epochs
         logger.info(f"Override: warmup_epochs = {args.warmup_epochs}")
 
     # Data overrides
     if args.data_path is not None:
-        config['data']['data_path'] = args.data_path
+        config["data"]["data_path"] = args.data_path
         logger.info(f"Override: data_path = {args.data_path}")
 
     if args.num_workers is not None:
-        config['data']['num_workers'] = args.num_workers
+        config["data"]["num_workers"] = args.num_workers
         logger.info(f"Override: num_workers = {args.num_workers}")
 
     # Output directory
     if args.output_dir is not None:
-        config['checkpoint']['checkpoint_dir'] = os.path.join(args.output_dir, 'checkpoints')
-        config['logging']['log_dir'] = os.path.join(args.output_dir, 'logs')
+        config["checkpoint"]["checkpoint_dir"] = os.path.join(args.output_dir, "checkpoints")
+        config["logging"]["log_dir"] = os.path.join(args.output_dir, "logs")
         logger.info(f"Override: output_dir = {args.output_dir}")
 
     # Resume checkpoint
     if args.resume is not None:
-        config['checkpoint']['resume'] = args.resume
+        config["checkpoint"]["resume"] = args.resume
         logger.info(f"Override: resume = {args.resume}")
 
     # Logging overrides
     if args.no_wandb:
-        config['logging']['wandb']['enabled'] = False
+        config["logging"]["wandb"]["enabled"] = False
         logger.info("Override: Disabled W&B logging")
 
     # Distributed settings
     if args.distributed:
-        config['distributed']['enabled'] = True
-        config['distributed']['world_size'] = args.world_size
+        config["distributed"]["enabled"] = True
+        config["distributed"]["world_size"] = args.world_size
         logger.info(f"Override: Enabled distributed training (world_size={args.world_size})")
 
     return config
@@ -249,37 +226,37 @@ def validate_config(config: Dict[str, Any]) -> None:
         ValueError: If configuration is invalid
     """
     # Check required sections
-    required_sections = ['model', 'data', 'training', 'masking', 'loss', 'checkpoint', 'logging']
+    required_sections = ["model", "data", "training", "masking", "loss", "checkpoint", "logging"]
     for section in required_sections:
         if section not in config:
             raise ValueError(f"Missing required config section: {section}")
 
     # Validate model config
-    if config['model']['num_hierarchies'] < 2 or config['model']['num_hierarchies'] > 4:
+    if config["model"]["num_hierarchies"] < 2 or config["model"]["num_hierarchies"] > 4:
         raise ValueError("num_hierarchies must be between 2 and 4")
 
     # Validate training config
-    if config['training']['epochs'] <= 0:
+    if config["training"]["epochs"] <= 0:
         raise ValueError("epochs must be positive")
-    if config['training']['lr'] <= 0:
+    if config["training"]["lr"] <= 0:
         raise ValueError("lr must be positive")
 
     # Validate loss hierarchy weights
-    if len(config['loss']['hierarchy_weights']) != config['model']['num_hierarchies']:
+    if len(config["loss"]["hierarchy_weights"]) != config["model"]["num_hierarchies"]:
         raise ValueError(
             f"Loss hierarchy_weights length ({len(config['loss']['hierarchy_weights'])}) "
             f"must match num_hierarchies ({config['model']['num_hierarchies']})"
         )
 
     # Validate data path exists if not using downloadable datasets
-    data_path = Path(config['data']['data_path'])
-    use_multi_dataset = config['data'].get('use_multi_dataset', False)
-    downloadable = ['cifar10', 'cifar100', 'stl10']
+    data_path = Path(config["data"]["data_path"])
+    use_multi_dataset = config["data"].get("use_multi_dataset", False)
+    downloadable = ["cifar10", "cifar100", "stl10"]
 
     if use_multi_dataset:
         # Multi-dataset mode: check if all datasets are downloadable or paths exist
-        for ds_config in config['data']['datasets']:
-            dataset_name = ds_config['name'].lower()
+        for ds_config in config["data"]["datasets"]:
+            dataset_name = ds_config["name"].lower()
             if dataset_name not in downloadable and not data_path.exists():
                 logger.warning(
                     f"Data path does not exist: {data_path}\n"
@@ -287,7 +264,7 @@ def validate_config(config: Dict[str, Any]) -> None:
                 )
     else:
         # Single dataset mode
-        dataset_name = config['data']['dataset'].lower()
+        dataset_name = config["data"]["dataset"].lower()
         if dataset_name not in downloadable and not data_path.exists():
             logger.warning(
                 f"Data path does not exist: {data_path}\n"
@@ -311,8 +288,8 @@ def setup_device(config: Dict[str, Any], args: argparse.Namespace) -> torch.devi
     # Priority: args.device > config.device > auto-detect
     if args.device:
         device = torch.device(args.device)
-    elif 'device' in config:
-        device = torch.device(config['device'])
+    elif "device" in config:
+        device = torch.device(config["device"])
     elif torch.cuda.is_available():
         device = torch.device("cuda")
     else:
@@ -347,7 +324,7 @@ def setup_distributed(args: argparse.Namespace) -> bool:
 
     # Initialize process group
     try:
-        dist.init_process_group(backend='nccl')
+        dist.init_process_group(backend="nccl")
         local_rank = args.local_rank
         torch.cuda.set_device(local_rank)
         logger.info(
@@ -396,8 +373,8 @@ def create_directories(config: Dict[str, Any]) -> None:
         config: Configuration dictionary
     """
     directories = [
-        config['checkpoint']['checkpoint_dir'],
-        config['logging']['log_dir'],
+        config["checkpoint"]["checkpoint_dir"],
+        config["logging"]["log_dir"],
     ]
 
     for directory in directories:
@@ -429,8 +406,10 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
     print(f"  Predictor depth: {config['model']['predictor']['depth']}")
 
     print("\nData:")
-    if config['data'].get('use_multi_dataset', False):
-        datasets_info = ', '.join([f"{ds['name']} ({ds['weight']:.0%})" for ds in config['data']['datasets']])
+    if config["data"].get("use_multi_dataset", False):
+        datasets_info = ", ".join(
+            [f"{ds['name']} ({ds['weight']:.0%})" for ds in config["data"]["datasets"]]
+        )
         print(f"  Datasets: {datasets_info}")
         print(f"  Sampling: {config['data']['sampling_strategy']}")
     else:
@@ -450,7 +429,7 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
     print(f"  Mixed precision: {config['training']['use_amp']}")
 
     print("\nMasking:")
-    num_masks = config['masking'].get('num_target_masks', config['masking'].get('num_masks', 4))
+    num_masks = config["masking"].get("num_target_masks", config["masking"].get("num_masks", 4))
     print(f"  Num target masks: {num_masks}")
     print(f"  Mask scale: {config['masking']['mask_scale']}")
     print(f"  Num context masks: {config['masking']['num_context_masks']}")
@@ -461,8 +440,12 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
 
     print("\nLogging:")
     # Handle both nested and flat wandb/tensorboard config structures
-    wandb_enabled = config['logging'].get('use_wandb', config['logging'].get('wandb', {}).get('enabled', False))
-    tb_enabled = config['logging'].get('use_tensorboard', config['logging'].get('tensorboard', {}).get('enabled', False))
+    wandb_enabled = config["logging"].get(
+        "use_wandb", config["logging"].get("wandb", {}).get("enabled", False)
+    )
+    tb_enabled = config["logging"].get(
+        "use_tensorboard", config["logging"].get("tensorboard", {}).get("enabled", False)
+    )
     print(f"  W&B: {'Enabled' if wandb_enabled else 'Disabled'}")
     print(f"  TensorBoard: {'Enabled' if tb_enabled else 'Disabled'}")
     print(f"  Log frequency: {config['logging']['log_frequency']} steps")
@@ -502,7 +485,7 @@ def main():
         device = setup_device(config, args)
 
         # Set random seed
-        set_seed(config.get('seed', 42), distributed=is_distributed)
+        set_seed(config.get("seed", 42), distributed=is_distributed)
 
         # Create output directories
         if is_main_process:
@@ -515,7 +498,7 @@ def main():
         logger.info("Building datasets...")
 
         # Check if using multi-dataset (foundation model)
-        use_multi_dataset = config['data'].get('use_multi_dataset', False)
+        use_multi_dataset = config["data"].get("use_multi_dataset", False)
 
         if use_multi_dataset:
             # Foundation model: Multiple datasets
@@ -524,27 +507,27 @@ def main():
             logger.info("Using multi-dataset configuration for foundation model training")
 
             train_dataset = build_multi_dataset(
-                dataset_configs=config['data']['datasets'],
-                data_path=config['data']['data_path'],
-                split='train',
-                sampling_strategy=config['data'].get('sampling_strategy', 'weighted'),
-                image_size=config['data']['image_size'],
-                color_jitter=config['data'].get('augmentation', {}).get('color_jitter', 0.4),
+                dataset_configs=config["data"]["datasets"],
+                data_path=config["data"]["data_path"],
+                split="train",
+                sampling_strategy=config["data"].get("sampling_strategy", "weighted"),
+                image_size=config["data"]["image_size"],
+                color_jitter=config["data"].get("augmentation", {}).get("color_jitter", 0.4),
             )
 
             # For multi-dataset, validation is tricky - use first dataset for now
             val_dataset = None
-            if config.get('evaluation', {}).get('eval_frequency', 0) > 0:
+            if config.get("evaluation", {}).get("eval_frequency", 0) > 0:
                 try:
                     # Use first dataset for validation
-                    first_dataset = config['data']['datasets'][0]['name']
+                    first_dataset = config["data"]["datasets"][0]["name"]
                     logger.info(f"Using {first_dataset} for validation")
 
                     val_dataset = build_dataset(
                         dataset_name=first_dataset,
-                        data_path=config['data']['data_path'],
-                        split='val',
-                        image_size=config['data']['image_size'],
+                        data_path=config["data"]["data_path"],
+                        split="val",
+                        image_size=config["data"]["image_size"],
                         color_jitter=None,
                     )
                     logger.info(f"Validation dataset size: {len(val_dataset)}")
@@ -554,22 +537,22 @@ def main():
         else:
             # Single dataset (original behavior)
             train_dataset = build_dataset(
-                dataset_name=config['data']['dataset'],
-                data_path=config['data']['data_path'],
-                split='train',
-                image_size=config['data']['image_size'],
-                color_jitter=config['data'].get('augmentation', {}).get('color_jitter', 0.4),
+                dataset_name=config["data"]["dataset"],
+                data_path=config["data"]["data_path"],
+                split="train",
+                image_size=config["data"]["image_size"],
+                color_jitter=config["data"].get("augmentation", {}).get("color_jitter", 0.4),
             )
 
             # Build validation dataset if eval is enabled
             val_dataset = None
-            if config.get('evaluation', {}).get('eval_frequency', 0) > 0:
+            if config.get("evaluation", {}).get("eval_frequency", 0) > 0:
                 try:
                     val_dataset = build_dataset(
-                        dataset_name=config['data']['dataset'],
-                        data_path=config['data']['data_path'],
-                        split='val',
-                        image_size=config['data']['image_size'],
+                        dataset_name=config["data"]["dataset"],
+                        data_path=config["data"]["data_path"],
+                        split="val",
+                        image_size=config["data"]["image_size"],
                         color_jitter=None,  # No augmentation for validation
                     )
                     logger.info(f"Validation dataset size: {len(val_dataset)}")
@@ -581,9 +564,9 @@ def main():
         # Build dataloaders
         train_loader = build_dataloader(
             dataset=train_dataset,
-            batch_size=config['data']['batch_size'],
-            num_workers=config['data']['num_workers'],
-            pin_memory=config['data'].get('pin_memory', True),
+            batch_size=config["data"]["batch_size"],
+            num_workers=config["data"]["num_workers"],
+            pin_memory=config["data"].get("pin_memory", True),
             shuffle=True,
         )
 
@@ -591,9 +574,9 @@ def main():
         if val_dataset is not None:
             val_loader = build_dataloader(
                 dataset=val_dataset,
-                batch_size=config['data']['batch_size'],
-                num_workers=config['data']['num_workers'],
-                pin_memory=config['data'].get('pin_memory', True),
+                batch_size=config["data"]["batch_size"],
+                num_workers=config["data"]["num_workers"],
+                pin_memory=config["data"].get("pin_memory", True),
                 shuffle=False,
             )
 
@@ -630,20 +613,22 @@ def main():
 
         # Determine image dimensions in patches
         patch_size = 16  # Most ViT models use 16x16 patches
-        img_size = config['data']['image_size']
+        img_size = config["data"]["image_size"]
         num_patches = (img_size // patch_size) ** 2
 
         # Use hierarchical masking for multi-level prediction
         masking_generator = HierarchicalMaskGenerator(
             input_size=(img_size, img_size),
             patch_size=patch_size,
-            num_hierarchies=config['model']['num_hierarchies'],
-            num_target_masks=config['masking'].get('num_masks', 4),
-            base_scale=tuple(config['masking'].get('mask_scale', [0.05, 0.15])),
-            aspect_ratio_range=tuple(config['masking'].get('aspect_ratio', [0.75, 1.5])),
+            num_hierarchies=config["model"]["num_hierarchies"],
+            num_target_masks=config["masking"].get("num_masks", 4),
+            base_scale=tuple(config["masking"].get("mask_scale", [0.05, 0.15])),
+            aspect_ratio_range=tuple(config["masking"].get("aspect_ratio", [0.75, 1.5])),
         )
 
-        logger.info(f"Masking: {num_patches} patches, hierarchical levels: {config['model']['num_hierarchies']}")
+        logger.info(
+            f"Masking: {num_patches} patches, hierarchical levels: {config['model']['num_hierarchies']}"
+        )
 
         # ====================================================================
         # Build Loss Function
@@ -653,7 +638,9 @@ def main():
         loss_fn = create_loss_from_config(config)
         loss_fn = loss_fn.to(device)
 
-        logger.info(f"Loss: {config['loss']['type']} with hierarchy weights {config['loss']['hierarchy_weights']}")
+        logger.info(
+            f"Loss: {config['loss']['type']} with hierarchy weights {config['loss']['hierarchy_weights']}"
+        )
 
         # ====================================================================
         # Build Optimizer

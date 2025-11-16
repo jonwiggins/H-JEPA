@@ -7,15 +7,16 @@ self-supervised learning models.
 """
 
 import warnings
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, confusion_matrix, top_k_accuracy_score
 from sklearn.model_selection import KFold
-from torch.utils.data import DataLoader, SubsetRandomSampler
+from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 from tqdm import tqdm
 
 
@@ -58,7 +59,7 @@ class LinearProbe(nn.Module):
 
         self._init_weights()
 
-    def _init_weights(self):
+    def _init_weights(self) -> None:
         """Initialize weights."""
         nn.init.normal_(self.classifier.weight, std=0.01)
         nn.init.constant_(self.classifier.bias, 0)
@@ -96,6 +97,8 @@ class LinearProbe(nn.Module):
             attention_weights = self.attention(features)  # [B, N, 1]
             attention_weights = F.softmax(attention_weights, dim=1)
             pooled = (features * attention_weights).sum(dim=1)
+        else:
+            pooled = features.mean(dim=1)
 
         return pooled
 
@@ -117,7 +120,7 @@ class LinearProbe(nn.Module):
             pooled = F.normalize(pooled, p=2, dim=-1)
 
         # Classify
-        logits = self.classifier(pooled)
+        logits: torch.Tensor = self.classifier(pooled)
 
         return logits
 
@@ -165,8 +168,8 @@ class LinearProbeEvaluator:
 
     @torch.no_grad()
     def extract_features(
-        self, dataloader: DataLoader, desc: str = "Extracting features"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, dataloader: DataLoader[Any], desc: str = "Extracting features"
+    ) -> Tuple[npt.NDArray[Any], npt.NDArray[Any]]:
         """
         Extract features from dataset.
 
@@ -184,7 +187,7 @@ class LinearProbeEvaluator:
             images = images.to(self.device)
 
             # Extract features at specified hierarchy level
-            features = self.model.extract_features(
+            features: torch.Tensor = self.model.extract_features(  # type: ignore[operator]
                 images,
                 level=self.hierarchy_level,
                 use_target_encoder=True,
@@ -193,15 +196,15 @@ class LinearProbeEvaluator:
             all_features.append(features.cpu().numpy())
             all_labels.append(labels.cpu().numpy())
 
-        features = np.concatenate(all_features, axis=0)
-        labels = np.concatenate(all_labels, axis=0)
+        features_np: npt.NDArray[Any] = np.concatenate(all_features, axis=0)
+        labels_np: npt.NDArray[Any] = np.concatenate(all_labels, axis=0)
 
-        return features, labels
+        return features_np, labels_np
 
     def train_probe(
         self,
-        train_loader: DataLoader,
-        val_loader: Optional[DataLoader] = None,
+        train_loader: DataLoader[Any],
+        val_loader: Optional[DataLoader[Any]] = None,
         epochs: int = 100,
         lr: float = 0.1,
         weight_decay: float = 0.0,
@@ -234,17 +237,18 @@ class LinearProbeEvaluator:
         )
 
         # Setup scheduler
+        scheduler: Optional[
+            Union[torch.optim.lr_scheduler.CosineAnnealingLR, torch.optim.lr_scheduler.StepLR]
+        ] = None
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
         elif scheduler_type == "step":
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=epochs // 3, gamma=0.1)
-        else:
-            scheduler = None
 
         criterion = nn.CrossEntropyLoss()
 
         # Training history
-        history = {
+        history: Dict[str, List[float]] = {
             "train_loss": [],
             "train_acc": [],
             "val_loss": [],
@@ -258,14 +262,16 @@ class LinearProbeEvaluator:
             train_correct = 0
             train_total = 0
 
-            pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}") if verbose else train_loader
+            pbar: Union[tqdm[Any], DataLoader[Any]] = (
+                tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}") if verbose else train_loader
+            )
 
             for images, labels in pbar:
                 images, labels = images.to(self.device), labels.to(self.device)
 
                 # Extract frozen features
                 with torch.no_grad():
-                    features = self.model.extract_features(
+                    features: torch.Tensor = self.model.extract_features(  # type: ignore[operator]
                         images,
                         level=self.hierarchy_level,
                         use_target_encoder=True,
@@ -286,7 +292,7 @@ class LinearProbeEvaluator:
                 train_total += labels.size(0)
                 train_correct += predicted.eq(labels).sum().item()
 
-                if verbose:
+                if verbose and isinstance(pbar, tqdm):
                     pbar.set_postfix(
                         {
                             "loss": train_loss / (pbar.n + 1),
@@ -328,11 +334,11 @@ class LinearProbeEvaluator:
     @torch.no_grad()
     def evaluate(
         self,
-        dataloader: DataLoader,
+        dataloader: DataLoader[Any],
         compute_confusion: bool = False,
         top_k: int = 5,
         verbose: bool = True,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """
         Evaluate linear probe.
 
@@ -360,7 +366,7 @@ class LinearProbeEvaluator:
             images, labels = images.to(self.device), labels.to(self.device)
 
             # Extract frozen features
-            features = self.model.extract_features(
+            features: torch.Tensor = self.model.extract_features(  # type: ignore[operator]
                 images,
                 level=self.hierarchy_level,
                 use_target_encoder=True,
@@ -395,7 +401,7 @@ class LinearProbeEvaluator:
 
         avg_loss = total_loss / len(dataloader)
 
-        metrics = {
+        metrics: Dict[str, Any] = {
             "loss": avg_loss,
             "accuracy": accuracy,
             f"top_{top_k}_accuracy": top_k_acc,
@@ -410,14 +416,14 @@ class LinearProbeEvaluator:
 
     def k_fold_cross_validation(
         self,
-        dataset: torch.utils.data.Dataset,
+        dataset: Dataset[Any],
         k_folds: int = 5,
         epochs: int = 100,
         batch_size: int = 256,
         lr: float = 0.1,
         num_workers: int = 4,
         verbose: bool = True,
-    ) -> Dict[str, List[float]]:
+    ) -> Dict[str, Any]:
         """
         Perform k-fold cross-validation.
 
@@ -435,7 +441,7 @@ class LinearProbeEvaluator:
         """
         kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
-        results = {
+        results: Dict[str, Any] = {
             "fold_accuracies": [],
             "fold_losses": [],
             "mean_accuracy": 0.0,
@@ -507,15 +513,15 @@ class LinearProbeEvaluator:
 
 def linear_probe_eval(
     model: nn.Module,
-    train_loader: DataLoader,
-    val_loader: DataLoader,
+    train_loader: DataLoader[Any],
+    val_loader: DataLoader[Any],
     num_classes: int,
     hierarchy_level: int = 0,
     epochs: int = 100,
     lr: float = 0.1,
     device: str = "cuda",
     verbose: bool = True,
-) -> Dict[str, float]:
+) -> Dict[str, Any]:
     """
     Convenience function for linear probe evaluation.
 
@@ -534,7 +540,7 @@ def linear_probe_eval(
         Evaluation metrics
     """
     # Get input dimension from model
-    input_dim = model.embed_dim
+    input_dim: int = int(model.embed_dim)  # type: ignore[arg-type]
 
     # Create evaluator
     evaluator = LinearProbeEvaluator(

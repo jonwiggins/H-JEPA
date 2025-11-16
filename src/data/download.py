@@ -12,15 +12,29 @@ import shutil
 import sys
 import warnings
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, cast
 from urllib.error import URLError
 
 import torch
 from torchvision import datasets
 from tqdm import tqdm
 
+
+class DatasetInfo(TypedDict):
+    """Type definition for dataset information."""
+
+    name: str
+    size_gb: float
+    num_images: int
+    num_classes: int
+    resolution: str
+    auto_download: bool
+    description: str
+    url: str
+
+
 # Dataset information and requirements
-DATASET_INFO = {
+DATASET_INFO: Dict[str, DatasetInfo] = {
     "cifar10": {
         "name": "CIFAR-10",
         "size_gb": 0.17,
@@ -304,7 +318,7 @@ def download_dataset(
         return False
 
 
-def print_manual_download_instructions(dataset_name: str):
+def print_manual_download_instructions(dataset_name: str) -> None:
     """
     Print instructions for manually downloading a dataset.
 
@@ -389,7 +403,7 @@ They will be automatically selected from the full ImageNet if you download it.
     print("=" * 70 + "\n")
 
 
-def print_dataset_summary():
+def print_dataset_summary() -> None:
     """Print a summary of all supported datasets."""
     print("\n" + "=" * 70)
     print("SUPPORTED DATASETS FOR H-JEPA")
@@ -414,7 +428,7 @@ def print_dataset_summary():
     print("\nUse download_data.sh script or this module to download datasets.\n")
 
 
-def main():
+def main() -> None:
     """Main function for command-line usage."""
     import argparse
 

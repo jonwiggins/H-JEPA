@@ -21,10 +21,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.trainers import HJEPATrainer, create_optimizer
 from src.utils import setup_logging
 
-
 # ============================================================================
 # Example 1: Basic Training Setup
 # ============================================================================
+
 
 def basic_training_example():
     """
@@ -35,46 +35,46 @@ def basic_training_example():
 
     # Configuration (normally loaded from YAML)
     config = {
-        'model': {
-            'encoder_type': 'vit_base_patch16_224',
-            'embed_dim': 768,
-            'num_hierarchies': 3,
-            'ema': {
-                'momentum': 0.996,
-                'momentum_end': 1.0,
-                'momentum_warmup_epochs': 30,
+        "model": {
+            "encoder_type": "vit_base_patch16_224",
+            "embed_dim": 768,
+            "num_hierarchies": 3,
+            "ema": {
+                "momentum": 0.996,
+                "momentum_end": 1.0,
+                "momentum_warmup_epochs": 30,
             },
         },
-        'training': {
-            'epochs': 100,
-            'warmup_epochs': 10,
-            'lr': 1.5e-4,
-            'min_lr': 1e-6,
-            'weight_decay': 0.05,
-            'optimizer': 'adamw',
-            'betas': [0.9, 0.95],
-            'lr_schedule': 'cosine',
-            'clip_grad': 3.0,
-            'use_amp': True,
-            'accumulation_steps': 1,
+        "training": {
+            "epochs": 100,
+            "warmup_epochs": 10,
+            "lr": 1.5e-4,
+            "min_lr": 1e-6,
+            "weight_decay": 0.05,
+            "optimizer": "adamw",
+            "betas": [0.9, 0.95],
+            "lr_schedule": "cosine",
+            "clip_grad": 3.0,
+            "use_amp": True,
+            "accumulation_steps": 1,
         },
-        'checkpoint': {
-            'checkpoint_dir': 'results/checkpoints',
-            'save_frequency': 10,
-            'keep_best_n': 3,
+        "checkpoint": {
+            "checkpoint_dir": "results/checkpoints",
+            "save_frequency": 10,
+            "keep_best_n": 3,
         },
-        'logging': {
-            'experiment_name': 'hjepa_example',
-            'log_dir': 'results/logs',
-            'log_frequency': 100,
-            'wandb': {
-                'enabled': False,  # Set to True to use W&B
-                'project': 'h-jepa',
-                'entity': None,
-                'tags': ['example'],
+        "logging": {
+            "experiment_name": "hjepa_example",
+            "log_dir": "results/logs",
+            "log_frequency": 100,
+            "wandb": {
+                "enabled": False,  # Set to True to use W&B
+                "project": "h-jepa",
+                "entity": None,
+                "tags": ["example"],
             },
-            'tensorboard': {
-                'enabled': True,
+            "tensorboard": {
+                "enabled": True,
             },
         },
     }
@@ -117,7 +117,7 @@ def basic_training_example():
     class DummyLoss(nn.Module):
         def forward(self, predictions, targets):
             loss = F.smooth_l1_loss(predictions, targets)
-            return loss, {'loss': loss.item(), 'mse': loss.item()}
+            return loss, {"loss": loss.item(), "mse": loss.item()}
 
     loss_fn = DummyLoss()
 
@@ -136,7 +136,7 @@ def basic_training_example():
         loss_fn=loss_fn,
         masking_fn=dummy_masking_fn,
         config=config,
-        device='cuda' if torch.cuda.is_available() else 'cpu',
+        device="cuda" if torch.cuda.is_available() else "cpu",
     )
 
     # Start training
@@ -150,6 +150,7 @@ def basic_training_example():
 # ============================================================================
 # Example 2: Resume from Checkpoint
 # ============================================================================
+
 
 def resume_training_example():
     """
@@ -172,8 +173,8 @@ def resume_training_example():
         loss_fn=loss_fn,
         masking_fn=masking_fn,
         config=config,
-        device='cuda' if torch.cuda.is_available() else 'cpu',
-        resume_checkpoint='results/checkpoints/checkpoint_latest.pth',  # Resume from here
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        resume_checkpoint="results/checkpoints/checkpoint_latest.pth",  # Resume from here
     )
 
     # Training will automatically resume from the checkpoint
@@ -184,11 +185,12 @@ def resume_training_example():
 # Example 3: Advanced Training with Custom Schedulers
 # ============================================================================
 
+
 def advanced_training_example():
     """
     Example with hierarchical learning rates and custom EMA schedule.
     """
-    from src.utils import HierarchicalScheduler, CosineScheduler
+    from src.utils import CosineScheduler, HierarchicalScheduler
 
     # Create separate schedulers for different hierarchy levels
     schedulers = [
@@ -228,6 +230,7 @@ def advanced_training_example():
 # Example 4: Monitoring and Logging
 # ============================================================================
 
+
 def monitoring_example():
     """
     Example showing monitoring features.
@@ -236,9 +239,9 @@ def monitoring_example():
 
     # Create metrics logger
     logger = MetricsLogger(
-        experiment_name='monitoring_example',
-        log_dir='results/logs',
-        config={'key': 'value'},
+        experiment_name="monitoring_example",
+        log_dir="results/logs",
+        config={"key": "value"},
         use_wandb=False,
         use_tensorboard=True,
     )
@@ -246,18 +249,18 @@ def monitoring_example():
     # Log metrics
     for step in range(100):
         metrics = {
-            'loss': 0.5 * (1.0 - step / 100),
-            'accuracy': 0.5 + 0.5 * (step / 100),
+            "loss": 0.5 * (1.0 - step / 100),
+            "accuracy": 0.5 + 0.5 * (step / 100),
         }
-        logger.log_metrics(metrics, step=step, prefix='train/')
+        logger.log_metrics(metrics, step=step, prefix="train/")
 
     # Log images
     dummy_image = torch.randn(3, 224, 224)
-    logger.log_image('example_image', dummy_image, step=0)
+    logger.log_image("example_image", dummy_image, step=0)
 
     # Log histograms
     dummy_gradients = torch.randn(1000)
-    logger.log_histogram('gradients/layer1', dummy_gradients, step=0)
+    logger.log_histogram("gradients/layer1", dummy_gradients, step=0)
 
     # System metrics
     logger.log_system_metrics(step=0)
@@ -272,20 +275,22 @@ def monitoring_example():
 # Example 5: Checkpoint Management
 # ============================================================================
 
+
 def checkpoint_management_example():
     """
     Example showing checkpoint management features.
     """
-    from src.utils import CheckpointManager
     import torch.nn as nn
+
+    from src.utils import CheckpointManager
 
     # Create checkpoint manager
     ckpt_manager = CheckpointManager(
-        checkpoint_dir='results/checkpoints_example',
+        checkpoint_dir="results/checkpoints_example",
         keep_best_n=3,
         save_frequency=5,
-        metric_name='val_loss',
-        mode='min',
+        metric_name="val_loss",
+        mode="min",
     )
 
     # Create dummy model and optimizer
@@ -305,7 +310,7 @@ def checkpoint_management_example():
                 model=model,
                 optimizer=optimizer,
                 scheduler=None,
-                metrics={'val_loss': val_loss},
+                metrics={"val_loss": val_loss},
                 is_best=is_best,
             )
 
@@ -323,7 +328,7 @@ def checkpoint_management_example():
     print("Checkpoint management example completed!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("H-JEPA Training Infrastructure Examples")
     print("=" * 80)
     print()

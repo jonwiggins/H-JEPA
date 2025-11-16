@@ -41,16 +41,8 @@ Example:
     ... )
 """
 
-from .combined import (
-    CombinedLoss,
-    HierarchicalCombinedLoss,
-    create_loss_from_config,
-)
-from .contrastive import (
-    ContrastiveJEPALoss,
-    NTXentLoss,
-    create_cjepa_loss_from_config,
-)
+from .combined import CombinedLoss, HierarchicalCombinedLoss, create_loss_from_config
+from .contrastive import ContrastiveJEPALoss, NTXentLoss, create_cjepa_loss_from_config
 from .hjepa_loss import HJEPALoss
 from .sigreg import EppsPulleyTest, HybridVICRegSIGRegLoss, SIGRegLoss
 from .vicreg import AdaptiveVICRegLoss, VICRegLoss

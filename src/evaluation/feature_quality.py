@@ -6,9 +6,10 @@ representations, including rank analysis, variance measures, and isotropy.
 """
 
 import warnings
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -54,12 +55,12 @@ class FeatureQualityAnalyzer:
     @torch.no_grad()
     def extract_features(
         self,
-        dataloader: DataLoader,
+        dataloader: DataLoader[Any],
         max_samples: Optional[int] = None,
         pool: bool = True,
         normalize: bool = False,
         desc: str = "Extracting features",
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
         """
         Extract features from dataset.
 
@@ -84,7 +85,7 @@ class FeatureQualityAnalyzer:
             images = images.to(self.device)
 
             # Extract features at specified hierarchy level
-            features = self.model.extract_features(
+            features = self.model.extract_features(  # type: ignore[operator]
                 images,
                 level=self.hierarchy_level,
                 use_target_encoder=True,
@@ -116,7 +117,7 @@ class FeatureQualityAnalyzer:
 
         return features, labels
 
-    def compute_effective_rank(self, features: np.ndarray) -> float:
+    def compute_effective_rank(self, features: npt.NDArray[np.float64]) -> float:
         """
         Compute effective rank of feature matrix using SVD.
 
@@ -147,10 +148,10 @@ class FeatureQualityAnalyzer:
         # Effective rank is exp(entropy)
         effective_rank = np.exp(entropy)
 
-        return effective_rank
+        return float(effective_rank)
 
     def compute_rank_analysis(
-        self, features: np.ndarray, variance_threshold: float = 0.99
+        self, features: npt.NDArray[np.float64], variance_threshold: float = 0.99
     ) -> Dict[str, float]:
         """
         Compute comprehensive rank analysis.
@@ -199,7 +200,7 @@ class FeatureQualityAnalyzer:
 
         return metrics
 
-    def compute_feature_statistics(self, features: np.ndarray) -> Dict[str, float]:
+    def compute_feature_statistics(self, features: npt.NDArray[np.float64]) -> Dict[str, float]:
         """
         Compute feature statistics (variance, covariance, etc.).
 
@@ -236,7 +237,7 @@ class FeatureQualityAnalyzer:
 
         return metrics
 
-    def compute_isotropy(self, features: np.ndarray) -> Dict[str, float]:
+    def compute_isotropy(self, features: npt.NDArray[np.float64]) -> Dict[str, float]:
         """
         Compute isotropy metrics.
 
@@ -281,7 +282,7 @@ class FeatureQualityAnalyzer:
 
     def detect_collapse(
         self,
-        features: np.ndarray,
+        features: npt.NDArray[np.float64],
         threshold_rank_ratio: float = 0.1,
         threshold_variance: float = 0.01,
     ) -> Dict[str, bool]:
@@ -319,9 +320,9 @@ class FeatureQualityAnalyzer:
 
     def compute_all_metrics(
         self,
-        dataloader: DataLoader,
+        dataloader: DataLoader[Any],
         max_samples: int = 10000,
-    ) -> Dict[str, Dict]:
+    ) -> Dict[str, Any]:
         """
         Compute all feature quality metrics.
 
@@ -362,12 +363,12 @@ class FeatureQualityAnalyzer:
 
     def visualize_features_tsne(
         self,
-        features: np.ndarray,
-        labels: np.ndarray,
+        features: npt.NDArray[np.float64],
+        labels: npt.NDArray[np.int64],
         n_components: int = 2,
         perplexity: float = 30.0,
         random_state: int = 42,
-    ) -> np.ndarray:
+    ) -> npt.NDArray[np.float64]:
         """
         Visualize features using t-SNE.
 
@@ -390,19 +391,20 @@ class FeatureQualityAnalyzer:
             verbose=1,
         )
 
-        embeddings = tsne.fit_transform(features)
+        embeddings_raw = tsne.fit_transform(features)
+        embeddings: npt.NDArray[np.float64] = embeddings_raw
 
         return embeddings
 
     def visualize_features_umap(
         self,
-        features: np.ndarray,
-        labels: np.ndarray,
+        features: npt.NDArray[np.float64],
+        labels: npt.NDArray[np.int64],
         n_components: int = 2,
         n_neighbors: int = 15,
         min_dist: float = 0.1,
         random_state: int = 42,
-    ) -> np.ndarray:
+    ) -> npt.NDArray[np.float64]:
         """
         Visualize features using UMAP.
 
@@ -430,15 +432,16 @@ class FeatureQualityAnalyzer:
             verbose=True,
         )
 
-        embeddings = reducer.fit_transform(features)
+        embeddings_raw = reducer.fit_transform(features)
+        embeddings: npt.NDArray[np.float64] = embeddings_raw
 
         return embeddings
 
     def compute_pca(
         self,
-        features: np.ndarray,
+        features: npt.NDArray[np.float64],
         n_components: int = 50,
-    ) -> Tuple[np.ndarray, PCA]:
+    ) -> Tuple[npt.NDArray[np.float64], PCA]:
         """
         Compute PCA of features.
 
@@ -462,11 +465,11 @@ class FeatureQualityAnalyzer:
 
 def analyze_feature_quality(
     model: nn.Module,
-    dataloader: DataLoader,
+    dataloader: DataLoader[Any],
     hierarchy_level: int = 0,
     max_samples: int = 10000,
     device: str = "cuda",
-) -> Dict[str, Dict]:
+) -> Dict[str, Any]:
     """
     Convenience function for feature quality analysis.
 
@@ -494,7 +497,7 @@ def analyze_feature_quality(
     return results
 
 
-def print_quality_report(metrics: Dict[str, Dict], verbose: bool = True):
+def print_quality_report(metrics: Dict[str, Any], verbose: bool = True) -> None:
     """
     Print a formatted report of feature quality metrics.
 
@@ -556,11 +559,11 @@ def print_quality_report(metrics: Dict[str, Dict], verbose: bool = True):
 
 def compare_hierarchy_levels(
     model: nn.Module,
-    dataloader: DataLoader,
+    dataloader: DataLoader[Any],
     num_levels: Optional[int] = None,
     max_samples: int = 10000,
     device: str = "cuda",
-) -> Dict[int, Dict]:
+) -> Dict[int, Any]:
     """
     Compare feature quality across hierarchy levels.
 
@@ -575,9 +578,14 @@ def compare_hierarchy_levels(
         Dictionary mapping level to metrics
     """
     if num_levels is None:
-        num_levels = model.num_hierarchies
+        num_levels_attr = getattr(model, "num_hierarchies", None)
+        if num_levels_attr is None:
+            raise ValueError(
+                "Model does not have num_hierarchies attribute and num_levels not provided"
+            )
+        num_levels = int(num_levels_attr)
 
-    results = {}
+    results: Dict[int, Any] = {}
 
     for level in range(num_levels):
         print(f"\n{'='*60}")

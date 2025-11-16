@@ -5,7 +5,7 @@ This module implements the main H-JEPA model that combines context encoder,
 target encoder, and predictor for hierarchical self-supervised learning.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -78,7 +78,7 @@ class HJEPA(nn.Module):
         use_layerscale: bool = False,
         layerscale_init: float = 1e-5,
         use_flash_attention: bool = True,
-    ):
+    ) -> None:
         super().__init__()
 
         if not 2 <= num_hierarchies <= 4:
@@ -154,7 +154,7 @@ class HJEPA(nn.Module):
 
         self.apply(self._init_weights)
 
-    def _init_weights(self, m):
+    def _init_weights(self, m: nn.Module) -> None:
         """Initialize weights."""
         if isinstance(m, nn.Linear):
             nn.init.trunc_normal_(m.weight, std=0.02)
@@ -182,7 +182,7 @@ class HJEPA(nn.Module):
             kernel_size = 2**level
             return nn.AvgPool1d(kernel_size=kernel_size, stride=kernel_size)
 
-    def _build_fpn(self):
+    def _build_fpn(self) -> None:
         """
         Build Feature Pyramid Network components.
 
@@ -297,7 +297,7 @@ class HJEPA(nn.Module):
             # Upsample top-down features to match current level resolution
             # For 1D sequence, we use interpolation
             current_n = lateral_features[level].shape[1]
-            top_down_n = top_down.shape[1]
+            top_down_n = top_down.shape[1]  # type: ignore[attr-defined]
 
             if top_down_n != current_n:
                 # Rearrange for interpolation: [B, N, D] -> [B, D, N]
@@ -325,7 +325,7 @@ class HJEPA(nn.Module):
                 # Apply fusion convolution to reduce dimension
                 fpn_features[level] = self.fpn_fusion_convs[level](fused)
 
-        return fpn_features
+        return fpn_features  # type: ignore[return-value]
 
     def forward(
         self,
@@ -367,7 +367,7 @@ class HJEPA(nn.Module):
         max_masked = num_masked_per_sample.max().item()
 
         # Create padded mask indices tensor [B, max_masked]
-        mask_indices = torch.zeros((B, max_masked), dtype=torch.long, device=mask.device)
+        mask_indices = torch.zeros((B, max_masked), dtype=torch.long, device=mask.device)  # type: ignore[arg-type]
 
         # Fill in the actual mask indices for each sample
         for i in range(B):
@@ -494,7 +494,7 @@ class HJEPA(nn.Module):
                 features = self.hierarchy_pooling[level](features)
                 features = rearrange(features, "b d n -> b n d")
 
-        return features
+        return features  # type: ignore[no-any-return]
 
     def update_target_encoder(self, current_step: int) -> float:
         """
@@ -588,7 +588,7 @@ def create_hjepa(
     )
 
 
-def create_hjepa_from_config(config: Dict) -> HJEPA:
+def create_hjepa_from_config(config: Dict[str, Any]) -> HJEPA:
     """
     Create H-JEPA model from configuration dictionary.
 

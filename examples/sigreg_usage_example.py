@@ -16,10 +16,11 @@ Reference: LeJEPA paper (https://arxiv.org/abs/2511.08544)
 
 import torch
 import torch.nn as nn
+
 from src.losses import (
-    SIGRegLoss,
-    HybridVICRegSIGRegLoss,
     EppsPulleyTest,
+    HybridVICRegSIGRegLoss,
+    SIGRegLoss,
     VICRegLoss,
     create_loss_from_config,
 )
@@ -33,10 +34,10 @@ def example_1_basic_sigreg():
 
     # Create SIGReg loss with default parameters
     loss_fn = SIGRegLoss(
-        num_slices=1024,              # Number of random projections
-        num_test_points=17,            # Reference Gaussian points
-        invariance_weight=25.0,        # MSE weight
-        sigreg_weight=25.0,            # SIGReg regularization weight
+        num_slices=1024,  # Number of random projections
+        num_test_points=17,  # Reference Gaussian points
+        invariance_weight=25.0,  # MSE weight
+        sigreg_weight=25.0,  # SIGReg regularization weight
     )
 
     # Simulate two views of the same data (different augmentations)
@@ -134,8 +135,10 @@ def example_3_hyperparameter_tuning():
         loss_dict = loss_fn(view_a, view_b)
         elapsed = time.time() - start
 
-        print(f"{name:15s}: Loss={loss_dict['loss'].item():.4f}, "
-              f"Time={elapsed*1000:.2f}ms, Slices={params['num_slices']}")
+        print(
+            f"{name:15s}: Loss={loss_dict['loss'].item():.4f}, "
+            f"Time={elapsed*1000:.2f}ms, Slices={params['num_slices']}"
+        )
 
     print()
 
@@ -229,18 +232,18 @@ def example_5_vicreg_vs_sigreg():
     print("\n" + "=" * 70)
     print(f"{'Metric':<25} {'VICReg':<20} {'SIGReg':<20}")
     print("=" * 70)
-    print(f"{'Total Loss':<25} {vicreg_dict['loss'].item():<20.6f} "
-          f"{sigreg_dict['loss'].item():<20.6f}")
-    print(f"{'Invariance Loss':<25} {vicreg_dict['invariance_loss'].item():<20.6f} "
-          f"{sigreg_dict['invariance_loss'].item():<20.6f}")
-    print(f"{'Variance Loss':<25} {vicreg_dict['variance_loss'].item():<20.6f} "
-          f"{'N/A':<20}")
-    print(f"{'Covariance Loss':<25} {vicreg_dict['covariance_loss'].item():<20.6f} "
-          f"{'N/A':<20}")
-    print(f"{'SIGReg Loss':<25} {'N/A':<20} "
-          f"{sigreg_dict['sigreg_loss'].item():<20.6f}")
-    print(f"{'Computation Time':<25} {vicreg_time*1000:<20.2f} "
-          f"{sigreg_time*1000:<20.2f}")
+    print(
+        f"{'Total Loss':<25} {vicreg_dict['loss'].item():<20.6f} "
+        f"{sigreg_dict['loss'].item():<20.6f}"
+    )
+    print(
+        f"{'Invariance Loss':<25} {vicreg_dict['invariance_loss'].item():<20.6f} "
+        f"{sigreg_dict['invariance_loss'].item():<20.6f}"
+    )
+    print(f"{'Variance Loss':<25} {vicreg_dict['variance_loss'].item():<20.6f} " f"{'N/A':<20}")
+    print(f"{'Covariance Loss':<25} {vicreg_dict['covariance_loss'].item():<20.6f} " f"{'N/A':<20}")
+    print(f"{'SIGReg Loss':<25} {'N/A':<20} " f"{sigreg_dict['sigreg_loss'].item():<20.6f}")
+    print(f"{'Computation Time':<25} {vicreg_time*1000:<20.2f} " f"{sigreg_time*1000:<20.2f}")
     print("=" * 70)
 
     print("\nKey Differences:")
@@ -260,8 +263,8 @@ def example_6_hybrid_transition():
 
     # Create hybrid loss
     loss_fn = HybridVICRegSIGRegLoss(
-        vicreg_weight=1.0,      # Start with full VICReg
-        sigreg_weight=0.0,      # Start with no SIGReg
+        vicreg_weight=1.0,  # Start with full VICReg
+        sigreg_weight=0.0,  # Start with no SIGReg
         invariance_weight=25.0,
         num_slices=1024,
     )
@@ -289,10 +292,12 @@ def example_6_hybrid_transition():
 
         loss_dict = loss_fn(view_a, view_b)
 
-        print(f"Epoch {epoch:3d} ({desc:30s}): "
-              f"Total={loss_dict['loss'].item():.4f}, "
-              f"VIC={loss_dict['vicreg_loss'].item():.4f}, "
-              f"SIG={loss_dict['sigreg_loss'].item():.4f}")
+        print(
+            f"Epoch {epoch:3d} ({desc:30s}): "
+            f"Total={loss_dict['loss'].item():.4f}, "
+            f"VIC={loss_dict['vicreg_loss'].item():.4f}, "
+            f"SIG={loss_dict['sigreg_loss'].item():.4f}"
+        )
 
     print("\nUse Cases for Hybrid Loss:")
     print("  1. Gradual transition during training")
@@ -310,28 +315,28 @@ def example_7_config_based():
     # Define different configurations
     configs = {
         "Small Model": {
-            'type': 'sigreg',
-            'sigreg_num_slices': 512,
-            'sigreg_weight': 25.0,
-            'sigreg_invariance_weight': 25.0,
+            "type": "sigreg",
+            "sigreg_num_slices": 512,
+            "sigreg_weight": 25.0,
+            "sigreg_invariance_weight": 25.0,
         },
         "Standard Model": {
-            'type': 'sigreg',
-            'sigreg_num_slices': 1024,
-            'sigreg_weight': 25.0,
-            'sigreg_invariance_weight': 25.0,
+            "type": "sigreg",
+            "sigreg_num_slices": 1024,
+            "sigreg_weight": 25.0,
+            "sigreg_invariance_weight": 25.0,
         },
         "Large Model": {
-            'type': 'sigreg',
-            'sigreg_num_slices': 2048,
-            'sigreg_weight': 30.0,
-            'sigreg_invariance_weight': 25.0,
-            'sigreg_fixed_slices': True,
+            "type": "sigreg",
+            "sigreg_num_slices": 2048,
+            "sigreg_weight": 30.0,
+            "sigreg_invariance_weight": 25.0,
+            "sigreg_fixed_slices": True,
         },
         "Hybrid": {
-            'type': 'hybrid_vicreg_sigreg',  # Not yet in factory, but shown for reference
-            'vicreg_weight': 0.5,
-            'sigreg_weight': 0.5,
+            "type": "hybrid_vicreg_sigreg",  # Not yet in factory, but shown for reference
+            "vicreg_weight": 0.5,
+            "sigreg_weight": 0.5,
         },
     }
 
@@ -339,7 +344,7 @@ def example_7_config_based():
     print("-" * 70)
 
     for name, config in configs.items():
-        if config['type'] == 'hybrid_vicreg_sigreg':
+        if config["type"] == "hybrid_vicreg_sigreg":
             print(f"{name:15s}: Hybrid not in factory (use HybridVICRegSIGRegLoss directly)")
             continue
 
@@ -392,7 +397,7 @@ def example_8_training_integration():
 
         # Compute loss
         loss_dict = loss_fn(z_a, z_b)
-        total_loss = loss_dict['loss']
+        total_loss = loss_dict["loss"]
 
         # Backward
         optimizer.zero_grad()
@@ -400,9 +405,11 @@ def example_8_training_integration():
         optimizer.step()
 
         # Log
-        print(f"Step {step:2d}: Loss={total_loss.item():.4f}, "
-              f"Inv={loss_dict['invariance_loss'].item():.4f}, "
-              f"SIG={loss_dict['sigreg_loss'].item():.4f}")
+        print(
+            f"Step {step:2d}: Loss={total_loss.item():.4f}, "
+            f"Inv={loss_dict['invariance_loss'].item():.4f}, "
+            f"SIG={loss_dict['sigreg_loss'].item():.4f}"
+        )
 
     print("\nTraining tips:")
     print("  - Monitor both invariance and SIGReg terms")
@@ -456,21 +463,26 @@ def example_10_troubleshooting():
     print("=" * 70)
 
     issues = [
-        ("SIGReg loss increasing",
-         "Embeddings diverging from Gaussian",
-         ["Increase sigreg_weight", "Check normalization", "Reduce learning rate"]),
-
-        ("Out of memory",
-         "Too many slices or large batch",
-         ["Reduce num_slices to 512", "Use fixed_slices=True", "Reduce batch size"]),
-
-        ("Training unstable",
-         "Imbalanced loss terms",
-         ["Balance inv/sig weights 1:1", "Use gradient clipping", "Check for NaN"]),
-
-        ("Slower than VICReg",
-         "Large batch, small embedding dim",
-         ["Reduce num_slices", "Use fixed_slices=True", "Consider VICReg for D<512"]),
+        (
+            "SIGReg loss increasing",
+            "Embeddings diverging from Gaussian",
+            ["Increase sigreg_weight", "Check normalization", "Reduce learning rate"],
+        ),
+        (
+            "Out of memory",
+            "Too many slices or large batch",
+            ["Reduce num_slices to 512", "Use fixed_slices=True", "Reduce batch size"],
+        ),
+        (
+            "Training unstable",
+            "Imbalanced loss terms",
+            ["Balance inv/sig weights 1:1", "Use gradient clipping", "Check for NaN"],
+        ),
+        (
+            "Slower than VICReg",
+            "Large batch, small embedding dim",
+            ["Reduce num_slices", "Use fixed_slices=True", "Consider VICReg for D<512"],
+        ),
     ]
 
     for issue, cause, solutions in issues:
@@ -483,7 +495,7 @@ def example_10_troubleshooting():
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("SIGReg Usage Examples - Sign-based Regularization")
     print("Improved training stability from LeJEPA paper")

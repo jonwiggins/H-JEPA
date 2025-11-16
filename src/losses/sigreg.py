@@ -81,6 +81,7 @@ class EppsPulleyTest(nn.Module):
         # Convert quantiles to Gaussian samples using inverse CDF
         # For standard normal: mean=0, std=1
         reference_points = torch.erfinv(2 * quantiles - 1) * math.sqrt(2)
+        self.reference_points: torch.Tensor
         self.register_buffer("reference_points", reference_points)
 
     def _kernel(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -231,7 +232,7 @@ class SIGRegLoss(nn.Module):
         )
 
         # Pre-allocated fixed random slices if requested
-        self._fixed_random_slices = None
+        self._fixed_random_slices: Optional[torch.Tensor] = None
 
     def _generate_random_slices(
         self,

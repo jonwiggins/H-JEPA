@@ -15,13 +15,14 @@ Features:
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..utils.checkpoint import CheckpointManager
@@ -57,15 +58,15 @@ class HJEPATrainer:
     def __init__(
         self,
         model: nn.Module,
-        train_loader: torch.utils.data.DataLoader,
-        val_loader: Optional[torch.utils.data.DataLoader],
+        train_loader: DataLoader[Any],
+        val_loader: Optional[DataLoader[Any]],
         optimizer: torch.optim.Optimizer,
         loss_fn: nn.Module,
-        masking_fn: Any,
+        masking_fn: Callable[[int, str], Dict[str, Any]],
         config: Dict[str, Any],
         device: str = "cuda",
         resume_checkpoint: Optional[str] = None,
-    ):
+    ) -> None:
         self.model = model
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -89,7 +90,7 @@ class HJEPATrainer:
         self.steps_per_epoch = len(train_loader) // self.accumulation_steps
 
         # Learning rate scheduler
-        self.lr_scheduler = create_lr_scheduler(
+        self.lr_scheduler: Callable[[int], float] = create_lr_scheduler(
             optimizer_type=config["training"]["optimizer"],
             base_lr=config["training"]["lr"],
             min_lr=config["training"]["min_lr"],
@@ -100,7 +101,7 @@ class HJEPATrainer:
         )
 
         # EMA scheduler for target encoder
-        self.ema_scheduler = create_ema_scheduler(
+        self.ema_scheduler: Callable[[int], float] = create_ema_scheduler(
             base_momentum=config["model"]["ema"]["momentum"],
             final_momentum=config["model"]["ema"]["momentum_end"],
             epochs=self.epochs,
@@ -109,7 +110,7 @@ class HJEPATrainer:
         )
 
         # Mixed precision training
-        self.scaler = GradScaler() if self.use_amp else None
+        self.scaler: Optional[GradScaler] = GradScaler() if self.use_amp else None
 
         # Checkpoint manager
         self.checkpoint_manager = CheckpointManager(
@@ -159,7 +160,7 @@ class HJEPATrainer:
         logger.info(f"Device: {self.device}")
         logger.info(f"Mixed precision: {self.use_amp}")
 
-    def train(self):
+    def train(self) -> None:
         """
         Main training loop.
 
@@ -245,16 +246,16 @@ class HJEPATrainer:
             loss, loss_dict = self._train_step(batch, epoch, effective_step)
 
             # Backward pass
-            if self.use_amp:
+            if self.use_amp and self.scaler is not None:
                 self.scaler.scale(loss).backward()
             else:
-                loss.backward()
+                loss.backward()  # type: ignore[no-untyped-call]
 
             # Optimizer step (if accumulation is complete)
             if (batch_idx + 1) % self.accumulation_steps == 0:
                 # Gradient clipping
                 if self.clip_grad is not None:
-                    if self.use_amp:
+                    if self.use_amp and self.scaler is not None:
                         self.scaler.unscale_(self.optimizer)
 
                     torch.nn.utils.clip_grad_norm_(
@@ -263,7 +264,7 @@ class HJEPATrainer:
                     )
 
                 # Optimizer step
-                if self.use_amp:
+                if self.use_amp and self.scaler is not None:
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
                 else:
@@ -330,7 +331,7 @@ class HJEPATrainer:
 
         # Return average metrics
         avg_loss = np.mean([m["loss"] for m in [loss_dict]])
-        return {"loss": avg_loss}
+        return {"loss": float(avg_loss)}
 
     def _train_step(
         self,
@@ -358,7 +359,7 @@ class HJEPATrainer:
         images = images.to(self.device)
 
         # Generate masks
-        masks_dict = self.masking_fn(
+        masks_dict = self.masking_fn(  # type: ignore[call-arg]  # type: ignore[call-arg]
             batch_size=images.size(0),
             device=self.device,
         )
@@ -437,17 +438,17 @@ class HJEPATrainer:
             images = images.to(self.device)
 
             # Generate masks
-            context_masks, target_masks = self.masking_fn(
+            context_masks, target_masks = self.masking_fn(  # type: ignore[call-arg]
                 batch_size=images.size(0),
                 device=self.device,
             )
 
             # Forward pass
             with autocast(enabled=self.use_amp):
-                context_embeddings = self.model.encode_context(images, context_masks)
-                target_embeddings = self.model.encode_target(images, target_masks)
+                context_embeddings = self.model.encode_context(images, context_masks)  # type: ignore[operator]
+                target_embeddings = self.model.encode_target(images, target_masks)  # type: ignore[operator]
 
-                predictions = self.model.predict(
+                predictions = self.model.predict(  # type: ignore[operator]
                     context_embeddings,
                     target_masks,
                     context_masks,
@@ -465,7 +466,7 @@ class HJEPATrainer:
         return {"loss": avg_val_loss}
 
     @torch.no_grad()
-    def _update_target_encoder(self, momentum: float):
+    def _update_target_encoder(self, momentum: float) -> None:
         """
         Update target encoder parameters using EMA.
 
@@ -478,8 +479,8 @@ class HJEPATrainer:
             # If model doesn't have separate encoders, skip EMA update
             return
 
-        context_params = self.model.context_encoder.parameters()
-        target_params = self.model.target_encoder.parameters()
+        context_params = self.model.context_encoder.parameters()  # type: ignore[union-attr]
+        target_params = self.model.target_encoder.parameters()  # type: ignore[union-attr]
 
         for target_param, context_param in zip(target_params, context_params):
             target_param.data.mul_(momentum).add_(
@@ -551,14 +552,14 @@ class HJEPATrainer:
 
             metrics["context_rank"] = torch.exp(context_entropy).item()
             metrics["target_rank"] = torch.exp(target_entropy).item()
-        except:
+        except Exception:
             # SVD can fail, just skip rank computation
             pass
 
         return metrics
 
     @torch.no_grad()
-    def _log_epoch_visualizations(self, epoch: int):
+    def _log_epoch_visualizations(self, epoch: int) -> None:
         """
         Log prediction visualizations and embeddings at epoch milestones.
 
@@ -577,7 +578,7 @@ class HJEPATrainer:
             images = images[:4].to(self.device)  # Only use first 4 images
 
             # Generate masks
-            masks_dict = self.masking_fn(
+            masks_dict = self.masking_fn(  # type: ignore[call-arg]
                 batch_size=images.size(0),
                 device=self.device,
             )
@@ -638,7 +639,7 @@ class HJEPATrainer:
         epoch: int,
         val_loss: Optional[float],
         is_best: bool,
-    ):
+    ) -> None:
         """
         Save training checkpoint.
 
@@ -647,7 +648,7 @@ class HJEPATrainer:
             val_loss: Validation loss (if available)
             is_best: Whether this is the best model so far
         """
-        metrics = {"epoch": epoch}
+        metrics: Dict[str, float] = {"epoch": float(epoch)}
         if val_loss is not None:
             metrics["val_loss"] = val_loss
 
@@ -668,7 +669,7 @@ class HJEPATrainer:
             is_best=is_best,
         )
 
-    def _resume_from_checkpoint(self, checkpoint_path: str):
+    def _resume_from_checkpoint(self, checkpoint_path: str) -> None:
         """
         Resume training from checkpoint.
 
@@ -697,7 +698,7 @@ class HJEPATrainer:
         epoch: int,
         train_metrics: Dict[str, float],
         val_metrics: Optional[Dict[str, float]],
-    ):
+    ) -> None:
         """
         Print epoch summary.
 
@@ -727,7 +728,7 @@ class HJEPATrainer:
 def create_optimizer(
     model: nn.Module,
     config: Dict[str, Any],
-) -> torch.optim.Optimizer:
+) -> Union[torch.optim.AdamW, torch.optim.Adam, torch.optim.SGD]:
     """
     Create optimizer from config.
 
@@ -742,12 +743,13 @@ def create_optimizer(
     lr = config["training"]["lr"]
     weight_decay = config["training"].get("weight_decay", 0.0)
 
+    optimizer: Union[torch.optim.AdamW, torch.optim.Adam, torch.optim.SGD]
     if optimizer_type == "adamw":
         betas = config["training"].get("betas", [0.9, 0.95])
         optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=lr,
-            betas=betas,
+            betas=tuple(betas),
             weight_decay=weight_decay,
         )
     elif optimizer_type == "adam":

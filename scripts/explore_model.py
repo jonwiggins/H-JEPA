@@ -6,19 +6,20 @@ This script loads a trained H-JEPA checkpoint and provides various
 visualization and analysis capabilities to understand what the model learned.
 """
 
+import argparse
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from pathlib import Path
-from PIL import Image
 import torchvision.transforms as transforms
-from typing import Optional, Tuple, List
-import argparse
+from PIL import Image
 
-from src.models.hjepa import create_hjepa
 from src.data.datasets import get_dataset
+from src.models.hjepa import create_hjepa
 
 
 def load_model(checkpoint_path: str, device: str = "mps") -> Tuple:
@@ -27,19 +28,19 @@ def load_model(checkpoint_path: str, device: str = "mps") -> Tuple:
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
     # Extract config and model state
-    config = checkpoint.get('config', {})
-    model_state = checkpoint.get('model_state_dict', checkpoint.get('target_encoder', {}))
+    config = checkpoint.get("config", {})
+    model_state = checkpoint.get("model_state_dict", checkpoint.get("target_encoder", {}))
 
     # Create model
     print("Creating H-JEPA model...")
     model = create_hjepa(
-        encoder_type=config.get('model', {}).get('encoder_type', 'vit_base_patch16_224'),
-        img_size=config.get('data', {}).get('image_size', 224),
-        num_hierarchies=config.get('model', {}).get('num_hierarchies', 3),
-        predictor_depth=config.get('model', {}).get('predictor', {}).get('depth', 6),
-        predictor_heads=config.get('model', {}).get('predictor', {}).get('num_heads', 6),
-        use_rope=config.get('model', {}).get('use_rope', True),
-        use_flash_attention=config.get('model', {}).get('use_flash_attention', True),
+        encoder_type=config.get("model", {}).get("encoder_type", "vit_base_patch16_224"),
+        img_size=config.get("data", {}).get("image_size", 224),
+        num_hierarchies=config.get("model", {}).get("num_hierarchies", 3),
+        predictor_depth=config.get("model", {}).get("predictor", {}).get("depth", 6),
+        predictor_heads=config.get("model", {}).get("predictor", {}).get("num_heads", 6),
+        use_rope=config.get("model", {}).get("use_rope", True),
+        use_flash_attention=config.get("model", {}).get("use_flash_attention", True),
     )
 
     # Load weights
@@ -55,10 +56,7 @@ def load_model(checkpoint_path: str, device: str = "mps") -> Tuple:
 
 
 def visualize_attention_maps(
-    model,
-    image: torch.Tensor,
-    device: str = "mps",
-    save_path: Optional[str] = None
+    model, image: torch.Tensor, device: str = "mps", save_path: Optional[str] = None
 ):
     """Visualize attention maps from the encoder"""
     print("\n=== Attention Map Visualization ===")
@@ -73,7 +71,7 @@ def visualize_attention_maps(
         x = context_encoder.vit.patch_embed(image)
 
         # Add position embeddings (if not using RoPE)
-        if hasattr(context_encoder.vit, 'pos_embed'):
+        if hasattr(context_encoder.vit, "pos_embed"):
             x = x + context_encoder.vit.pos_embed
 
         # Store attention maps
@@ -98,9 +96,9 @@ def visualize_attention_maps(
 
     # Visualize attention from different layers and heads
     fig, axes = plt.subplots(3, 4, figsize=(16, 12))
-    fig.suptitle('Multi-Head Attention Maps Across Layers', fontsize=16)
+    fig.suptitle("Multi-Head Attention Maps Across Layers", fontsize=16)
 
-    layers_to_viz = [0, len(attention_maps)//2, -1]  # First, middle, last layer
+    layers_to_viz = [0, len(attention_maps) // 2, -1]  # First, middle, last layer
 
     for row, layer_idx in enumerate(layers_to_viz):
         attn_layer = attention_maps[layer_idx]  # Shape: (1, num_heads, N, N)
@@ -115,15 +113,15 @@ def visualize_attention_maps(
                 attn_grid = attn_weights.reshape(grid_size, grid_size)
 
                 ax = axes[row, col]
-                im = ax.imshow(attn_grid, cmap='viridis', interpolation='nearest')
-                ax.set_title(f'Layer {layer_idx+1}, Head {col+1}')
-                ax.axis('off')
+                im = ax.imshow(attn_grid, cmap="viridis", interpolation="nearest")
+                ax.set_title(f"Layer {layer_idx+1}, Head {col+1}")
+                ax.axis("off")
                 plt.colorbar(im, ax=ax, fraction=0.046)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
         print(f"✓ Saved attention visualization to {save_path}")
     else:
         plt.show()
@@ -132,10 +130,7 @@ def visualize_attention_maps(
 
 
 def visualize_hierarchical_representations(
-    model,
-    image: torch.Tensor,
-    device: str = "mps",
-    save_path: Optional[str] = None
+    model, image: torch.Tensor, device: str = "mps", save_path: Optional[str] = None
 ):
     """Visualize hierarchical representations learned by the model"""
     print("\n=== Hierarchical Representation Visualization ===")
@@ -147,11 +142,11 @@ def visualize_hierarchical_representations(
         embeddings = model.context_encoder.forward_hierarchical(image)
 
     # Visualize embeddings from each hierarchy
-    fig, axes = plt.subplots(1, len(embeddings), figsize=(6*len(embeddings), 5))
+    fig, axes = plt.subplots(1, len(embeddings), figsize=(6 * len(embeddings), 5))
     if len(embeddings) == 1:
         axes = [axes]
 
-    fig.suptitle('Hierarchical Embeddings (PCA Projection)', fontsize=16)
+    fig.suptitle("Hierarchical Embeddings (PCA Projection)", fontsize=16)
 
     for i, emb in enumerate(embeddings):
         # Flatten spatial dimensions
@@ -170,13 +165,13 @@ def visualize_hierarchical_representations(
 
         ax = axes[i]
         ax.imshow(proj_grid)
-        ax.set_title(f'Hierarchy {i+1}\n{H}x{W} spatial resolution')
-        ax.axis('off')
+        ax.set_title(f"Hierarchy {i+1}\n{H}x{W} spatial resolution")
+        ax.axis("off")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
         print(f"✓ Saved hierarchical representations to {save_path}")
     else:
         plt.show()
@@ -189,7 +184,7 @@ def masked_prediction_demo(
     image: torch.Tensor,
     device: str = "mps",
     mask_ratio: float = 0.5,
-    save_path: Optional[str] = None
+    save_path: Optional[str] = None,
 ):
     """Demonstrate masked region prediction"""
     print("\n=== Masked Prediction Demonstration ===")
@@ -202,7 +197,7 @@ def masked_prediction_demo(
     mask_h, mask_w = H // 16, W // 16  # Patch grid size
     mask = torch.rand(mask_h, mask_w, device=device) > mask_ratio
     mask = mask.unsqueeze(0).unsqueeze(0).float()
-    mask = F.interpolate(mask, size=(H, W), mode='nearest')
+    mask = F.interpolate(mask, size=(H, W), mode="nearest")
 
     with torch.no_grad():
         # Get context embeddings (from visible patches)
@@ -216,50 +211,46 @@ def masked_prediction_demo(
         predictions = []
         for ctx, tgt in zip(context_embeddings, target_embeddings):
             # Simple visualization: show prediction error
-            pred_error = F.mse_loss(ctx, tgt, reduction='none').mean(dim=1, keepdim=True)
+            pred_error = F.mse_loss(ctx, tgt, reduction="none").mean(dim=1, keepdim=True)
             predictions.append(pred_error)
 
     # Visualize
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    fig.suptitle(f'Masked Prediction (Mask Ratio: {mask_ratio})', fontsize=16)
+    fig.suptitle(f"Masked Prediction (Mask Ratio: {mask_ratio})", fontsize=16)
 
     # Row 1: Original, Masked, Mask
     axes[0, 0].imshow(image[0].permute(1, 2, 0).cpu().numpy())
-    axes[0, 0].set_title('Original Image')
-    axes[0, 0].axis('off')
+    axes[0, 0].set_title("Original Image")
+    axes[0, 0].axis("off")
 
     axes[0, 1].imshow(masked_image[0].permute(1, 2, 0).cpu().numpy())
-    axes[0, 1].set_title('Masked Image (Context)')
-    axes[0, 1].axis('off')
+    axes[0, 1].set_title("Masked Image (Context)")
+    axes[0, 1].axis("off")
 
-    axes[0, 2].imshow(mask[0, 0].cpu().numpy(), cmap='gray')
-    axes[0, 2].set_title('Mask (White=Visible)')
-    axes[0, 2].axis('off')
+    axes[0, 2].imshow(mask[0, 0].cpu().numpy(), cmap="gray")
+    axes[0, 2].set_title("Mask (White=Visible)")
+    axes[0, 2].axis("off")
 
     # Row 2: Prediction errors at different hierarchies
     for i, pred_err in enumerate(predictions):
         if i < 3:
             err_map = pred_err[0, 0].cpu().numpy()
-            im = axes[1, i].imshow(err_map, cmap='hot', interpolation='bilinear')
-            axes[1, i].set_title(f'Prediction Error\nHierarchy {i+1}')
-            axes[1, i].axis('off')
+            im = axes[1, i].imshow(err_map, cmap="hot", interpolation="bilinear")
+            axes[1, i].set_title(f"Prediction Error\nHierarchy {i+1}")
+            axes[1, i].axis("off")
             plt.colorbar(im, ax=axes[1, i], fraction=0.046)
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
         print(f"✓ Saved masked prediction demo to {save_path}")
     else:
         plt.show()
 
 
 def embedding_similarity_analysis(
-    model,
-    dataset,
-    num_samples: int = 100,
-    device: str = "mps",
-    save_path: Optional[str] = None
+    model, dataset, num_samples: int = 100, device: str = "mps", save_path: Optional[str] = None
 ):
     """Analyze embedding similarities across the dataset"""
     print(f"\n=== Embedding Similarity Analysis ({num_samples} samples) ===")
@@ -295,41 +286,50 @@ def embedding_similarity_analysis(
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # Similarity heatmap
-    sns.heatmap(similarity.numpy(), cmap='viridis', ax=axes[0], square=True)
-    axes[0].set_title('Embedding Similarity Matrix')
-    axes[0].set_xlabel('Sample Index')
-    axes[0].set_ylabel('Sample Index')
+    sns.heatmap(similarity.numpy(), cmap="viridis", ax=axes[0], square=True)
+    axes[0].set_title("Embedding Similarity Matrix")
+    axes[0].set_xlabel("Sample Index")
+    axes[0].set_ylabel("Sample Index")
 
     # t-SNE visualization (simplified - use mean instead of t-SNE for speed)
     # Project to 2D using PCA
     U, S, V = torch.svd(embeddings)
     proj_2d = (embeddings @ V[:, :2]).numpy()
 
-    scatter = axes[1].scatter(proj_2d[:, 0], proj_2d[:, 1], c=labels, cmap='tab10', alpha=0.6)
-    axes[1].set_title('Embedding Space (PCA projection)')
-    axes[1].set_xlabel('PC1')
-    axes[1].set_ylabel('PC2')
-    plt.colorbar(scatter, ax=axes[1], label='Class')
+    scatter = axes[1].scatter(proj_2d[:, 0], proj_2d[:, 1], c=labels, cmap="tab10", alpha=0.6)
+    axes[1].set_title("Embedding Space (PCA projection)")
+    axes[1].set_xlabel("PC1")
+    axes[1].set_ylabel("PC2")
+    plt.colorbar(scatter, ax=axes[1], label="Class")
 
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
         print(f"✓ Saved embedding analysis to {save_path}")
     else:
         plt.show()
 
     print(f"\nEmbedding Statistics:")
     print(f"  Dimension: {embeddings.shape[1]}")
-    print(f"  Mean similarity (same class): {similarity[labels.unsqueeze(0) == labels.unsqueeze(1)].mean():.4f}")
-    print(f"  Mean similarity (diff class): {similarity[labels.unsqueeze(0) != labels.unsqueeze(1)].mean():.4f}")
+    print(
+        f"  Mean similarity (same class): {similarity[labels.unsqueeze(0) == labels.unsqueeze(1)].mean():.4f}"
+    )
+    print(
+        f"  Mean similarity (diff class): {similarity[labels.unsqueeze(0) != labels.unsqueeze(1)].mean():.4f}"
+    )
 
 
 def main():
     parser = argparse.ArgumentParser(description="Explore trained H-JEPA model")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to model checkpoint")
     parser.add_argument("--device", type=str, default="mps", choices=["mps", "cuda", "cpu"])
-    parser.add_argument("--output-dir", type=str, default="results/exploration", help="Output directory for visualizations")
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="results/exploration",
+        help="Output directory for visualizations",
+    )
     parser.add_argument("--sample-idx", type=int, default=0, help="Sample index from test set")
 
     args = parser.parse_args()
@@ -338,9 +338,9 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print("="*80)
+    print("=" * 80)
     print("H-JEPA Model Explorer")
-    print("="*80)
+    print("=" * 80)
 
     # Load model
     model, config = load_model(args.checkpoint, args.device)
@@ -348,14 +348,16 @@ def main():
     # Load dataset
     print("\nLoading dataset...")
     dataset = get_dataset(
-        dataset_name=config.get('data', {}).get('dataset', 'cifar10'),
-        root='./data',
+        dataset_name=config.get("data", {}).get("dataset", "cifar10"),
+        root="./data",
         train=False,
-        transform=transforms.Compose([
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
+        transform=transforms.Compose(
+            [
+                transforms.Resize(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        ),
     )
     print(f"✓ Loaded {len(dataset)} test samples")
 
@@ -364,40 +366,41 @@ def main():
     print(f"\nUsing sample {args.sample_idx} (class: {sample_label})")
 
     # Run all visualizations
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Running Visualizations...")
-    print("="*80)
+    print("=" * 80)
 
     # 1. Attention maps
     visualize_attention_maps(
-        model, sample_image, args.device,
-        save_path=output_dir / "attention_maps.png"
+        model, sample_image, args.device, save_path=output_dir / "attention_maps.png"
     )
 
     # 2. Hierarchical representations
     visualize_hierarchical_representations(
-        model, sample_image, args.device,
-        save_path=output_dir / "hierarchical_representations.png"
+        model, sample_image, args.device, save_path=output_dir / "hierarchical_representations.png"
     )
 
     # 3. Masked prediction demo
     masked_prediction_demo(
-        model, sample_image, args.device,
+        model,
+        sample_image,
+        args.device,
         mask_ratio=0.5,
-        save_path=output_dir / "masked_prediction.png"
+        save_path=output_dir / "masked_prediction.png",
     )
 
     # 4. Embedding similarity analysis
     embedding_similarity_analysis(
-        model, dataset,
+        model,
+        dataset,
         num_samples=100,
         device=args.device,
-        save_path=output_dir / "embedding_similarity.png"
+        save_path=output_dir / "embedding_similarity.png",
     )
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"✓ All visualizations complete! Check {output_dir}/")
-    print("="*80)
+    print("=" * 80)
 
 
 if __name__ == "__main__":

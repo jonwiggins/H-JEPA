@@ -24,29 +24,29 @@ import argparse
 import json
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-import numpy as np
 import yaml
+from torch.utils.data import DataLoader
 
-from src.models.hjepa import create_hjepa
-from src.data import build_dataset, build_dataloader
-from src.evaluation.linear_probe import linear_probe_eval, LinearProbeEvaluator
-from src.evaluation.knn_eval import knn_eval, KNNEvaluator
+from src.data import build_dataloader, build_dataset
 from src.evaluation.feature_quality import (
-    analyze_feature_quality,
-    print_quality_report,
-    compare_hierarchy_levels,
     FeatureQualityAnalyzer,
+    analyze_feature_quality,
+    compare_hierarchy_levels,
+    print_quality_report,
 )
-from src.evaluation.transfer import fine_tune_eval, few_shot_eval
+from src.evaluation.knn_eval import KNNEvaluator, knn_eval
+from src.evaluation.linear_probe import LinearProbeEvaluator, linear_probe_eval
+from src.evaluation.transfer import few_shot_eval, fine_tune_eval
+from src.models.hjepa import create_hjepa
 
 
 def parse_args():
@@ -223,6 +223,7 @@ def set_seed(seed: int):
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     import random
+
     random.seed(seed)
 
 
@@ -310,9 +311,9 @@ def get_num_classes(dataset_name: str) -> int:
 
 def run_linear_probe(model, train_loader, val_loader, num_classes, hierarchy_level, args, device):
     """Run linear probe evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"Linear Probe Evaluation - Hierarchy Level {hierarchy_level}")
-    print("="*80)
+    print("=" * 80)
 
     metrics = linear_probe_eval(
         model=model,
@@ -335,9 +336,9 @@ def run_linear_probe(model, train_loader, val_loader, num_classes, hierarchy_lev
 
 def run_knn(model, train_loader, test_loader, num_classes, hierarchy_level, args, device):
     """Run k-NN evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"k-NN Evaluation - Hierarchy Level {hierarchy_level}")
-    print("="*80)
+    print("=" * 80)
 
     metrics = knn_eval(
         model=model,
@@ -359,9 +360,9 @@ def run_knn(model, train_loader, test_loader, num_classes, hierarchy_level, args
 
 def run_feature_quality(model, dataloader, hierarchy_level, args, device):
     """Run feature quality analysis."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"Feature Quality Analysis - Hierarchy Level {hierarchy_level}")
-    print("="*80)
+    print("=" * 80)
 
     metrics = analyze_feature_quality(
         model=model,
@@ -378,9 +379,9 @@ def run_feature_quality(model, dataloader, hierarchy_level, args, device):
 
 def run_fine_tune(model, train_loader, val_loader, num_classes, hierarchy_level, args, device):
     """Run fine-tuning evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"Fine-tuning Evaluation - Hierarchy Level {hierarchy_level}")
-    print("="*80)
+    print("=" * 80)
 
     metrics = fine_tune_eval(
         model=model,
@@ -404,9 +405,9 @@ def run_fine_tune(model, train_loader, val_loader, num_classes, hierarchy_level,
 
 def run_few_shot(model, dataset, num_classes, hierarchy_level, args, device):
     """Run few-shot evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"Few-shot Learning Evaluation - Hierarchy Level {hierarchy_level}")
-    print("="*80)
+    print("=" * 80)
 
     results = few_shot_eval(
         model=model,
@@ -422,7 +423,9 @@ def run_few_shot(model, dataset, num_classes, hierarchy_level, args, device):
 
     print(f"\nFew-shot Results (Level {hierarchy_level}):")
     for k_shot, metrics in results.items():
-        print(f"  {k_shot}-shot: {metrics['accuracy']:.2f}% ± {metrics['confidence_interval']:.2f}%")
+        print(
+            f"  {k_shot}-shot: {metrics['accuracy']:.2f}% ± {metrics['confidence_interval']:.2f}%"
+        )
 
     return results
 
@@ -460,9 +463,9 @@ def main():
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("H-JEPA Evaluation")
-    print("="*80)
+    print("=" * 80)
     print(f"Dataset: {args.dataset}")
     print(f"Evaluation type: {args.eval_type}")
     print(f"Hierarchy levels: {args.hierarchy_levels}")
@@ -515,7 +518,9 @@ def main():
     # Run evaluations for each hierarchy level
     for level in args.hierarchy_levels:
         if level >= model.num_hierarchies:
-            print(f"\nWarning: Skipping level {level} (model only has {model.num_hierarchies} levels)")
+            print(
+                f"\nWarning: Skipping level {level} (model only has {model.num_hierarchies} levels)"
+            )
             continue
 
         level_results = {}
@@ -556,9 +561,9 @@ def main():
     save_results(all_results, args.output_dir, args)
 
     # Print summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EVALUATION SUMMARY")
-    print("="*80)
+    print("=" * 80)
 
     for level in args.hierarchy_levels:
         if f"level_{level}" not in all_results:
@@ -577,13 +582,13 @@ def main():
             print(f"  Fine-tune: {level_results['fine_tune']['accuracy']:.2f}%")
 
         if "feature_quality" in level_results:
-            rank = level_results['feature_quality']['rank']
+            rank = level_results["feature_quality"]["rank"]
             print(f"  Effective Rank: {rank['effective_rank']:.2f}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Evaluation complete!")
     print(f"Results saved to: {args.output_dir}")
-    print("="*80)
+    print("=" * 80)
 
 
 if __name__ == "__main__":

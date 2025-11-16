@@ -174,12 +174,12 @@ Computational Cost:
   Forward Pass:     +2-5% (rotation overhead in attention)
   Memory:           ~0% (only cos/sin tables)
   Parameters:       0 (completely parameter-free)
-  
+
 Benefits:
   Resolution Transfer:  +10-20% better on unseen resolutions
   Position Encoding:    More robust relative position information
   Modern Architecture:  Matches V-JEPA 2 and SOTA ViTs
-  
+
 
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                              Usage Summary                                    ║

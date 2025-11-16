@@ -12,7 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import torch
-from src.masks import MultiBlockMaskGenerator, HierarchicalMaskGenerator
+
+from src.masks import HierarchicalMaskGenerator, MultiBlockMaskGenerator
 
 
 def example_multi_block_masking():
@@ -23,17 +24,17 @@ def example_multi_block_masking():
 
     # Initialize mask generator with typical H-JEPA parameters
     mask_gen = MultiBlockMaskGenerator(
-        input_size=224,              # Image size (224x224)
-        patch_size=16,               # ViT patch size (16x16)
-        num_target_masks=4,          # 4 target blocks to predict
-        target_scale=(0.15, 0.2),    # Target blocks are 15-20% of image
-        context_scale=(0.85, 1.0),   # Context block is 85-100% of image
+        input_size=224,  # Image size (224x224)
+        patch_size=16,  # ViT patch size (16x16)
+        num_target_masks=4,  # 4 target blocks to predict
+        target_scale=(0.15, 0.2),  # Target blocks are 15-20% of image
+        context_scale=(0.85, 1.0),  # Context block is 85-100% of image
         aspect_ratio_range=(0.75, 1.5),  # Aspect ratio variation
     )
 
     # Generate masks for a batch
     batch_size = 8
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     context_mask, target_masks = mask_gen(batch_size=batch_size, device=device)
 
@@ -44,16 +45,17 @@ def example_multi_block_masking():
     # Get statistics
     stats = mask_gen.get_mask_statistics(context_mask, target_masks)
     print(f"\nMask Statistics:")
-    print(f"  Context coverage: {stats['context_coverage_mean']:.2%} ± {stats['context_coverage_std']:.2%}")
-    print(f"  Target coverage: {stats['target_coverage_mean']:.2%} ± {stats['target_coverage_std']:.2%}")
+    print(
+        f"  Context coverage: {stats['context_coverage_mean']:.2%} ± {stats['context_coverage_std']:.2%}"
+    )
+    print(
+        f"  Target coverage: {stats['target_coverage_mean']:.2%} ± {stats['target_coverage_std']:.2%}"
+    )
     print(f"  Overlap (should be ~0): {stats['overlap_mean']:.4f}")
 
     # Visualize (optional)
     fig = mask_gen.visualize_masks(
-        context_mask,
-        target_masks,
-        sample_idx=0,
-        save_path='/tmp/example_multi_block.png'
+        context_mask, target_masks, sample_idx=0, save_path="/tmp/example_multi_block.png"
     )
     print(f"\nVisualization saved to /tmp/example_multi_block.png")
 
@@ -70,15 +72,15 @@ def example_hierarchical_masking():
     mask_gen = HierarchicalMaskGenerator(
         input_size=224,
         patch_size=16,
-        num_hierarchies=3,           # 3 levels of hierarchy
-        num_target_masks=4,          # 4 targets per level
-        scale_progression='geometric',  # Geometric scale progression
-        base_scale=(0.05, 0.15),     # Base scale for finest level
+        num_hierarchies=3,  # 3 levels of hierarchy
+        num_target_masks=4,  # 4 targets per level
+        scale_progression="geometric",  # Geometric scale progression
+        base_scale=(0.05, 0.15),  # Base scale for finest level
     )
 
     # Generate hierarchical masks
     batch_size = 8
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     masks = mask_gen(batch_size=batch_size, device=device)
 
@@ -100,17 +102,13 @@ def example_hierarchical_masking():
 
     # Visualize all levels
     fig = mask_gen.visualize_hierarchical_masks(
-        masks,
-        sample_idx=0,
-        save_path='/tmp/example_hierarchical.png'
+        masks, sample_idx=0, save_path="/tmp/example_hierarchical.png"
     )
     print(f"\nVisualization saved to /tmp/example_hierarchical.png")
 
     # Combined view
     fig2 = mask_gen.visualize_combined_view(
-        masks,
-        sample_idx=0,
-        save_path='/tmp/example_hierarchical_combined.png'
+        masks, sample_idx=0, save_path="/tmp/example_hierarchical_combined.png"
     )
     print(f"Combined view saved to /tmp/example_hierarchical_combined.png")
 
@@ -129,7 +127,7 @@ def example_integration_with_model():
     patch_size = 16
     num_patches = (image_size // patch_size) ** 2  # 196 for 224x224 with 16x16 patches
     embed_dim = 768
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Initialize mask generator
     mask_gen = MultiBlockMaskGenerator(
@@ -183,12 +181,12 @@ def example_custom_configuration():
     mask_gen_aggressive = MultiBlockMaskGenerator(
         input_size=224,
         patch_size=16,
-        num_target_masks=6,           # More targets
-        target_scale=(0.10, 0.15),    # Smaller targets
-        context_scale=(0.70, 0.85),   # Smaller context
+        num_target_masks=6,  # More targets
+        target_scale=(0.10, 0.15),  # Smaller targets
+        context_scale=(0.70, 0.85),  # Smaller context
     )
 
-    context, targets = mask_gen_aggressive(batch_size=2, device='cpu')
+    context, targets = mask_gen_aggressive(batch_size=2, device="cpu")
     print(f"  Context coverage: {context.float().mean():.2%}")
     print(f"  Target coverage: {targets.float().mean():.2%}")
 
@@ -197,24 +195,24 @@ def example_custom_configuration():
     mask_gen_conservative = MultiBlockMaskGenerator(
         input_size=224,
         patch_size=16,
-        num_target_masks=3,           # Fewer targets
-        target_scale=(0.20, 0.25),    # Larger targets
-        context_scale=(0.90, 1.0),    # Larger context
+        num_target_masks=3,  # Fewer targets
+        target_scale=(0.20, 0.25),  # Larger targets
+        context_scale=(0.90, 1.0),  # Larger context
     )
 
-    context, targets = mask_gen_conservative(batch_size=2, device='cpu')
+    context, targets = mask_gen_conservative(batch_size=2, device="cpu")
     print(f"  Context coverage: {context.float().mean():.2%}")
     print(f"  Target coverage: {targets.float().mean():.2%}")
 
     # Configuration 3: Different image size
     print("\nConfiguration 3: High-resolution (384x384)")
     mask_gen_highres = MultiBlockMaskGenerator(
-        input_size=384,               # Higher resolution
+        input_size=384,  # Higher resolution
         patch_size=16,
         num_target_masks=4,
     )
 
-    context, targets = mask_gen_highres(batch_size=2, device='cpu')
+    context, targets = mask_gen_highres(batch_size=2, device="cpu")
     num_patches = (384 // 16) ** 2  # 576 patches
     print(f"  Total patches: {num_patches}")
     print(f"  Context coverage: {context.float().mean():.2%}")

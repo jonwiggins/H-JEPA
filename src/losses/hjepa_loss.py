@@ -91,6 +91,7 @@ class HJEPALoss(nn.Module):
             self.hierarchy_weights = list(hierarchy_weights)
 
         # Register as buffer so it moves to correct device
+        self._hierarchy_weights: torch.Tensor
         self.register_buffer(
             "_hierarchy_weights", torch.tensor(self.hierarchy_weights, dtype=torch.float32)
         )
@@ -202,8 +203,6 @@ class HJEPALoss(nn.Module):
 
         # Process masks
         if masks is not None:
-            if isinstance(masks, torch.Tensor):
-                masks = [masks]
             assert len(masks) == num_levels, (
                 f"Number of masks ({len(masks)}) must match "
                 f"number of hierarchy levels ({num_levels})"

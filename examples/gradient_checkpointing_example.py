@@ -5,11 +5,12 @@ Example: Using Gradient Checkpointing with H-JEPA
 This script demonstrates how to use gradient checkpointing for memory-efficient training.
 """
 
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import yaml
-from pathlib import Path
-import sys
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,9 +28,9 @@ def print_memory_stats(stage: str):
 
 def compare_memory_usage():
     """Compare memory usage with and without gradient checkpointing."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Gradient Checkpointing Memory Comparison")
-    print("="*80)
+    print("=" * 80)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nDevice: {device}")
@@ -46,16 +47,16 @@ def compare_memory_usage():
     images = torch.randn(batch_size, 3, img_size, img_size).to(device)
     num_patches = (img_size // 16) ** 2  # For patch size 16
     mask = torch.zeros(batch_size, num_patches).to(device)
-    mask[:, :num_patches//2] = 1  # Mask first half of patches
+    mask[:, : num_patches // 2] = 1  # Mask first half of patches
 
     print(f"\nBatch size: {batch_size}")
     print(f"Image size: {img_size}x{img_size}")
     print(f"Number of patches: {num_patches}")
 
     # Test WITHOUT gradient checkpointing
-    print("\n" + "-"*80)
+    print("\n" + "-" * 80)
     print("WITHOUT Gradient Checkpointing")
-    print("-"*80)
+    print("-" * 80)
 
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
@@ -76,12 +77,9 @@ def compare_memory_usage():
     print_memory_stats("After forward pass")
 
     # Compute loss (simplified)
-    predictions = outputs['predictions']
-    targets = outputs['targets']
-    loss = sum([
-        nn.functional.mse_loss(pred, tgt)
-        for pred, tgt in zip(predictions, targets)
-    ])
+    predictions = outputs["predictions"]
+    targets = outputs["targets"]
+    loss = sum([nn.functional.mse_loss(pred, tgt) for pred, tgt in zip(predictions, targets)])
 
     # Backward pass
     loss.backward()
@@ -94,9 +92,9 @@ def compare_memory_usage():
     torch.cuda.empty_cache()
 
     # Test WITH gradient checkpointing
-    print("\n" + "-"*80)
+    print("\n" + "-" * 80)
     print("WITH Gradient Checkpointing")
-    print("-"*80)
+    print("-" * 80)
 
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
@@ -117,12 +115,9 @@ def compare_memory_usage():
     print_memory_stats("After forward pass")
 
     # Compute loss (simplified)
-    predictions = outputs['predictions']
-    targets = outputs['targets']
-    loss = sum([
-        nn.functional.mse_loss(pred, tgt)
-        for pred, tgt in zip(predictions, targets)
-    ])
+    predictions = outputs["predictions"]
+    targets = outputs["targets"]
+    loss = sum([nn.functional.mse_loss(pred, tgt) for pred, tgt in zip(predictions, targets)])
 
     # Backward pass
     loss.backward()
@@ -131,45 +126,45 @@ def compare_memory_usage():
     peak_memory_with = torch.cuda.max_memory_allocated() / 1024**3
 
     # Summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Summary")
-    print("="*80)
+    print("=" * 80)
     print(f"Peak memory WITHOUT checkpointing: {peak_memory_without:.2f} GB")
     print(f"Peak memory WITH checkpointing:    {peak_memory_with:.2f} GB")
     savings = (1 - peak_memory_with / peak_memory_without) * 100
     print(f"Memory savings:                     {savings:.1f}%")
-    print("="*80)
+    print("=" * 80)
 
 
 def example_config_usage():
     """Example of using gradient checkpointing via configuration."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example: Using Gradient Checkpointing via Configuration")
-    print("="*80)
+    print("=" * 80)
 
     # Example configuration
     config = {
-        'model': {
-            'encoder_type': 'vit_base_patch16_224',
-            'embed_dim': 768,
-            'num_hierarchies': 3,
-            'predictor': {
-                'depth': 6,
-                'num_heads': 12,
-                'mlp_ratio': 4.0,
+        "model": {
+            "encoder_type": "vit_base_patch16_224",
+            "embed_dim": 768,
+            "num_hierarchies": 3,
+            "predictor": {
+                "depth": 6,
+                "num_heads": 12,
+                "mlp_ratio": 4.0,
             },
-            'ema': {
-                'momentum': 0.996,
-                'momentum_end': 1.0,
-                'momentum_warmup_epochs': 30,
+            "ema": {
+                "momentum": 0.996,
+                "momentum_end": 1.0,
+                "momentum_warmup_epochs": 30,
             },
         },
-        'training': {
-            'use_gradient_checkpointing': True,  # Enable here
-            'drop_path_rate': 0.1,
+        "training": {
+            "use_gradient_checkpointing": True,  # Enable here
+            "drop_path_rate": 0.1,
         },
-        'data': {
-            'image_size': 224,
+        "data": {
+            "image_size": 224,
         },
     }
 
@@ -178,21 +173,23 @@ def example_config_usage():
 
     print("\nModel created with configuration:")
     print(f"  use_gradient_checkpointing: {model.use_gradient_checkpointing}")
-    print(f"  context_encoder.use_gradient_checkpointing: {model.context_encoder.use_gradient_checkpointing}")
+    print(
+        f"  context_encoder.use_gradient_checkpointing: {model.context_encoder.use_gradient_checkpointing}"
+    )
     print(f"  predictor.use_gradient_checkpointing: {model.predictor.use_gradient_checkpointing}")
 
     # Save example config
     config_path = Path(__file__).parent / "gradient_checkpointing_config.yaml"
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
     print(f"\nExample configuration saved to: {config_path}")
 
 
 def example_programmatic_usage():
     """Example of using gradient checkpointing programmatically."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example: Using Gradient Checkpointing Programmatically")
-    print("="*80)
+    print("=" * 80)
 
     # Create model with checkpointing enabled
     model = create_hjepa(
@@ -208,7 +205,9 @@ def example_programmatic_usage():
 
     print("\nModel created with gradient checkpointing enabled:")
     print(f"  model.use_gradient_checkpointing: {model.use_gradient_checkpointing}")
-    print(f"  context_encoder.use_gradient_checkpointing: {model.context_encoder.use_gradient_checkpointing}")
+    print(
+        f"  context_encoder.use_gradient_checkpointing: {model.context_encoder.use_gradient_checkpointing}"
+    )
     print(f"  predictor.use_gradient_checkpointing: {model.predictor.use_gradient_checkpointing}")
 
     # Can also toggle dynamically
@@ -226,9 +225,9 @@ def example_programmatic_usage():
 
 def example_training_mode():
     """Demonstrate that checkpointing only applies during training."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example: Checkpointing Only Active During Training")
-    print("="*80)
+    print("=" * 80)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -262,9 +261,9 @@ def example_training_mode():
 
 def main():
     """Run all examples."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("H-JEPA Gradient Checkpointing Examples")
-    print("="*80)
+    print("=" * 80)
 
     # Example 1: Programmatic usage
     example_programmatic_usage()
@@ -279,19 +278,19 @@ def main():
     if torch.cuda.is_available():
         compare_memory_usage()
     else:
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("Memory Comparison")
-        print("="*80)
+        print("=" * 80)
         print("\nCUDA not available. Skipping memory comparison.")
         print("Run on a GPU to see memory savings.")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Examples completed!")
-    print("="*80)
+    print("=" * 80)
     print("\nFor more information, see:")
     print("  - docs/gradient_checkpointing.md")
     print("  - docs/gradient_checkpointing_implementation_report.md")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
 
 
 if __name__ == "__main__":

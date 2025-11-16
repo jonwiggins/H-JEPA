@@ -5,11 +5,12 @@ This module implements the multi-block masking strategy used in H-JEPA training,
 which samples multiple target blocks and a large context block for predictive learning.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import torch
 
 
@@ -50,14 +51,14 @@ class MultiBlockMaskGenerator:
 
     def __init__(
         self,
-        input_size: int or Tuple[int, int] = 224,
+        input_size: Union[int, Tuple[int, int]] = 224,
         patch_size: int = 16,
         num_target_masks: int = 4,
         target_scale: Tuple[float, float] = (0.15, 0.2),
         context_scale: Tuple[float, float] = (0.85, 1.0),
         aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
-    ):
+    ) -> None:
         # Handle input size
         if isinstance(input_size, int):
             self.input_size = (input_size, input_size)
@@ -166,7 +167,7 @@ class MultiBlockMaskGenerator:
     def _sample_block(
         self,
         scale_range: Tuple[float, float],
-        occupied: Optional[np.ndarray] = None,
+        occupied: Optional[npt.NDArray[np.bool_]] = None,
     ) -> Tuple[int, int, int, int]:
         """
         Sample a single block (top, left, height, width) in patch coordinates.
@@ -238,7 +239,7 @@ class MultiBlockMaskGenerator:
         sample_idx: int = 0,
         figsize: Tuple[int, int] = (12, 4),
         save_path: Optional[str] = None,
-    ) -> plt.Figure:
+    ) -> "plt.Figure":
         """
         Visualize the generated masks.
 
@@ -340,7 +341,7 @@ class MultiBlockMaskGenerator:
         return stats
 
 
-def demo():
+def demo() -> None:
     """Demonstration of MultiBlockMaskGenerator."""
     print("Multi-Block Mask Generator Demo")
     print("=" * 50)

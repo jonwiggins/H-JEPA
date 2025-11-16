@@ -17,24 +17,24 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
-import json
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
-from src.models.hjepa import create_hjepa
-from src.data import build_dataset, build_dataloader
-from src.evaluation.linear_probe import linear_probe_eval
-from src.evaluation.knn_eval import knn_eval
+from src.data import build_dataloader, build_dataset
 from src.evaluation.feature_quality import analyze_feature_quality, print_quality_report
+from src.evaluation.knn_eval import knn_eval
+from src.evaluation.linear_probe import linear_probe_eval
+from src.models.hjepa import create_hjepa
 
 
 def parse_args():
@@ -326,7 +326,9 @@ def main():
 
     # Check if requested level is valid
     if args.level >= model.num_hierarchies:
-        print(f"\nWarning: Requested level {args.level} but model only has {model.num_hierarchies} levels")
+        print(
+            f"\nWarning: Requested level {args.level} but model only has {model.num_hierarchies} levels"
+        )
         print(f"Using level 0 instead")
         args.level = 0
 
@@ -384,13 +386,17 @@ def main():
 
     if args.method in ["linear_probe", "all"]:
         results["linear_probe"] = run_linear_probe_eval(
-            model, train_loader, val_loader, num_classes, args.level, args.linear_probe_epochs, device
+            model,
+            train_loader,
+            val_loader,
+            num_classes,
+            args.level,
+            args.linear_probe_epochs,
+            device,
         )
 
     if args.method in ["feature_quality", "all"]:
-        results["feature_quality"] = run_feature_quality_eval(
-            model, val_loader, args.level, device
-        )
+        results["feature_quality"] = run_feature_quality_eval(model, val_loader, args.level, device)
 
     # Save results if requested
     if args.save_results:

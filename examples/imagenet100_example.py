@@ -14,42 +14,43 @@ Requirements:
 """
 
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import torch
+
 from src.data import (
-    build_dataset,
-    build_dataloader,
-    build_multi_dataset,
     ImageNet100Dataset,
     JEPATransform,
+    build_dataloader,
+    build_dataset,
+    build_multi_dataset,
 )
 
 
 def example_1_basic_usage(data_path: str):
     """Example 1: Basic ImageNet-100 dataset usage"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 1: Basic ImageNet-100 Usage")
-    print("="*70)
+    print("=" * 70)
 
     # Build dataset using factory function
     train_dataset = build_dataset(
-        dataset_name='imagenet100',
+        dataset_name="imagenet100",
         data_path=data_path,
-        split='train',
+        split="train",
         image_size=224,
         color_jitter=0.1,
     )
 
     # Build validation dataset
     val_dataset = build_dataset(
-        dataset_name='imagenet100',
+        dataset_name="imagenet100",
         data_path=data_path,
-        split='val',
+        split="val",
         image_size=224,
     )
 
@@ -70,9 +71,9 @@ def example_1_basic_usage(data_path: str):
 
 def example_2_dataloader(dataset):
     """Example 2: Creating dataloaders"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 2: DataLoader Creation")
-    print("="*70)
+    print("=" * 70)
 
     from src.data import build_dataloader
 
@@ -103,15 +104,15 @@ def example_2_dataloader(dataset):
 
 def example_3_multi_dataset(data_path: str):
     """Example 3: Multi-dataset with ImageNet-100"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 3: Multi-Dataset Configuration")
-    print("="*70)
+    print("=" * 70)
 
     # Configure multiple datasets with weights
     dataset_configs = [
-        {'name': 'imagenet100', 'weight': 0.6, 'path': data_path},
-        {'name': 'stl10', 'weight': 0.3},
-        {'name': 'cifar100', 'weight': 0.1},
+        {"name": "imagenet100", "weight": 0.6, "path": data_path},
+        {"name": "stl10", "weight": 0.3},
+        {"name": "cifar100", "weight": 0.1},
     ]
 
     print("\nDataset Configuration:")
@@ -121,9 +122,9 @@ def example_3_multi_dataset(data_path: str):
     # Build multi-dataset
     multi_dataset = build_multi_dataset(
         dataset_configs=dataset_configs,
-        data_path='./data',
-        split='train',
-        sampling_strategy='weighted',
+        data_path="./data",
+        split="train",
+        sampling_strategy="weighted",
         image_size=224,
         download=True,  # Auto-download CIFAR/STL10
     )
@@ -135,9 +136,11 @@ def example_3_multi_dataset(data_path: str):
     stats = multi_dataset.get_dataset_stats()
     print(f"\nSampling Statistics:")
     for name, info in stats.items():
-        print(f"  {name:12s}: {info['size']:7,} images, "
-              f"{info['weight']:5.1%} weight, "
-              f"{info['expected_samples_per_epoch']:6,} samples/epoch")
+        print(
+            f"  {name:12s}: {info['size']:7,} images, "
+            f"{info['weight']:5.1%} weight, "
+            f"{info['expected_samples_per_epoch']:6,} samples/epoch"
+        )
 
     # Sample from multi-dataset
     sample = multi_dataset[0]
@@ -151,9 +154,9 @@ def example_3_multi_dataset(data_path: str):
 
 def example_4_custom_transforms(data_path: str):
     """Example 4: Custom transforms for ImageNet-100"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 4: Custom Transforms")
-    print("="*70)
+    print("=" * 70)
 
     # Create custom JEPA transform
     custom_transform = JEPATransform(
@@ -166,7 +169,7 @@ def example_4_custom_transforms(data_path: str):
     # Use with dataset
     dataset = ImageNet100Dataset(
         data_path=data_path,
-        split='train',
+        split="train",
         transform=custom_transform,
     )
 
@@ -187,9 +190,9 @@ def example_4_custom_transforms(data_path: str):
 
 def example_5_class_filtering():
     """Example 5: Understanding ImageNet-100 class filtering"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 5: ImageNet-100 Class Filtering")
-    print("="*70)
+    print("=" * 70)
 
     from src.data.datasets import ImageNet100Dataset
 
@@ -216,57 +219,61 @@ def example_5_class_filtering():
 
 def example_6_performance_comparison():
     """Example 6: Performance comparison across datasets"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 6: Dataset Performance Comparison")
-    print("="*70)
+    print("=" * 70)
 
     datasets_info = {
-        'CIFAR-10': {
-            'images': 50000,
-            'resolution': '32x32',
-            'classes': 10,
-            'linear_probe': '50-55%',
-            'training_time': '2 hours',
+        "CIFAR-10": {
+            "images": 50000,
+            "resolution": "32x32",
+            "classes": 10,
+            "linear_probe": "50-55%",
+            "training_time": "2 hours",
         },
-        'CIFAR-100': {
-            'images': 50000,
-            'resolution': '32x32',
-            'classes': 100,
-            'linear_probe': '40-50%',
-            'training_time': '2 hours',
+        "CIFAR-100": {
+            "images": 50000,
+            "resolution": "32x32",
+            "classes": 100,
+            "linear_probe": "40-50%",
+            "training_time": "2 hours",
         },
-        'STL-10': {
-            'images': 105000,
-            'resolution': '96x96',
-            'classes': 10,
-            'linear_probe': '55-60%',
-            'training_time': '4 hours',
+        "STL-10": {
+            "images": 105000,
+            "resolution": "96x96",
+            "classes": 10,
+            "linear_probe": "55-60%",
+            "training_time": "4 hours",
         },
-        'ImageNet-100': {
-            'images': 126689,
-            'resolution': '224x224',
-            'classes': 100,
-            'linear_probe': '60-70%',
-            'training_time': '12 hours',
+        "ImageNet-100": {
+            "images": 126689,
+            "resolution": "224x224",
+            "classes": 100,
+            "linear_probe": "60-70%",
+            "training_time": "12 hours",
         },
-        'Multi-Dataset': {
-            'images': 280000,
-            'resolution': '224x224',
-            'classes': '100+',
-            'linear_probe': '65-75%',
-            'training_time': '18 hours',
+        "Multi-Dataset": {
+            "images": 280000,
+            "resolution": "224x224",
+            "classes": "100+",
+            "linear_probe": "65-75%",
+            "training_time": "18 hours",
         },
     }
 
     print("\nDataset Comparison (100 epochs, ViT-Small on M1 Max):")
-    print(f"\n{'Dataset':<15} {'Images':<10} {'Resolution':<12} {'Classes':<8} "
-          f"{'Linear Probe':<13} {'Training Time':<15}")
+    print(
+        f"\n{'Dataset':<15} {'Images':<10} {'Resolution':<12} {'Classes':<8} "
+        f"{'Linear Probe':<13} {'Training Time':<15}"
+    )
     print("-" * 90)
 
     for name, info in datasets_info.items():
-        print(f"{name:<15} {info['images']:<10,} {info['resolution']:<12} "
-              f"{str(info['classes']):<8} {info['linear_probe']:<13} "
-              f"{info['training_time']:<15}")
+        print(
+            f"{name:<15} {info['images']:<10,} {info['resolution']:<12} "
+            f"{str(info['classes']):<8} {info['linear_probe']:<13} "
+            f"{info['training_time']:<15}"
+        )
 
     print("\nKey Insights:")
     print("  • ImageNet-100 provides +10-15% improvement over CIFAR datasets")
@@ -277,9 +284,9 @@ def example_6_performance_comparison():
 
 def verify_dataset(data_path: str) -> bool:
     """Verify ImageNet-100 dataset is properly set up"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Dataset Verification")
-    print("="*70)
+    print("=" * 70)
 
     data_path = Path(data_path)
     train_dir = data_path / "train"
@@ -325,33 +332,33 @@ def verify_dataset(data_path: str) -> bool:
 def main():
     parser = argparse.ArgumentParser(description="ImageNet-100 Dataset Examples")
     parser.add_argument(
-        '--data-path',
+        "--data-path",
         type=str,
-        default='./data/imagenet',
-        help='Path to ImageNet directory (containing train/ and val/ subdirectories)',
+        default="./data/imagenet",
+        help="Path to ImageNet directory (containing train/ and val/ subdirectories)",
     )
     parser.add_argument(
-        '--verify-only',
-        action='store_true',
-        help='Only verify dataset setup, don\'t run examples',
+        "--verify-only",
+        action="store_true",
+        help="Only verify dataset setup, don't run examples",
     )
     parser.add_argument(
-        '--skip-multi-dataset',
-        action='store_true',
-        help='Skip multi-dataset example (useful if CIFAR/STL10 not available)',
+        "--skip-multi-dataset",
+        action="store_true",
+        help="Skip multi-dataset example (useful if CIFAR/STL10 not available)",
     )
 
     args = parser.parse_args()
 
-    print("="*70)
+    print("=" * 70)
     print("ImageNet-100 Dataset Examples for H-JEPA")
-    print("="*70)
+    print("=" * 70)
 
     # Verify dataset
     if not verify_dataset(args.data_path):
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("Dataset verification failed!")
-        print("="*70)
+        print("=" * 70)
         print("\nTo download ImageNet:")
         print("  1. Register at https://image-net.org/download.php")
         print("  2. Download ILSVRC2012 train and val sets")
@@ -396,9 +403,9 @@ def main():
         # Example 6: Performance comparison
         example_6_performance_comparison()
 
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("All Examples Completed Successfully!")
-        print("="*70)
+        print("=" * 70)
         print("\nNext Steps:")
         print("  1. Review the example code above")
         print("  2. Check configuration files: configs/m1_max_imagenet100_100epoch.yaml")
@@ -412,6 +419,7 @@ def main():
     except Exception as e:
         print(f"\n✗ Error running examples: {e}")
         import traceback
+
         traceback.print_exc()
         return
 

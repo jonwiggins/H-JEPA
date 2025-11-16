@@ -173,7 +173,7 @@ class Predictor(nn.Module):
 
         self.apply(self._init_weights)
 
-    def _init_weights(self, m):
+    def _init_weights(self, m: nn.Module) -> None:
         """Initialize weights."""
         if isinstance(m, nn.Linear):
             nn.init.trunc_normal_(m.weight, std=0.02)
@@ -212,10 +212,10 @@ class Predictor(nn.Module):
             # mask_indices: [B, N_mask], pos_embed: [B, N_total, D]
             mask_indices_expanded = mask_indices.unsqueeze(-1).expand(-1, -1, D)
             mask_pos_embed = torch.gather(pos_embed, 1, mask_indices_expanded)
-            mask_tokens = mask_tokens + mask_pos_embed
+            mask_tokens = mask_tokens + mask_pos_embed  # type: ignore[assignment]
         else:
             # Use default positional embedding
-            mask_tokens = mask_tokens + self.pos_embed_predictor
+            mask_tokens = mask_tokens + self.pos_embed_predictor  # type: ignore[assignment]
 
         # Concatenate context features with mask tokens
         # [B, N_context + N_mask, D]
@@ -240,7 +240,7 @@ class Predictor(nn.Module):
         x = self.norm(x)
         x = self.head(x)
 
-        return x
+        return x  # type: ignore[no-any-return]
 
     def forward_with_full_sequence(
         self,

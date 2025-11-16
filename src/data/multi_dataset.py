@@ -7,14 +7,14 @@ which is essential for building foundation models with broad capabilities.
 
 import random
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import torch
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
 
 
-class WeightedMultiDataset(Dataset):
+class WeightedMultiDataset(Dataset[Any]):
     """
     Combines multiple datasets with optional sampling weights.
 
@@ -43,11 +43,11 @@ class WeightedMultiDataset(Dataset):
 
     def __init__(
         self,
-        datasets: List[Dataset],
+        datasets: List[Dataset[Any]],
         weights: Optional[List[float]] = None,
         dataset_names: Optional[List[str]] = None,
         temperature: float = 1.0,
-    ):
+    ) -> None:
         self.datasets = datasets
         self.num_datasets = len(datasets)
 
@@ -58,7 +58,7 @@ class WeightedMultiDataset(Dataset):
             self.dataset_names = dataset_names
 
         # Dataset sizes
-        self.dataset_sizes = [len(d) for d in datasets]
+        self.dataset_sizes: List[int] = [len(d) for d in datasets]  # type: ignore[arg-type]
         self.total_size = sum(self.dataset_sizes)
 
         # Compute sampling weights
@@ -98,7 +98,7 @@ class WeightedMultiDataset(Dataset):
         print(f"Total images: {self.total_size:,}")
         print(f"Effective size (one epoch): {self.effective_size:,}")
 
-    def _compute_effective_size(self):
+    def _compute_effective_size(self) -> int:
         """
         Compute effective dataset size for one epoch.
 
@@ -109,10 +109,10 @@ class WeightedMultiDataset(Dataset):
         # This ensures we don't undersample any dataset too much
         return max(self.dataset_sizes)  # At least go through largest dataset
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.effective_size
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Any:
         """
         Sample from datasets according to weights.
 
@@ -135,7 +135,7 @@ class WeightedMultiDataset(Dataset):
         else:
             return (item, dataset_idx)
 
-    def get_dataset_stats(self) -> Dict[str, Dict]:
+    def get_dataset_stats(self) -> Dict[str, Dict[str, Any]]:
         """Get statistics about each dataset."""
         stats = {}
         for i, name in enumerate(self.dataset_names):
@@ -147,7 +147,7 @@ class WeightedMultiDataset(Dataset):
         return stats
 
 
-class BalancedMultiDataset(Dataset):
+class BalancedMultiDataset(Dataset[Any]):
     """
     Balanced sampling from multiple datasets.
 
@@ -166,10 +166,10 @@ class BalancedMultiDataset(Dataset):
 
     def __init__(
         self,
-        datasets: List[Dataset],
+        datasets: List[Dataset[Any]],
         dataset_names: Optional[List[str]] = None,
         samples_per_dataset: Optional[int] = None,
-    ):
+    ) -> None:
         self.datasets = datasets
         self.num_datasets = len(datasets)
 
@@ -178,7 +178,7 @@ class BalancedMultiDataset(Dataset):
         else:
             self.dataset_names = dataset_names
 
-        self.dataset_sizes = [len(d) for d in datasets]
+        self.dataset_sizes: List[int] = [len(d) for d in datasets]  # type: ignore[arg-type]
 
         # Determine samples per dataset
         if samples_per_dataset is None:
@@ -197,9 +197,9 @@ class BalancedMultiDataset(Dataset):
             print(f"  {name}: {size:,} images -> {self.samples_per_dataset:,} samples/epoch")
         print(f"Total samples per epoch: {self._length:,}")
 
-    def resample_indices(self):
+    def resample_indices(self) -> None:
         """Generate new random sampling indices."""
-        self.indices = []
+        self.indices: List[Tuple[int, int]] = []
         for dataset_idx, size in enumerate(self.dataset_sizes):
             # Sample with replacement if needed
             if size >= self.samples_per_dataset:
@@ -216,10 +216,10 @@ class BalancedMultiDataset(Dataset):
         # Shuffle so datasets are interleaved
         random.shuffle(self.indices)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._length
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Any:
         dataset_idx, item_idx = self.indices[idx]
         item = self.datasets[dataset_idx][item_idx]
 
@@ -231,12 +231,12 @@ class BalancedMultiDataset(Dataset):
 
 
 def build_multi_dataset(
-    dataset_configs: List[Dict],
+    dataset_configs: List[Dict[str, Any]],
     data_path: Union[str, Path],
     split: str = "train",
     sampling_strategy: str = "weighted",
-    **kwargs,
-) -> Dataset:
+    **kwargs: Any,
+) -> Dataset[Any]:
     """
     Build a multi-dataset for foundation model training.
 
@@ -308,8 +308,8 @@ def create_foundation_model_dataset(
     scale: str = "mini",  # mini, medium, large
     data_path: Union[str, Path] = "./data",
     split: str = "train",
-    **kwargs,
-) -> Dataset:
+    **kwargs: Any,
+) -> Dataset[Any]:
     """
     Create a pre-configured foundation model dataset.
 

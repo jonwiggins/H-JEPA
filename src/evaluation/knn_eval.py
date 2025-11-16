@@ -7,9 +7,10 @@ nearest neighbors in the training set.
 """
 
 import warnings
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -57,9 +58,9 @@ class KNNEvaluator:
             param.requires_grad = False
 
         # Will store training features and labels
-        self.train_features = None
-        self.train_labels = None
-        self.knn_index = None
+        self.train_features: Optional[npt.NDArray[np.float64]] = None
+        self.train_labels: Optional[npt.NDArray[np.int64]] = None
+        self.knn_index: Optional[NearestNeighbors] = None
 
     def pool_features(self, features: torch.Tensor) -> torch.Tensor:
         """
@@ -83,8 +84,8 @@ class KNNEvaluator:
 
     @torch.no_grad()
     def extract_features(
-        self, dataloader: DataLoader, normalize: bool = True, desc: str = "Extracting features"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, dataloader: DataLoader[Any], normalize: bool = True, desc: str = "Extracting features"
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
         """
         Extract and pool features from dataset.
 
@@ -103,7 +104,7 @@ class KNNEvaluator:
             images = images.to(self.device)
 
             # Extract features at specified hierarchy level
-            features = self.model.extract_features(
+            features = self.model.extract_features(  # type: ignore[operator]
                 images,
                 level=self.hierarchy_level,
                 use_target_encoder=True,
@@ -126,9 +127,9 @@ class KNNEvaluator:
 
     def build_knn_index(
         self,
-        train_loader: DataLoader,
+        train_loader: DataLoader[Any],
         normalize: bool = True,
-    ):
+    ) -> None:
         """
         Build k-NN index from training data.
 
@@ -160,9 +161,9 @@ class KNNEvaluator:
 
     def predict(
         self,
-        test_features: np.ndarray,
+        test_features: npt.NDArray[np.float64],
         num_classes: int,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]:
         """
         Predict labels using k-NN.
 
@@ -173,7 +174,7 @@ class KNNEvaluator:
         Returns:
             Tuple of (predictions, prediction_probs) [N] and [N, num_classes]
         """
-        if self.knn_index is None:
+        if self.knn_index is None or self.train_labels is None:
             raise RuntimeError("k-NN index not built. Call build_knn_index first.")
 
         # Find k nearest neighbors
@@ -211,7 +212,7 @@ class KNNEvaluator:
 
     def evaluate(
         self,
-        test_loader: DataLoader,
+        test_loader: DataLoader[Any],
         num_classes: int,
         normalize: bool = True,
         top_k_list: List[int] = [1, 5],
@@ -230,7 +231,7 @@ class KNNEvaluator:
         Returns:
             Dictionary with metrics
         """
-        if self.knn_index is None:
+        if self.knn_index is None or self.train_labels is None:
             raise RuntimeError("k-NN index not built. Call build_knn_index first.")
 
         # Extract test features
@@ -268,7 +269,7 @@ class KNNEvaluator:
 
     def evaluate_multiple_k(
         self,
-        test_loader: DataLoader,
+        test_loader: DataLoader[Any],
         num_classes: int,
         k_values: List[int] = [1, 5, 10, 20, 50, 100, 200],
         normalize: bool = True,
@@ -292,16 +293,17 @@ class KNNEvaluator:
             test_loader, normalize=normalize, desc="Extracting test features"
         )
 
-        results = {}
+        results: Dict[int, Dict[str, float]] = {}
 
         for k in k_values:
-            if k > len(self.train_features):
+            if self.train_features is None or k > len(self.train_features):
                 if verbose:
                     print(f"Skipping k={k} (larger than training set size)")
                 continue
 
             # Update k-NN index with new k
-            self.knn_index.n_neighbors = k
+            if self.knn_index is not None:
+                self.knn_index.n_neighbors = k
             self.k = k
 
             # Predict
@@ -323,8 +325,8 @@ class KNNEvaluator:
 
 def knn_eval(
     model: nn.Module,
-    train_loader: DataLoader,
-    test_loader: DataLoader,
+    train_loader: DataLoader[Any],
+    test_loader: DataLoader[Any],
     num_classes: int,
     hierarchy_level: int = 0,
     k: int = 20,
@@ -375,15 +377,15 @@ def knn_eval(
 
 def sweep_knn_params(
     model: nn.Module,
-    train_loader: DataLoader,
-    test_loader: DataLoader,
+    train_loader: DataLoader[Any],
+    test_loader: DataLoader[Any],
     num_classes: int,
     hierarchy_level: int = 0,
     k_values: List[int] = [10, 20, 50, 100, 200],
     temperatures: List[float] = [0.01, 0.05, 0.07, 0.1, 0.5],
     distance_metrics: List[str] = ["cosine", "euclidean"],
     device: str = "cuda",
-) -> Dict[str, Dict]:
+) -> Dict[str, Any]:
     """
     Sweep over k-NN hyperparameters to find best configuration.
 
@@ -401,9 +403,9 @@ def sweep_knn_params(
     Returns:
         Dictionary with results for each configuration
     """
-    results = {}
+    results: Dict[str, Any] = {}
     best_acc = 0.0
-    best_config = None
+    best_config: Optional[str] = None
 
     print("Sweeping k-NN hyperparameters...")
     print(f"k values: {k_values}")
@@ -455,8 +457,11 @@ def sweep_knn_params(
                     print(f"  Error: {str(e)}")
                     continue
 
-    print(f"\nBest configuration: {best_config}")
-    print(f"Best accuracy: {best_acc:.2f}%")
-    print(f"Config: {results[best_config]['config']}")
+    if best_config is not None:
+        print(f"\nBest configuration: {best_config}")
+        print(f"Best accuracy: {best_acc:.2f}%")
+        print(f"Config: {results[best_config]['config']}")
+    else:
+        print("\nNo successful configurations found.")
 
     return results

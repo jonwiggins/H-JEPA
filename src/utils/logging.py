@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -31,11 +32,12 @@ except ImportError:
     logging.warning("wandb not available. Install with: pip install wandb")
 
 try:
-    from torch.utils.tensorboard import SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter  # type: ignore[attr-defined]
 
     TENSORBOARD_AVAILABLE = True
 except ImportError:
     TENSORBOARD_AVAILABLE = False
+    SummaryWriter = None  # type: ignore[assignment, misc]
     logging.warning("tensorboard not available. Install with: pip install tensorboard")
 
 logger = logging.getLogger(__name__)
@@ -102,14 +104,14 @@ class MetricsLogger:
             try:
                 tb_dir = self.log_dir / "tensorboard"
                 tb_dir.mkdir(parents=True, exist_ok=True)
-                self.tb_writer = SummaryWriter(log_dir=str(tb_dir))
+                self.tb_writer = SummaryWriter(log_dir=str(tb_dir))  # type: ignore[no-untyped-call]
                 logger.info(f"TensorBoard initialized: {tb_dir}")
             except Exception as e:
                 logger.warning(f"Failed to initialize TensorBoard: {e}")
                 self.use_tensorboard = False
 
         # Metrics aggregation
-        self.metrics_buffer = defaultdict(list)
+        self.metrics_buffer: Dict[str, List[Union[float, int, torch.Tensor]]] = defaultdict(list)
         self.step = 0
 
     def log_metrics(
@@ -118,7 +120,7 @@ class MetricsLogger:
         step: Optional[int] = None,
         prefix: str = "",
         commit: bool = True,
-    ):
+    ) -> None:
         """
         Log metrics to W&B and TensorBoard.
 
@@ -146,7 +148,7 @@ class MetricsLogger:
         if self.use_tensorboard:
             try:
                 for name, value in metrics.items():
-                    self.tb_writer.add_scalar(name, value, self.step)
+                    self.tb_writer.add_scalar(name, value, self.step)  # type: ignore[no-untyped-call]
             except Exception as e:
                 logger.warning(f"Failed to log to TensorBoard: {e}")
 
@@ -155,10 +157,10 @@ class MetricsLogger:
     def log_image(
         self,
         name: str,
-        image: Union[np.ndarray, torch.Tensor],
+        image: Union[npt.NDArray[np.float32], torch.Tensor],
         step: Optional[int] = None,
         caption: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Log an image to W&B and TensorBoard.
 
@@ -185,17 +187,17 @@ class MetricsLogger:
         # Log to TensorBoard
         if self.use_tensorboard:
             try:
-                self.tb_writer.add_image(name, image, step)
+                self.tb_writer.add_image(name, image, step)  # type: ignore[no-untyped-call]
             except Exception as e:
                 logger.warning(f"Failed to log image to TensorBoard: {e}")
 
     def log_images(
         self,
         name: str,
-        images: List[Union[np.ndarray, torch.Tensor]],
+        images: List[Union[npt.NDArray[np.float32], torch.Tensor]],
         step: Optional[int] = None,
         captions: Optional[List[str]] = None,
-    ):
+    ) -> None:
         """
         Log multiple images to W&B and TensorBoard.
 
@@ -239,16 +241,16 @@ class MetricsLogger:
                 from torchvision.utils import make_grid
 
                 grid = make_grid(images_tensor, nrow=4)
-                self.tb_writer.add_image(name, grid, step)
+                self.tb_writer.add_image(name, grid, step)  # type: ignore[no-untyped-call]
             except Exception as e:
                 logger.warning(f"Failed to log images to TensorBoard: {e}")
 
     def log_histogram(
         self,
         name: str,
-        values: Union[np.ndarray, torch.Tensor],
+        values: Union[npt.NDArray[np.float32], torch.Tensor],
         step: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Log a histogram of values.
 
@@ -267,14 +269,21 @@ class MetricsLogger:
         # Log to W&B
         if self.use_wandb:
             try:
-                wandb.log({name: wandb.Histogram(values)}, step=step)
+                wandb.log(
+                    {
+                        name: wandb.Histogram(
+                            values.tolist() if isinstance(values, np.ndarray) else values
+                        )
+                    },
+                    step=step,
+                )
             except Exception as e:
                 logger.warning(f"Failed to log histogram to W&B: {e}")
 
         # Log to TensorBoard
         if self.use_tensorboard:
             try:
-                self.tb_writer.add_histogram(name, values, step)
+                self.tb_writer.add_histogram(name, values, step)  # type: ignore[no-untyped-call]
             except Exception as e:
                 logger.warning(f"Failed to log histogram to TensorBoard: {e}")
 
@@ -282,7 +291,7 @@ class MetricsLogger:
         self,
         model: nn.Module,
         step: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Log gradient histograms for model parameters.
 
@@ -305,7 +314,7 @@ class MetricsLogger:
         self,
         model: nn.Module,
         step: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Log weight histograms for model parameters.
 
@@ -328,7 +337,7 @@ class MetricsLogger:
         loss_dict: Dict[str, float],
         step: Optional[int] = None,
         prefix: str = "train/hierarchy/",
-    ):
+    ) -> None:
         """
         Log hierarchical losses per level with percentages.
 
@@ -341,8 +350,8 @@ class MetricsLogger:
             step = self.step
 
         # Extract level losses
-        level_losses = {}
-        total_loss = 0
+        level_losses: Dict[str, float] = {}
+        total_loss: float = 0.0
         for key, value in loss_dict.items():
             if key.startswith("loss_level_"):
                 level = key.split("_")[-1]
@@ -370,7 +379,7 @@ class MetricsLogger:
         masks: torch.Tensor,
         step: Optional[int] = None,
         max_images: int = 4,
-    ):
+    ) -> None:
         """
         Log side-by-side comparison of predictions vs targets.
 
@@ -426,7 +435,7 @@ class MetricsLogger:
         labels: Optional[torch.Tensor] = None,
         tag: str = "embeddings",
         step: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Log embeddings for t-SNE/UMAP visualization in TensorBoard.
 
@@ -450,7 +459,7 @@ class MetricsLogger:
                 if labels is not None:
                     metadata = labels.detach().cpu().numpy().tolist()
 
-                self.tb_writer.add_embedding(
+                self.tb_writer.add_embedding(  # type: ignore[no-untyped-call]
                     emb_np,
                     metadata=metadata,
                     tag=tag,
@@ -463,7 +472,7 @@ class MetricsLogger:
     def accumulate_metrics(
         self,
         metrics: Dict[str, float],
-    ):
+    ) -> None:
         """
         Accumulate metrics for later averaging.
 
@@ -480,7 +489,7 @@ class MetricsLogger:
         step: Optional[int] = None,
         prefix: str = "",
         reset: bool = True,
-    ):
+    ) -> None:
         """
         Log averaged accumulated metrics and optionally reset buffer.
 
@@ -493,13 +502,13 @@ class MetricsLogger:
             return
 
         # Compute averages
-        averaged_metrics = {}
+        averaged_metrics: Dict[str, Union[float, int]] = {}
         for name, values in self.metrics_buffer.items():
             # Convert to CPU if tensors, then to numpy array
             import torch
 
             cpu_values = [v.cpu().item() if isinstance(v, torch.Tensor) else v for v in values]
-            averaged_metrics[name] = np.mean(cpu_values)
+            averaged_metrics[name] = float(np.mean(cpu_values))
 
         # Log the averaged metrics
         self.log_metrics(averaged_metrics, step=step, prefix=prefix)
@@ -511,7 +520,7 @@ class MetricsLogger:
     def log_system_metrics(
         self,
         step: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Log system metrics (GPU usage, memory, etc.).
 
@@ -548,7 +557,7 @@ class MetricsLogger:
         self,
         model: nn.Module,
         log_freq: int = 1000,
-    ):
+    ) -> None:
         """
         Watch model for gradient and parameter tracking (W&B).
 
@@ -563,7 +572,7 @@ class MetricsLogger:
             except Exception as e:
                 logger.warning(f"Failed to watch model in W&B: {e}")
 
-    def finish(self):
+    def finish(self) -> None:
         """Clean up logging resources."""
         if self.use_wandb:
             try:
@@ -574,16 +583,16 @@ class MetricsLogger:
 
         if self.use_tensorboard:
             try:
-                self.tb_writer.close()
+                self.tb_writer.close()  # type: ignore[no-untyped-call]
                 logger.info("TensorBoard writer closed")
             except Exception as e:
                 logger.warning(f"Error closing TensorBoard: {e}")
 
-    def __enter__(self):
+    def __enter__(self) -> "MetricsLogger":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Context manager exit."""
         self.finish()
 
@@ -607,14 +616,14 @@ class ProgressTracker:
         self.total_steps = total_epochs * steps_per_epoch
 
         self.start_time = time.time()
-        self.epoch_start_time = None
-        self.step_times = []
+        self.epoch_start_time: Optional[float] = None
+        self.step_times: List[float] = []
 
-    def start_epoch(self):
+    def start_epoch(self) -> None:
         """Mark the start of an epoch."""
         self.epoch_start_time = time.time()
 
-    def step(self):
+    def step(self) -> None:
         """Record a training step."""
         if self.epoch_start_time is not None:
             step_time = time.time() - self.epoch_start_time
@@ -638,7 +647,7 @@ class ProgressTracker:
         if not self.step_times:
             return "N/A"
 
-        avg_step_time = np.mean(self.step_times)
+        avg_step_time = float(np.mean(self.step_times))
         steps_remaining = (self.total_epochs - current_epoch - 1) * self.steps_per_epoch + (
             self.steps_per_epoch - current_step
         )
@@ -665,7 +674,7 @@ class ProgressTracker:
         return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
-def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO):
+def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
     """
     Setup Python logging configuration.
 

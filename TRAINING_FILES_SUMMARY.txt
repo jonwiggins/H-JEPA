@@ -17,17 +17,17 @@ Documentation (1,100+ lines):
     - Comprehensive usage guide
     - Configuration reference
     - Troubleshooting tips
-    
+
   ✓ /home/user/H-JEPA/scripts/QUICK_START.md (236 lines)
     - 5-minute quick start
     - Common commands
     - Quick reference table
-    
+
   ✓ /home/user/H-JEPA/scripts/ARCHITECTURE.md (350+ lines)
     - System architecture diagrams
     - Component flow charts
     - Data pipeline visualization
-    
+
   ✓ /home/user/H-JEPA/TRAINING_SCRIPT_SUMMARY.md
     - Detailed implementation summary
     - Feature list

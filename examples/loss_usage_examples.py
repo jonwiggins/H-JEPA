@@ -7,13 +7,14 @@ in src/losses/ for training H-JEPA models.
 
 import torch
 import torch.nn as nn
+
 from src.losses import (
-    HJEPALoss,
-    VICRegLoss,
-    SIGRegLoss,
-    HybridVICRegSIGRegLoss,
     CombinedLoss,
     HierarchicalCombinedLoss,
+    HJEPALoss,
+    HybridVICRegSIGRegLoss,
+    SIGRegLoss,
+    VICRegLoss,
     create_loss_from_config,
 )
 
@@ -26,7 +27,7 @@ def example_1_basic_hjepa_loss():
 
     # Create loss function
     loss_fn = HJEPALoss(
-        loss_type='smoothl1',
+        loss_type="smoothl1",
         hierarchy_weights=[1.0, 0.5, 0.25],
         num_hierarchies=3,
         normalize_embeddings=True,
@@ -36,14 +37,8 @@ def example_1_basic_hjepa_loss():
     # Each level has [batch_size, num_patches, embedding_dim]
     batch_size, num_patches, embed_dim = 32, 196, 768
 
-    predictions = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
-    targets = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
+    predictions = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
+    targets = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
 
     # Compute loss
     loss_dict = loss_fn(predictions, targets)
@@ -96,7 +91,7 @@ def example_3_combined_loss():
 
     # Create combined loss
     loss_fn = CombinedLoss(
-        jepa_loss_type='smoothl1',
+        jepa_loss_type="smoothl1",
         jepa_hierarchy_weights=[1.0, 0.5, 0.25],
         num_hierarchies=3,
         vicreg_weight=0.1,  # Scale VICReg relative to JEPA
@@ -109,14 +104,8 @@ def example_3_combined_loss():
     # Simulate hierarchical predictions and targets
     batch_size, num_patches, embed_dim = 32, 196, 768
 
-    predictions = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
-    targets = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
+    predictions = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
+    targets = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
 
     # Compute loss
     loss_dict = loss_fn(predictions, targets)
@@ -128,8 +117,8 @@ def example_3_combined_loss():
     print()
     print("Per-level breakdown:")
     for i in range(3):
-        jepa = loss_dict[f'loss_h{i}'].item()
-        vicreg = loss_dict.get(f'vicreg_h{i}', torch.tensor(0.0)).item()
+        jepa = loss_dict[f"loss_h{i}"].item()
+        vicreg = loss_dict.get(f"vicreg_h{i}", torch.tensor(0.0)).item()
         print(f"  Level {i}: JEPA={jepa:.6f}, VICReg={vicreg:.6f}")
     print()
 
@@ -148,24 +137,24 @@ def example_4_hierarchical_combined():
     # Different VICReg configurations for each hierarchy level
     vicreg_configs = [
         {
-            'invariance_weight': 25.0,
-            'variance_weight': 25.0,
-            'covariance_weight': 1.0,
+            "invariance_weight": 25.0,
+            "variance_weight": 25.0,
+            "covariance_weight": 1.0,
         },
         {
-            'invariance_weight': 15.0,
-            'variance_weight': 15.0,
-            'covariance_weight': 0.5,
+            "invariance_weight": 15.0,
+            "variance_weight": 15.0,
+            "covariance_weight": 0.5,
         },
         {
-            'invariance_weight': 10.0,
-            'variance_weight': 10.0,
-            'covariance_weight': 0.25,
+            "invariance_weight": 10.0,
+            "variance_weight": 10.0,
+            "covariance_weight": 0.25,
         },
     ]
 
     loss_fn = HierarchicalCombinedLoss(
-        jepa_loss_type='smoothl1',
+        jepa_loss_type="smoothl1",
         jepa_hierarchy_weights=[1.0, 0.5, 0.25],
         num_hierarchies=3,
         vicreg_weight=[0.1, 0.05, 0.025],  # Different weights per level
@@ -174,14 +163,8 @@ def example_4_hierarchical_combined():
 
     # Simulate data
     batch_size, num_patches, embed_dim = 32, 196, 768
-    predictions = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
-    targets = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
+    predictions = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
+    targets = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
 
     # Compute loss
     loss_dict = loss_fn(predictions, targets)
@@ -200,7 +183,7 @@ def example_5_with_masking():
     print("=" * 60)
 
     loss_fn = HJEPALoss(
-        loss_type='smoothl1',
+        loss_type="smoothl1",
         hierarchy_weights=[1.0, 0.5, 0.25],
         num_hierarchies=3,
     )
@@ -208,20 +191,11 @@ def example_5_with_masking():
     # Simulate data with masks
     batch_size, num_patches, embed_dim = 32, 196, 768
 
-    predictions = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
-    targets = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
+    predictions = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
+    targets = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
 
     # Create random binary masks (1 = include in loss, 0 = exclude)
-    masks = [
-        torch.randint(0, 2, (batch_size, num_patches), dtype=torch.float32)
-        for _ in range(3)
-    ]
+    masks = [torch.randint(0, 2, (batch_size, num_patches), dtype=torch.float32) for _ in range(3)]
 
     # Compute loss with masking
     loss_dict = loss_fn(predictions, targets, masks)
@@ -239,15 +213,15 @@ def example_6_from_config():
 
     # Configuration dictionary (similar to YAML config)
     config = {
-        'type': 'combined',
-        'jepa_loss_type': 'smoothl1',
-        'hierarchy_weights': [1.0, 0.5, 0.25],
-        'num_hierarchies': 3,
-        'normalize_embeddings': True,
-        'vicreg_weight': 0.1,
-        'vicreg_invariance_weight': 25.0,
-        'vicreg_variance_weight': 25.0,
-        'vicreg_covariance_weight': 1.0,
+        "type": "combined",
+        "jepa_loss_type": "smoothl1",
+        "hierarchy_weights": [1.0, 0.5, 0.25],
+        "num_hierarchies": 3,
+        "normalize_embeddings": True,
+        "vicreg_weight": 0.1,
+        "vicreg_invariance_weight": 25.0,
+        "vicreg_variance_weight": 25.0,
+        "vicreg_covariance_weight": 1.0,
     }
 
     # Create loss from config
@@ -266,10 +240,10 @@ def example_7_sigreg_loss():
 
     # Create SIGReg loss
     loss_fn = SIGRegLoss(
-        num_slices=1024,              # Number of random projections
-        num_test_points=17,            # Reference Gaussian points
-        invariance_weight=25.0,        # MSE weight
-        sigreg_weight=25.0,            # SIGReg regularization weight
+        num_slices=1024,  # Number of random projections
+        num_test_points=17,  # Reference Gaussian points
+        invariance_weight=25.0,  # MSE weight
+        sigreg_weight=25.0,  # SIGReg regularization weight
         flatten_patches=True,
         fixed_slices=False,
     )
@@ -306,8 +280,8 @@ def example_8_hybrid_vicreg_sigreg():
 
     # Create hybrid loss for gradual transition or ablation studies
     loss_fn = HybridVICRegSIGRegLoss(
-        vicreg_weight=1.0,      # Start with VICReg
-        sigreg_weight=0.0,      # Gradually increase SIGReg
+        vicreg_weight=1.0,  # Start with VICReg
+        sigreg_weight=0.0,  # Gradually increase SIGReg
         invariance_weight=25.0,
         variance_weight=25.0,
         covariance_weight=1.0,
@@ -347,14 +321,14 @@ def example_9_sigreg_from_config():
 
     # Configuration dictionary for SIGReg
     config = {
-        'type': 'sigreg',
-        'sigreg_num_slices': 1024,
-        'sigreg_num_test_points': 17,
-        'sigreg_invariance_weight': 25.0,
-        'sigreg_weight': 25.0,
-        'sigreg_fixed_slices': False,
-        'flatten_patches': True,
-        'eps': 1e-6,
+        "type": "sigreg",
+        "sigreg_num_slices": 1024,
+        "sigreg_num_test_points": 17,
+        "sigreg_invariance_weight": 25.0,
+        "sigreg_weight": 25.0,
+        "sigreg_fixed_slices": False,
+        "flatten_patches": True,
+        "eps": 1e-6,
     }
 
     # Create loss from config
@@ -409,7 +383,7 @@ def example_10_training_loop():
 
     # Compute loss
     loss_dict = loss_fn(view_a, view_b)
-    total_loss = loss_dict['loss']
+    total_loss = loss_dict["loss"]
 
     # Backward pass
     optimizer.zero_grad()
@@ -482,7 +456,7 @@ def example_11_comparison():
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("H-JEPA Loss Functions - Usage Examples")
     print("=" * 60 + "\n")

@@ -12,23 +12,24 @@ DeiT III augmentations include:
 - Color jittering: Color-based augmentations
 """
 
+from pathlib import Path
+
 import torch
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from pathlib import Path
 
 # Import DeiT III augmentation components
 from src.data import (
+    CIFAR10Dataset,
     DeiTIIIAugmentation,
     DeiTIIIEvalTransform,
     build_deit3_transform,
-    CIFAR10Dataset,
 )
-
 
 # =============================================================================
 # Example 1: Basic Usage with Default DeiT III Settings
 # =============================================================================
+
 
 def example_1_basic_usage():
     """Basic usage with DeiT III defaults."""
@@ -93,6 +94,7 @@ def example_1_basic_usage():
 # Example 2: Custom Configuration
 # =============================================================================
 
+
 def example_2_custom_config():
     """Using custom augmentation configuration."""
     print("=" * 80)
@@ -101,23 +103,25 @@ def example_2_custom_config():
 
     # Create custom configuration
     custom_config = {
-        'image_size': 224,
-        'color_jitter': 0.3,  # Reduced color jitter
-        'auto_augment': True,
-        'rand_aug_num_ops': 3,  # More RandAugment operations
-        'rand_aug_magnitude': 7,  # Lower magnitude
-        'random_erasing_prob': 0.5,  # Higher erasing probability
-        'mixup_alpha': 0.5,  # Less aggressive mixup
-        'cutmix_alpha': 0.5,  # Less aggressive cutmix
-        'num_classes': 100,  # For CIFAR-100
+        "image_size": 224,
+        "color_jitter": 0.3,  # Reduced color jitter
+        "auto_augment": True,
+        "rand_aug_num_ops": 3,  # More RandAugment operations
+        "rand_aug_magnitude": 7,  # Lower magnitude
+        "random_erasing_prob": 0.5,  # Higher erasing probability
+        "mixup_alpha": 0.5,  # Less aggressive mixup
+        "cutmix_alpha": 0.5,  # Less aggressive cutmix
+        "num_classes": 100,  # For CIFAR-100
     }
 
     # Build transform from config
     train_aug = build_deit3_transform(is_training=True, config=custom_config)
 
     print("✓ Created custom DeiT III augmentation")
-    print(f"  - RandAugment: num_ops={custom_config['rand_aug_num_ops']}, "
-          f"magnitude={custom_config['rand_aug_magnitude']}")
+    print(
+        f"  - RandAugment: num_ops={custom_config['rand_aug_num_ops']}, "
+        f"magnitude={custom_config['rand_aug_magnitude']}"
+    )
     print(f"  - Mixup alpha: {custom_config['mixup_alpha']}")
     print(f"  - CutMix alpha: {custom_config['cutmix_alpha']}")
     print(f"  - Random Erasing prob: {custom_config['random_erasing_prob']}")
@@ -128,13 +132,14 @@ def example_2_custom_config():
 # Example 3: Individual Augmentation Components
 # =============================================================================
 
+
 def example_3_individual_components():
     """Using individual augmentation components."""
     print("=" * 80)
     print("Example 3: Individual Augmentation Components")
     print("=" * 80)
 
-    from src.data import RandAugment, Mixup, CutMix, RandomErasing
+    from src.data import CutMix, Mixup, RandAugment, RandomErasing
 
     # 1. RandAugment only
     rand_aug = RandAugment(num_ops=2, magnitude=9)
@@ -173,6 +178,7 @@ def example_3_individual_components():
 # Example 4: Evaluation Transform
 # =============================================================================
 
+
 def example_4_eval_transform():
     """Using evaluation transform (no augmentation)."""
     print("=" * 80)
@@ -197,6 +203,7 @@ def example_4_eval_transform():
 # Example 5: Complete Training Setup
 # =============================================================================
 
+
 def example_5_complete_training_setup():
     """Complete training setup with DeiT III augmentation."""
     print("=" * 80)
@@ -205,19 +212,19 @@ def example_5_complete_training_setup():
 
     # Configuration
     config = {
-        'image_size': 224,
-        'batch_size': 128,
-        'num_workers': 8,
-        'num_classes': 1000,
+        "image_size": 224,
+        "batch_size": 128,
+        "num_workers": 8,
+        "num_classes": 1000,
     }
 
     # 1. Create augmentation
     train_aug = DeiTIIIAugmentation(
-        image_size=config['image_size'],
-        num_classes=config['num_classes'],
+        image_size=config["image_size"],
+        num_classes=config["num_classes"],
     )
     eval_aug = DeiTIIIEvalTransform(
-        image_size=config['image_size'],
+        image_size=config["image_size"],
     )
 
     print("✓ Created augmentation pipelines")
@@ -245,7 +252,7 @@ def example_5_complete_training_setup():
     train_dataset = CIFAR10Dataset(
         data_path="data",
         split="train",
-        image_size=config['image_size'],
+        image_size=config["image_size"],
         transform=train_image_transform,
         download=True,
     )
@@ -253,7 +260,7 @@ def example_5_complete_training_setup():
     val_dataset = CIFAR10Dataset(
         data_path="data",
         split="val",
-        image_size=config['image_size'],
+        image_size=config["image_size"],
         transform=eval_aug,
         download=True,
     )
@@ -265,18 +272,18 @@ def example_5_complete_training_setup():
     # 4. Create dataloaders
     train_loader = DataLoader(
         train_dataset,
-        batch_size=config['batch_size'],
+        batch_size=config["batch_size"],
         shuffle=True,
-        num_workers=config['num_workers'],
+        num_workers=config["num_workers"],
         pin_memory=True,
         drop_last=True,
     )
 
     val_loader = DataLoader(
         val_dataset,
-        batch_size=config['batch_size'],
+        batch_size=config["batch_size"],
         shuffle=False,
-        num_workers=config['num_workers'],
+        num_workers=config["num_workers"],
         pin_memory=True,
     )
 
@@ -310,6 +317,7 @@ def example_5_complete_training_setup():
 # Example 6: Comparing Augmentation Strategies
 # =============================================================================
 
+
 def example_6_comparison():
     """Compare different augmentation strategies."""
     print("=" * 80)
@@ -318,6 +326,7 @@ def example_6_comparison():
 
     # Strategy 1: Minimal (JEPA-style)
     from src.data import JEPATransform
+
     jepa_transform = JEPATransform(
         image_size=224,
         color_jitter=0.4,

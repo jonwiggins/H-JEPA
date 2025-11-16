@@ -15,7 +15,7 @@ References:
 import math
 import random
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import torch
@@ -136,7 +136,7 @@ class RandAugment:
         """Shear image along X axis."""
         return img.transform(
             img.size,
-            Image.AFFINE,
+            Image.Transform.AFFINE,
             (1, magnitude, 0, 0, 1, 0),
             resample=self.interpolation,
             fillcolor=tuple(self.fill),
@@ -146,7 +146,7 @@ class RandAugment:
         """Shear image along Y axis."""
         return img.transform(
             img.size,
-            Image.AFFINE,
+            Image.Transform.AFFINE,
             (1, 0, 0, magnitude, 1, 0),
             resample=self.interpolation,
             fillcolor=tuple(self.fill),
@@ -157,7 +157,7 @@ class RandAugment:
         pixels = int(magnitude * img.size[0])
         return img.transform(
             img.size,
-            Image.AFFINE,
+            Image.Transform.AFFINE,
             (1, 0, pixels, 0, 1, 0),
             resample=self.interpolation,
             fillcolor=tuple(self.fill),
@@ -168,7 +168,7 @@ class RandAugment:
         pixels = int(magnitude * img.size[1])
         return img.transform(
             img.size,
-            Image.AFFINE,
+            Image.Transform.AFFINE,
             (1, 0, 0, 0, 1, pixels),
             resample=self.interpolation,
             fillcolor=tuple(self.fill),
@@ -181,7 +181,9 @@ class RandAugment:
 
         for op_name, op_func, magnitude_range in ops:
             magnitude = self._get_magnitude(magnitude_range)
-            img = op_func(img, magnitude)
+            # Some operations don't use magnitude (e.g., Identity, AutoContrast)
+            # but all our op_funcs accept Optional[float]
+            img = op_func(img, magnitude)  # type: ignore[arg-type]
 
         return img
 
@@ -472,7 +474,7 @@ class RandomErasing:
                         img[:, y : y + h, x : x + w].shape, dtype=img.dtype, device=img.device
                     )
                 else:
-                    img[:, y : y + h, x : x + w] = self.value
+                    img[:, y : y + h, x : x + w] = float(self.value)
 
                 return img
 
@@ -649,7 +651,7 @@ class DeiTIIIAugmentation:
 
     def __call__(self, img: Image.Image) -> Tensor:
         """Apply image-level transform to a single image."""
-        return self.image_transform(img)
+        return cast(Tensor, self.image_transform(img))
 
 
 class DeiTIIIEvalTransform:
@@ -687,7 +689,7 @@ class DeiTIIIEvalTransform:
 
     def __call__(self, img: Image.Image) -> Tensor:
         """Apply evaluation transform."""
-        return self.transform(img)
+        return cast(Tensor, self.transform(img))
 
 
 # =============================================================================
@@ -744,10 +746,10 @@ def build_deit3_transform(
         default_config.update(config)
 
     if is_training:
-        return DeiTIIIAugmentation(**default_config)
+        return DeiTIIIAugmentation(**default_config)  # type: ignore[arg-type]
     else:
         return DeiTIIIEvalTransform(
-            image_size=default_config["image_size"],
+            image_size=int(default_config["image_size"]),
         )
 
 

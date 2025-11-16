@@ -5,20 +5,26 @@ Provides functions to visualize multi-block masking strategies,
 context/target regions, and compare different masking approaches.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.animation as animation
+import matplotlib.figure as mfigure
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import torch
 
 try:
     from einops import rearrange
 except ImportError:
 
-    def rearrange(tensor, pattern, **axes_lengths):
+    def rearrange(  # type: ignore[misc]
+        tensor: Union[torch.Tensor, List[torch.Tensor]], pattern: str, **axes_lengths: Any
+    ) -> torch.Tensor:
         """Fallback rearrange for basic patterns."""
+        if not isinstance(tensor, torch.Tensor):
+            raise NotImplementedError("Fallback rearrange only supports single tensors")
         if pattern == "b n d -> b d n":
             return tensor.transpose(1, 2)
         elif pattern == "b d n -> b n d":
@@ -29,12 +35,12 @@ except ImportError:
 
 def visualize_masking_strategy(
     mask: torch.Tensor,
-    image: Optional[np.ndarray] = None,
+    image: Optional[npt.NDArray[np.float64]] = None,
     patch_size: int = 16,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 5),
     title: Optional[str] = None,
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize a single masking instance.
 
@@ -50,12 +56,11 @@ def visualize_masking_strategy(
         Matplotlib figure
     """
     # Convert mask to numpy
-    if isinstance(mask, torch.Tensor):
-        mask = mask.cpu().numpy()
+    mask_np: npt.NDArray[np.float64] = mask.cpu().numpy()
 
     # Reshape mask to 2D grid
-    grid_size = int(np.sqrt(len(mask)))
-    mask_2d = mask.reshape(grid_size, grid_size)
+    grid_size = int(np.sqrt(len(mask_np)))
+    mask_2d = mask_np.reshape(grid_size, grid_size)
 
     # Create figure
     num_plots = 3 if image is not None else 2
@@ -74,12 +79,12 @@ def visualize_masking_strategy(
     plt.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
 
     # Plot 2: Statistics
-    mask_ratio = mask.mean()
-    num_masked = int(mask.sum())
-    num_visible = len(mask) - num_masked
+    mask_ratio = mask_np.mean()
+    num_masked = int(mask_np.sum())
+    num_visible = len(mask_np) - num_masked
 
     stats_text = f"Masking Statistics:\n\n"
-    stats_text += f"Total patches: {len(mask)}\n"
+    stats_text += f"Total patches: {len(mask_np)}\n"
     stats_text += f"Masked patches: {num_masked}\n"
     stats_text += f"Visible patches: {num_visible}\n"
     stats_text += f"Mask ratio: {mask_ratio:.2%}"
@@ -133,7 +138,7 @@ def visualize_masked_image(
     mask_color: Tuple[float, float, float] = (0.5, 0.5, 0.5),
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 4),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize original image, mask, and masked image side by side.
 
@@ -149,45 +154,43 @@ def visualize_masked_image(
         Matplotlib figure
     """
     # Convert to numpy and normalize
-    if isinstance(image, torch.Tensor):
-        image = image.cpu().numpy()
+    image_np: npt.NDArray[np.float64] = image.cpu().numpy()
 
-    if image.shape[0] == 3:  # [C, H, W]
-        image = np.transpose(image, (1, 2, 0))
+    if image_np.shape[0] == 3:  # [C, H, W]
+        image_np = np.transpose(image_np, (1, 2, 0))
 
     # Normalize to [0, 1]
-    if image.max() > 1.0:
-        image = image / 255.0
+    if image_np.max() > 1.0:
+        image_np = image_np / 255.0
 
-    if isinstance(mask, torch.Tensor):
-        mask = mask.cpu().numpy()
+    mask_np: npt.NDArray[np.float64] = mask.cpu().numpy()
 
     # Reshape mask to 2D
-    grid_size = int(np.sqrt(len(mask)))
-    mask_2d = mask.reshape(grid_size, grid_size)
+    grid_size = int(np.sqrt(len(mask_np)))
+    mask_2d = mask_np.reshape(grid_size, grid_size)
 
     # Create masked image
-    masked_image = image.copy()
+    masked_image = image_np.copy()
     for i in range(grid_size):
         for j in range(grid_size):
             if mask_2d[i, j] > 0.5:
                 y_start = i * patch_size
-                y_end = min((i + 1) * patch_size, image.shape[0])
+                y_end = min((i + 1) * patch_size, image_np.shape[0])
                 x_start = j * patch_size
-                x_end = min((j + 1) * patch_size, image.shape[1])
+                x_end = min((j + 1) * patch_size, image_np.shape[1])
                 masked_image[y_start:y_end, x_start:x_end] = mask_color
 
     # Create figure
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 
     # Original image
-    axes[0].imshow(image)
+    axes[0].imshow(image_np)
     axes[0].set_title("Original Image")
     axes[0].axis("off")
 
     # Mask pattern
     axes[1].imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
-    axes[1].set_title(f"Mask ({mask.mean():.1%} masked)")
+    axes[1].set_title(f"Mask ({mask_np.mean():.1%} masked)")
     axes[1].axis("off")
 
     # Masked image
@@ -206,11 +209,11 @@ def visualize_masked_image(
 def visualize_context_target_regions(
     mask: torch.Tensor,
     target_blocks: Optional[List[Tuple[int, int, int, int]]] = None,
-    image: Optional[np.ndarray] = None,
+    image: Optional[npt.NDArray[np.float64]] = None,
     patch_size: int = 16,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 6),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize context (visible) and target (masked) regions separately.
 
@@ -225,11 +228,10 @@ def visualize_context_target_regions(
     Returns:
         Matplotlib figure
     """
-    if isinstance(mask, torch.Tensor):
-        mask = mask.cpu().numpy()
+    mask_np: npt.NDArray[np.float64] = mask.cpu().numpy()
 
-    grid_size = int(np.sqrt(len(mask)))
-    mask_2d = mask.reshape(grid_size, grid_size)
+    grid_size = int(np.sqrt(len(mask_np)))
+    mask_2d = mask_np.reshape(grid_size, grid_size)
 
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 
@@ -260,12 +262,12 @@ def visualize_context_target_regions(
     # Plot 2: Context regions only
     context_mask = 1 - mask_2d
     axes[1].imshow(context_mask, cmap="Greens", vmin=0, vmax=1, interpolation="nearest")
-    axes[1].set_title(f"Context Regions\n({(1-mask.mean()):.1%} visible)")
+    axes[1].set_title(f"Context Regions\n({(1-mask_np.mean()):.1%} visible)")
     axes[1].axis("off")
 
     # Plot 3: Target regions only
     axes[2].imshow(mask_2d, cmap="Reds", vmin=0, vmax=1, interpolation="nearest")
-    axes[2].set_title(f"Target Regions\n({mask.mean():.1%} masked)")
+    axes[2].set_title(f"Target Regions\n({mask_np.mean():.1%} masked)")
     axes[2].axis("off")
 
     plt.suptitle("Context and Target Regions", fontsize=14)
@@ -280,10 +282,10 @@ def visualize_context_target_regions(
 def compare_masking_strategies(
     masks: List[torch.Tensor],
     labels: List[str],
-    image: Optional[np.ndarray] = None,
+    image: Optional[npt.NDArray[np.float64]] = None,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 10),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Compare different masking strategies side by side.
 
@@ -309,10 +311,7 @@ def compare_masking_strategies(
         ax = axes[row, col]
 
         # Convert mask to numpy
-        if isinstance(mask, torch.Tensor):
-            mask_np = mask.cpu().numpy()
-        else:
-            mask_np = mask
+        mask_np: npt.NDArray[np.float64] = mask.cpu().numpy()
 
         # Reshape to 2D
         grid_size = int(np.sqrt(len(mask_np)))
@@ -347,7 +346,7 @@ def compare_masking_strategies(
 
 def animate_masking_process(
     masks: List[torch.Tensor],
-    image: Optional[np.ndarray] = None,
+    image: Optional[npt.NDArray[np.float64]] = None,
     patch_size: int = 16,
     save_path: Optional[str] = None,
     interval: int = 500,
@@ -383,7 +382,7 @@ def animate_masking_process(
         axes[1].set_title("Masked Image")
         axes[1].axis("off")
 
-    def update(frame):
+    def update(frame: int) -> List[Any]:
         mask = masks[frame].cpu().numpy()
         mask_2d = mask.reshape(grid_size, grid_size)
 
@@ -423,7 +422,7 @@ def visualize_multi_block_masking(
     mask_scale: Tuple[float, float] = (0.15, 0.2),
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (15, 10),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize multiple samples of multi-block masking strategy.
 
@@ -501,7 +500,7 @@ def plot_masking_statistics(
     masks: List[torch.Tensor],
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 4),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Plot statistics about masking patterns.
 

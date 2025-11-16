@@ -458,4 +458,3 @@ For production runs, focus on:
 2. `collapse/level{i}_*` - prevent collapse
 3. `prediction/level{i}_cosine_sim_mean` - validate learning
 4. `gradient/clipping_percentage` - detect training instability
-

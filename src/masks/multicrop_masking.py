@@ -11,7 +11,7 @@ This combines the benefits of multi-crop augmentation with H-JEPA's
 hierarchical predictive learning.
 """
 
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,7 +72,7 @@ class MultiCropMaskGenerator:
         base_scale: Tuple[float, float] = (0.05, 0.15),
         aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
-    ):
+    ) -> None:
         self.global_crop_size = global_crop_size
         self.local_crop_size = local_crop_size
         self.num_global_crops = num_global_crops
@@ -104,6 +104,7 @@ class MultiCropMaskGenerator:
         )
 
         # Create mask generator for local crops if needed
+        self.local_mask_gen: Optional[HierarchicalMaskGenerator]
         if masking_strategy == "cross_crop_prediction":
             self.local_mask_gen = HierarchicalMaskGenerator(
                 input_size=local_crop_size,
@@ -117,7 +118,7 @@ class MultiCropMaskGenerator:
         else:
             self.local_mask_gen = None
 
-    def __call__(self, batch_size: int, device: str = "cuda") -> Dict[str, Dict]:
+    def __call__(self, batch_size: int, device: str = "cuda") -> Dict[str, Any]:
         """
         Generate masks for multi-crop inputs.
 
@@ -153,7 +154,7 @@ class MultiCropMaskGenerator:
 
         return masks
 
-    def _generate_global_only_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
+    def _generate_global_only_masks(self, batch_size: int, device: str) -> Dict[str, Any]:
         """
         Generate masks only for global crops.
 
@@ -171,7 +172,7 @@ class MultiCropMaskGenerator:
             "local_masks": None,
         }
 
-    def _generate_global_with_local_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
+    def _generate_global_with_local_masks(self, batch_size: int, device: str) -> Dict[str, Any]:
         """
         Generate masks for global crops, treat local crops as context.
 
@@ -201,7 +202,7 @@ class MultiCropMaskGenerator:
             "local_masks": local_masks,
         }
 
-    def _generate_cross_crop_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
+    def _generate_cross_crop_masks(self, batch_size: int, device: str) -> Dict[str, Any]:
         """
         Generate masks for cross-crop prediction.
 
@@ -221,7 +222,7 @@ class MultiCropMaskGenerator:
         num_masked_local = self.num_local_crops // 2
 
         for crop_idx in range(self.num_local_crops):
-            if crop_idx < num_masked_local:
+            if crop_idx < num_masked_local and self.local_mask_gen is not None:
                 # Apply masking to this local crop
                 crop_masks = self.local_mask_gen(batch_size=batch_size, device=device)
                 local_masks[f"crop_{crop_idx}"] = crop_masks
@@ -230,9 +231,19 @@ class MultiCropMaskGenerator:
                 local_context = torch.ones(
                     batch_size, self.local_num_patches, dtype=torch.bool, device=device
                 )
+                # Create empty targets tensor to match hierarchical structure
+                empty_targets = torch.zeros(
+                    batch_size,
+                    self.num_target_masks,
+                    self.local_num_patches,
+                    dtype=torch.bool,
+                    device=device,
+                )
                 local_masks[f"crop_{crop_idx}"] = {
-                    "context": local_context,
-                    "targets": None,
+                    "level_0": {
+                        "context": local_context,
+                        "targets": empty_targets,
+                    }
                 }
 
         return {
@@ -259,11 +270,11 @@ class MultiCropMaskGenerator:
 
     def visualize_multicrop_masks(
         self,
-        masks: Dict[str, Dict],
+        masks: Dict[str, Any],
         sample_idx: int = 0,
         figsize: Tuple[int, int] = (20, 10),
         save_path: Optional[str] = None,
-    ) -> plt.Figure:
+    ) -> "plt.Figure":
         """
         Visualize masks across all crops.
 
@@ -397,12 +408,14 @@ class MultiCropMaskGenerator:
         return fig
 
 
-def demo():
+def demo() -> None:
     """Demonstration of MultiCropMaskGenerator."""
     print("Multi-Crop Mask Generator Demo")
     print("=" * 70)
 
-    strategies = ["global_only", "global_with_local_context", "cross_crop_prediction"]
+    strategies: List[
+        Literal["global_only", "global_with_local_context", "cross_crop_prediction"]
+    ] = ["global_only", "global_with_local_context", "cross_crop_prediction"]
 
     for strategy in strategies:
         print(f"\nStrategy: {strategy}")

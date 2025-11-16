@@ -9,14 +9,14 @@ and k-NN evaluation across different datasets.
 This provides a comprehensive assessment of representation generalization.
 """
 
-import torch
-import subprocess
-import json
-from pathlib import Path
 import argparse
-from typing import List, Dict
-import pandas as pd
+import json
+import subprocess
+from pathlib import Path
+from typing import Dict, List
 
+import pandas as pd
+import torch
 
 DATASETS = ["cifar10", "cifar100", "stl10"]
 
@@ -36,11 +36,16 @@ def run_linear_probe(
     cmd = [
         "python3.11",
         "scripts/eval_linear_probe.py",
-        "--checkpoint", checkpoint,
-        "--dataset", dataset,
-        "--device", device,
-        "--epochs", str(epochs),
-        "--output-dir", str(output_dir / "linear_probe"),
+        "--checkpoint",
+        checkpoint,
+        "--dataset",
+        dataset,
+        "--device",
+        device,
+        "--epochs",
+        str(epochs),
+        "--output-dir",
+        str(output_dir / "linear_probe"),
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -54,7 +59,7 @@ def run_linear_probe(
     checkpoint_name = Path(checkpoint).stem
     results_file = output_dir / "linear_probe" / f"{checkpoint_name}_{dataset}_results.json"
 
-    with open(results_file, 'r') as f:
+    with open(results_file, "r") as f:
         results = json.load(f)
 
     print(f"✓ Linear Probe Accuracy: {results['best_val_acc']:.2f}%")
@@ -79,11 +84,16 @@ def run_knn(
     cmd = [
         "python3.11",
         "scripts/eval_knn.py",
-        "--checkpoint", checkpoint,
-        "--dataset", dataset,
-        "--device", device,
-        "--k", *[str(k) for k in k_values],
-        "--output-dir", str(output_dir / "knn"),
+        "--checkpoint",
+        checkpoint,
+        "--dataset",
+        dataset,
+        "--device",
+        device,
+        "--k",
+        *[str(k) for k in k_values],
+        "--output-dir",
+        str(output_dir / "knn"),
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -97,13 +107,13 @@ def run_knn(
     checkpoint_name = Path(checkpoint).stem
     results_file = output_dir / "knn" / f"{checkpoint_name}_{dataset}_knn_results.json"
 
-    with open(results_file, 'r') as f:
+    with open(results_file, "r") as f:
         results = json.load(f)
 
     # Print k-NN results
     print(f"✓ k-NN Results:")
     for k in k_values:
-        acc = results['results'][f'k={k}']['accuracy']
+        acc = results["results"][f"k={k}"]["accuracy"]
         print(f"  k={k:2d}: {acc:6.2f}%")
 
     return results
@@ -120,16 +130,16 @@ def create_summary_report(
     data = []
 
     for dataset in DATASETS:
-        if dataset in linear_results and 'best_val_acc' in linear_results[dataset]:
+        if dataset in linear_results and "best_val_acc" in linear_results[dataset]:
             row = {
-                'Dataset': dataset.upper(),
-                'Linear Probe': f"{linear_results[dataset]['best_val_acc']:.2f}%",
+                "Dataset": dataset.upper(),
+                "Linear Probe": f"{linear_results[dataset]['best_val_acc']:.2f}%",
             }
 
             # Add k-NN results
-            if dataset in knn_results and 'results' in knn_results[dataset]:
-                for k_key, k_result in knn_results[dataset]['results'].items():
-                    row[f'k-NN {k_key}'] = f"{k_result['accuracy']:.2f}%"
+            if dataset in knn_results and "results" in knn_results[dataset]:
+                for k_key, k_result in knn_results[dataset]["results"].items():
+                    row[f"k-NN {k_key}"] = f"{k_result['accuracy']:.2f}%"
 
             data.append(row)
 
@@ -150,26 +160,42 @@ def create_summary_report(
 
     # Save detailed JSON
     json_file = output_dir / "transfer_learning_detailed.json"
-    with open(json_file, 'w') as f:
-        json.dump({
-            'linear_probe': linear_results,
-            'knn': knn_results,
-        }, f, indent=2)
+    with open(json_file, "w") as f:
+        json.dump(
+            {
+                "linear_probe": linear_results,
+                "knn": knn_results,
+            },
+            f,
+            indent=2,
+        )
 
     print(f"✓ Detailed results saved to {json_file}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Transfer learning evaluation for H-JEPA")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to pretrained checkpoint")
-    parser.add_argument("--datasets", type=str, nargs="+", default=DATASETS,
-                       choices=DATASETS, help="Datasets to evaluate on")
+    parser.add_argument(
+        "--checkpoint", type=str, required=True, help="Path to pretrained checkpoint"
+    )
+    parser.add_argument(
+        "--datasets",
+        type=str,
+        nargs="+",
+        default=DATASETS,
+        choices=DATASETS,
+        help="Datasets to evaluate on",
+    )
     parser.add_argument("--device", type=str, default="mps", choices=["mps", "cuda", "cpu"])
     parser.add_argument("--linear-probe", action="store_true", help="Run linear probing evaluation")
     parser.add_argument("--knn", action="store_true", help="Run k-NN evaluation")
     parser.add_argument("--linear-epochs", type=int, default=100, help="Epochs for linear probing")
-    parser.add_argument("--k-values", type=int, nargs="+", default=[1, 5, 10, 20], help="k values for k-NN")
-    parser.add_argument("--output-dir", type=str, default="results/transfer_learning", help="Output directory")
+    parser.add_argument(
+        "--k-values", type=int, nargs="+", default=[1, 5, 10, 20], help="k values for k-NN"
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default="results/transfer_learning", help="Output directory"
+    )
 
     args = parser.parse_args()
 

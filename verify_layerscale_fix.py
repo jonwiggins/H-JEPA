@@ -15,7 +15,7 @@ def check_create_encoder_signature():
     print("Checking create_encoder() signature...")
 
     # Read the encoder.py file
-    with open('src/models/encoder.py', 'r') as f:
+    with open("src/models/encoder.py", "r") as f:
         content = f.read()
 
     # Parse the file
@@ -23,10 +23,10 @@ def check_create_encoder_signature():
 
     # Find the create_encoder function
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == 'create_encoder':
+        if isinstance(node, ast.FunctionDef) and node.name == "create_encoder":
             params = [arg.arg for arg in node.args.args]
 
-            required_params = ['use_flash_attention', 'use_layerscale', 'layerscale_init']
+            required_params = ["use_flash_attention", "use_layerscale", "layerscale_init"]
             for param in required_params:
                 if param in params:
                     print(f"  ✅ Found parameter: {param}")
@@ -45,27 +45,27 @@ def check_hjepa_calls_create_encoder():
     print("\nChecking HJEPA calls to create_encoder()...")
 
     # Read the hjepa.py file
-    with open('src/models/hjepa.py', 'r') as f:
+    with open("src/models/hjepa.py", "r") as f:
         content = f.read()
 
     # Look for the create_encoder call
-    if 'create_encoder(' not in content:
+    if "create_encoder(" not in content:
         print("  ❌ HJEPA does not call create_encoder")
         return False
 
     # Find the specific call with parameters
-    start = content.find('self.context_encoder, self.target_encoder = create_encoder(')
+    start = content.find("self.context_encoder, self.target_encoder = create_encoder(")
     if start == -1:
         print("  ❌ Could not find encoder creation call")
         return False
 
-    end = content.find(')', start)
+    end = content.find(")", start)
     call = content[start:end]
 
     # Check for required parameters
-    required_params = ['use_flash_attention', 'use_layerscale', 'layerscale_init']
+    required_params = ["use_flash_attention", "use_layerscale", "layerscale_init"]
     for param in required_params:
-        if f'{param}={param}' in call:
+        if f"{param}={param}" in call:
             print(f"  ✅ HJEPA passes: {param}")
         else:
             print(f"  ❌ HJEPA missing: {param}")
@@ -78,14 +78,14 @@ def check_todo_comments():
     """Check that TODO comments exist for pending implementation."""
     print("\nChecking TODO comments...")
 
-    with open('src/models/encoder.py', 'r') as f:
+    with open("src/models/encoder.py", "r") as f:
         content = f.read()
 
     # Look for TODO comments related to LayerScale
-    if 'TODO: LayerScale integration' in content:
+    if "TODO: LayerScale integration" in content:
         print("  ✅ Found TODO comment for LayerScale")
         return True
-    elif 'TODO' in content and 'layerscale' in content.lower():
+    elif "TODO" in content and "layerscale" in content.lower():
         print("  ✅ Found TODO comment mentioning LayerScale")
         return True
     else:

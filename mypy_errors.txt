@@ -1,0 +1,2248 @@
+src/visualization/training_viz.py: note: In function "visualize_loss_landscape":
+src/visualization/training_viz.py:149:17: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+        dataloader: torch.utils.data.DataLoader,
+                    ^
+src/visualization/training_viz.py:193:22: error: Incompatible types in
+assignment (expression has type "tuple[list[Any], list[Any]]", variable has type
+"tuple[Tensor, Tensor] | None")  [assignment]
+            directions = (direction1, direction2)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/training_viz.py:213:35: error: Value of type
+"tuple[Tensor, Tensor] | None" is not indexable  [index]
+                            + alpha * directions[0][param_idx]
+                                      ^~~~~~~~~~~~~
+src/visualization/training_viz.py:214:34: error: Value of type
+"tuple[Tensor, Tensor] | None" is not indexable  [index]
+                            + beta * directions[1][param_idx]
+                                     ^~~~~~~~~~~~~
+src/visualization/training_viz.py:235:35: error: "Tensor" not callable
+[operator]
+                        num_patches = model.get_num_patches()
+                                      ^~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/training_viz.py: note: In function "plot_collapse_metrics":
+src/visualization/training_viz.py:409:9: error: Statement is unreachable
+[unreachable]
+            features_np = features
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/visualization/training_viz.py: note: In function "load_training_logs":
+src/visualization/training_viz.py:551:54: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    def load_training_logs(log_dir: Union[str, Path]) -> Dict:
+                                                         ^
+src/visualization/prediction_viz.py: note: In function "visualize_predictions":
+src/visualization/prediction_viz.py:37:30: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        original_image: Optional[np.ndarray] = None,
+                                 ^
+src/visualization/prediction_viz.py: note: In function "visualize_feature_space":
+src/visualization/prediction_viz.py:232:1: error: Function is missing a type
+annotation for one or more arguments  [no-untyped-def]
+    def visualize_feature_space(
+    ^
+src/visualization/prediction_viz.py:234:22: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        labels: Optional[np.ndarray] = None,
+                         ^
+src/visualization/prediction_viz.py:264:9: error: Statement is unreachable
+[unreachable]
+            features_np = features
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/visualization/prediction_viz.py: note: In function "visualize_nearest_neighbors":
+src/visualization/prediction_viz.py:361:26: error: "Tensor" not callable
+[operator]
+            query_features = model.extract_features(query_image, level=lev...
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/prediction_viz.py:362:29: error: "Tensor" not callable
+[operator]
+            database_features = model.extract_features(database_images, le...
+                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/visualization/prediction_viz.py:401:31: error: Invalid index type
+"int | float" for "Tensor"; expected type
+"SupportsIndex | bool | int | slice[Any, Any, Any] | EllipsisType | Tensor | _NestedSequence[bool | int | slice[Any, Any, Any] | EllipsisType | Tensor | None] | tuple[SupportsIndex | bool | int | slice[Any, Any, Any] | EllipsisType | Tensor | _NestedSequence[bool | int | slice[Any, Any, Any] | EllipsisType | Tensor | None] | None, ...] | None"
+ [index]
+            img = database_images[idx].cpu().permute(1, 2, 0).numpy()
+                                  ^~~
+src/visualization/prediction_viz.py:409:43: error: Invalid index type
+"int | float" for "list[str]"; expected type "SupportsIndex"  [index]
+                title += f"\n{database_labels[idx]}"
+                                              ^~~
+src/visualization/prediction_viz.py: note: In function "visualize_reconstruction":
+src/visualization/prediction_viz.py:427:30: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        original_image: Optional[np.ndarray] = None,
+                                 ^
+src/visualization/prediction_viz.py:449:9: error: Statement is unreachable
+[unreachable]
+            pred_np = predictions[0]
+            ^~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/prediction_viz.py:454:9: error: Statement is unreachable
+[unreachable]
+            target_np = targets[0]
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/visualization/prediction_viz.py:459:9: error: Statement is unreachable
+[unreachable]
+            mask_np = mask[0]
+            ^~~~~~~~~~~~~~~~~
+src/visualization/prediction_viz.py: note: In function "visualize_embedding_distribution":
+src/visualization/prediction_viz.py:538:9: error: Statement is unreachable
+[unreachable]
+            features_np = features
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/utils/checkpoint.py: note: In member "save_checkpoint" of class "CheckpointManager":
+src/utils/checkpoint.py:92:23: error: Item "Tensor" of "Tensor | Module" has no
+attribute "state_dict"  [union-attr]
+            model_state = model.module.state_dict() if hasattr(model, "mod...
+                          ^~~~~~~~~~~~~~~~~~~~~~~
+src/utils/checkpoint.py: note: In member "load_checkpoint" of class "CheckpointManager":
+src/utils/checkpoint.py:169:13: error: Item "Tensor" of "Tensor | Module" has
+no attribute "load_state_dict"  [union-attr]
+                model.module.load_state_dict(checkpoint["model_state_dict"...
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/checkpoint.py: note: In member "_update_best_checkpoints" of class "CheckpointManager":
+src/utils/checkpoint.py:241:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _update_best_checkpoints(
+        ^
+src/utils/checkpoint.py: note: In member "cleanup_old_checkpoints" of class "CheckpointManager":
+src/utils/checkpoint.py:285:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def cleanup_old_checkpoints(self, keep_last_n: int = 5):
+        ^
+src/utils/checkpoint.py: note: In function "save_checkpoint":
+src/utils/checkpoint.py:344:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    def save_checkpoint(
+    ^
+src/utils/checkpoint.py:344:1: error: Function is missing a type annotation for
+one or more arguments  [no-untyped-def]
+    def save_checkpoint(
+    ^
+src/utils/checkpoint.py:357:19: error: Item "Tensor" of "Tensor | Module" has
+no attribute "state_dict"  [union-attr]
+        model_state = model.module.state_dict() if hasattr(model, "module"...
+                      ^~~~~~~~~~~~~~~~~~~~~~~
+src/utils/checkpoint.py: note: In function "load_checkpoint":
+src/utils/checkpoint.py:391:9: error: Item "Tensor" of "Tensor | Module" has no
+attribute "load_state_dict"  [union-attr]
+            model.module.load_state_dict(checkpoint["model_state_dict"])
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/checkpoint.py:399:5: error: Returning Any from function declared to
+return "dict[str, Any]"  [no-any-return]
+        return checkpoint
+        ^~~~~~~~~~~~~~~~~
+src/masks/multi_block.py: note: In member "__init__" of class "MultiBlockMaskGenerator":
+src/masks/multi_block.py:53:21: error: Invalid type comment or annotation
+[valid-type]
+            input_size: int or Tuple[int, int] = 224,
+                        ^
+src/masks/multi_block.py: note: In member "_sample_block" of class "MultiBlockMaskGenerator":
+src/masks/multi_block.py:169:28: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+            occupied: Optional[np.ndarray] = None,
+                               ^
+src/masks/multi_block.py: note: In function "demo":
+src/masks/multi_block.py:343:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    def demo():
+    ^
+src/masks/multi_block.py:343:1: note: Use "-> None" if function does not return a value
+src/masks/multi_block.py: note: At top level:
+src/masks/multi_block.py:393:5: error: Call to untyped function "demo" in typed
+context  [no-untyped-call]
+        demo()
+        ^~~~~~
+src/masks/hierarchical.py: note: In member "__init__" of class "HierarchicalMaskGenerator":
+src/masks/hierarchical.py:54:21: error: Invalid type comment or annotation
+[valid-type]
+            input_size: int or Tuple[int, int] = 224,
+                        ^
+src/masks/hierarchical.py: note: In member "_compute_level_configs" of class "HierarchicalMaskGenerator":
+src/masks/hierarchical.py:85:46: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+        def _compute_level_configs(self) -> List[Dict]:
+                                                 ^
+src/masks/hierarchical.py: note: In member "_generate_level_masks" of class "HierarchicalMaskGenerator":
+src/masks/hierarchical.py:166:17: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+            config: Dict,
+                    ^
+src/masks/hierarchical.py: note: In member "_sample_block" of class "HierarchicalMaskGenerator":
+src/masks/hierarchical.py:234:28: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+            occupied: Optional[np.ndarray] = None,
+                               ^
+src/masks/hierarchical.py: note: In member "get_hierarchical_statistics" of class "HierarchicalMaskGenerator":
+src/masks/hierarchical.py:466:16: error: Incompatible return value type (got
+"dict[str, dict[str, floating[Any] | float | Any]]", expected
+"dict[str, dict[str, float]]")  [return-value]
+            return stats
+                   ^~~~~
+src/masks/hierarchical.py: note: In function "demo":
+src/masks/hierarchical.py:469:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    def demo():
+    ^
+src/masks/hierarchical.py:469:1: note: Use "-> None" if function does not return a value
+src/masks/hierarchical.py: note: At top level:
+src/masks/hierarchical.py:538:5: error: Call to untyped function "demo" in
+typed context  [no-untyped-call]
+        demo()
+        ^~~~~~
+src/losses/vicreg.py: note: In member "_covariance_loss" of class "VICRegLoss":
+src/losses/vicreg.py:160:9: error: Returning Any from function declared to
+return "Tensor"  [no-any-return]
+            return covariance_loss
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/losses/vicreg.py: note: In member "__init__" of class "AdaptiveVICRegLoss":
+src/losses/vicreg.py:299:38: error: Incompatible types in assignment
+(expression has type "Parameter", variable has type "float")  [assignment]
+                self.invariance_weight = nn.Parameter(
+                                         ^
+src/losses/vicreg.py:302:36: error: Incompatible types in assignment
+(expression has type "Parameter", variable has type "float")  [assignment]
+                self.variance_weight = nn.Parameter(torch.tensor(variance_...
+                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/losses/vicreg.py:303:38: error: Incompatible types in assignment
+(expression has type "Parameter", variable has type "float")  [assignment]
+                self.covariance_weight = nn.Parameter(
+                                         ^
+src/losses/vicreg.py: note: In member "update_weights" of class "AdaptiveVICRegLoss":
+src/losses/vicreg.py:335:13: error: "float" has no attribute "data"
+[attr-defined]
+                self.invariance_weight.data = (
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/vicreg.py:336:40: error: "float" has no attribute "data"
+[attr-defined]
+                    self.weight_momentum * self.invariance_weight.data
+                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/vicreg.py:339:13: error: "float" has no attribute "data"
+[attr-defined]
+                self.variance_weight.data = (
+                ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/vicreg.py:340:40: error: "float" has no attribute "data"
+[attr-defined]
+                    self.weight_momentum * self.variance_weight.data
+                                           ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/vicreg.py:343:13: error: "float" has no attribute "data"
+[attr-defined]
+                self.covariance_weight.data = (
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/vicreg.py:344:40: error: "float" has no attribute "data"
+[attr-defined]
+                    self.weight_momentum * self.covariance_weight.data
+                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/hjepa_loss.py: note: In member "forward" of class "HJEPALoss":
+src/losses/hjepa_loss.py:205:27: error: Subclass of "list[Tensor]" and "Tensor"
+cannot exist: would have incompatible method signatures  [unreachable]
+                if isinstance(masks, torch.Tensor):
+                              ^~~~~
+src/losses/hjepa_loss.py:206:17: error: Statement is unreachable  [unreachable]
+                    masks = [masks]
+                    ^~~~~~~~~~~~~~~
+src/losses/hjepa_loss.py:263:27: error: Unsupported operand types for *
+("Tensor" and Module)  [operator]
+            weighted_losses = losses_tensor * self._hierarchy_weights
+                              ^
+src/losses/hjepa_loss.py:263:27: note: Right operand is of type "Tensor | Module"
+src/losses/contrastive.py: note: In member "forward" of class "ContrastiveJEPALoss":
+src/losses/contrastive.py:360:56: error: Subclass of "Tensor" and "list[Any]"
+cannot exist: would have incompatible method signatures  [unreachable]
+    ...      device=predictions[0].device if isinstance(predictions, list) el...
+                                                        ^~~~~~~~~~~
+src/losses/contrastive.py: note: In function "create_cjepa_loss_from_config":
+src/losses/contrastive.py:458:43: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+    def create_cjepa_loss_from_config(config: Dict, jepa_loss: nn.Module) ...
+                                              ^
+src/evaluation/transfer.py: note: In member "__init__" of class "TransferHead":
+src/evaluation/transfer.py:48:27: error: Argument 1 to "append" of "list" has
+incompatible type "ReLU"; expected "Linear"  [arg-type]
+                layers.append(nn.ReLU())
+                              ^~~~~~~~~
+src/evaluation/transfer.py:50:31: error: Argument 1 to "append" of "list" has
+incompatible type "Dropout"; expected "Linear"  [arg-type]
+                    layers.append(nn.Dropout(dropout))
+                                  ^~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py: note: In member "forward" of class "TransferHead":
+src/evaluation/transfer.py:73:9: error: Returning Any from function declared to
+return "Tensor"  [no-any-return]
+            return self.mlp(features)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py: note: In member "__init__" of class "FineTuneEvaluator":
+src/evaluation/transfer.py:118:23: error: Argument "input_dim" to
+"TransferHead" has incompatible type "Tensor | Module"; expected "int"
+[arg-type]
+                input_dim=input_dim,
+                          ^~~~~~~~~
+src/evaluation/transfer.py: note: In member "forward" of class "FineTuneEvaluator":
+src/evaluation/transfer.py:129:28: error: "Tensor" not callable  [operator]
+                    features = self.model.extract_features(
+                               ^
+src/evaluation/transfer.py:136:24: error: "Tensor" not callable  [operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/transfer.py:144:9: error: Returning Any from function declared
+to return "Tensor"  [no-any-return]
+            return logits
+            ^~~~~~~~~~~~~
+src/evaluation/transfer.py: note: In member "train_epoch" of class "FineTuneEvaluator":
+src/evaluation/transfer.py:148:23: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            train_loader: DataLoader,
+                          ^
+src/evaluation/transfer.py:180:13: error: Incompatible types in assignment
+(expression has type "int | float", variable has type "int")  [assignment]
+                correct += predicted.eq(labels).sum().item()
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:183:17: error: Item "DataLoader[Any]" of
+"Any | DataLoader[Any]" has no attribute "set_postfix"  [union-attr]
+                    pbar.set_postfix(
+                    ^~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:184:44: error: Item "DataLoader[Any]" of
+"Any | DataLoader[Any]" has no attribute "n"  [union-attr]
+                        {"loss": total_loss / (pbar.n + 1), "acc": 100.0 *...
+                                               ^~~~~~
+src/evaluation/transfer.py: note: In member "evaluate" of class "FineTuneEvaluator":
+src/evaluation/transfer.py:197:22: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            test_loader: DataLoader,
+                         ^
+src/evaluation/transfer.py:225:13: error: Incompatible types in assignment
+(expression has type "int | float", variable has type "int")  [assignment]
+                correct += predicted.eq(labels).sum().item()
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py: note: In member "fine_tune" of class "FineTuneEvaluator":
+src/evaluation/transfer.py:239:23: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            train_loader: DataLoader,
+                          ^
+src/evaluation/transfer.py:240:30: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            val_loader: Optional[DataLoader] = None,
+                                 ^
+src/evaluation/transfer.py:268:22: error: Incompatible types in assignment
+(expression has type "list[dict[str, object]]", variable has type
+"Iterator[Parameter]")  [assignment]
+                params = [
+                         ^
+src/evaluation/transfer.py:268:22: note: "list" is missing following "Iterator" protocol member:
+src/evaluation/transfer.py:268:22: note:     __next__
+src/evaluation/transfer.py:268:22: note: Following member(s) of "list[dict[str, object]]" have conflicts:
+src/evaluation/transfer.py:268:22: note:     Expected:
+src/evaluation/transfer.py:268:22: note:         def __iter__(self) -> Iterator[Parameter]
+src/evaluation/transfer.py:268:22: note:     Got:
+src/evaluation/transfer.py:268:22: note:         def __iter__(self) -> Iterator[dict[str, object]]
+src/evaluation/transfer.py:279:25: error: Incompatible types in assignment
+(expression has type "StepLR", variable has type "CosineAnnealingLR")
+[assignment]
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, ste...
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/evaluation/transfer.py:286:19: error: Need type annotation for "history"
+[var-annotated]
+            history = {
+                      ^
+src/evaluation/transfer.py: note: In member "sample_few_shot_episodes" of class "FewShotEvaluator":
+src/evaluation/transfer.py:370:18: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+            dataset: torch.utils.data.Dataset,
+                     ^
+src/evaluation/transfer.py:375:15: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+        ) -> List[Dict]:
+                  ^
+src/evaluation/transfer.py:391:28: error: Argument 1 to "len" has incompatible
+type "Dataset[Any]"; expected "Sized"  [arg-type]
+            for i in range(len(dataset)):
+                               ^~~~~~~
+src/evaluation/transfer.py:394:22: error: Incompatible types in assignment
+(expression has type "ndarray[Any, dtype[Any]]", variable has type "list[Any]")
+[assignment]
+            all_labels = np.array(all_labels)
+                         ^~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:399:49: error: Non-overlapping equality check (left
+operand type: "list[Any]", right operand type: "int")  [comparison-overlap]
+                class_indices[class_idx] = np.where(all_labels == class_id...
+                                                    ^~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:407:13: error: Need type annotation for
+"support_indices" (hint: "support_indices: list[<type>] = ...")  [var-annotated]
+                support_indices = []
+                ^~~~~~~~~~~~~~~
+src/evaluation/transfer.py:408:13: error: Need type annotation for
+"query_indices" (hint: "query_indices: list[<type>] = ...")  [var-annotated]
+                query_indices = []
+                ^~~~~~~~~~~~~
+src/evaluation/transfer.py: note: In member "evaluate_episode" of class "FewShotEvaluator":
+src/evaluation/transfer.py:431:18: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+            dataset: torch.utils.data.Dataset,
+                     ^
+src/evaluation/transfer.py:432:18: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+            episode: Dict,
+                     ^
+src/evaluation/transfer.py:454:24: error: "Tensor" not callable  [operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/transfer.py:463:28: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "list[Tensor]")  [assignment]
+            support_features = torch.cat(support_features, dim=0)
+                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:464:26: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "list[Any]")  [assignment]
+            support_labels = torch.tensor(support_labels)
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:476:21: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "list[Any]")  [assignment]
+            centroids = torch.stack(centroids)  # [n_way, D]
+                        ^~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py:486:24: error: "Tensor" not callable  [operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/transfer.py:494:43: error: "list[Any]" has no attribute "T"
+[attr-defined]
+                    similarities = features @ centroids.T
+                                              ^~~~~~~~~~~
+src/evaluation/transfer.py:497:51: error: "list[Any]" has no attribute
+"unsqueeze"  [attr-defined]
+    ...               distances = torch.cdist(features, centroids.unsqueeze(0...
+                                                        ^~~~~~~~~~~~~~~~~~~
+src/evaluation/transfer.py: note: In member "evaluate_few_shot" of class "FewShotEvaluator":
+src/evaluation/transfer.py:512:18: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+            dataset: torch.utils.data.Dataset,
+                     ^
+src/evaluation/transfer.py: note: In function "fine_tune_eval":
+src/evaluation/transfer.py:569:19: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+        train_loader: DataLoader,
+                      ^
+src/evaluation/transfer.py:570:17: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+        val_loader: DataLoader,
+                    ^
+src/evaluation/transfer.py: note: In function "few_shot_eval":
+src/evaluation/transfer.py:623:14: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+        dataset: torch.utils.data.Dataset,
+                 ^
+src/evaluation/linear_probe.py: note: In member "__init__" of class "LinearProbe":
+src/evaluation/linear_probe.py:59:9: error: Call to untyped function
+"_init_weights" in typed context  [no-untyped-call]
+            self._init_weights()
+            ^~~~~~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py: note: In member "_init_weights" of class "LinearProbe":
+src/evaluation/linear_probe.py:61:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _init_weights(self):
+        ^
+src/evaluation/linear_probe.py:61:5: note: Use "-> None" if function does not return a value
+src/evaluation/linear_probe.py: note: In member "forward" of class "LinearProbe":
+src/evaluation/linear_probe.py:122:9: error: Returning Any from function
+declared to return "Tensor"  [no-any-return]
+            return logits
+            ^~~~~~~~~~~~~
+src/evaluation/linear_probe.py: note: In member "extract_features" of class "LinearProbeEvaluator":
+src/evaluation/linear_probe.py:168:27: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+            self, dataloader: DataLoader, desc: str = "Extracting features...
+                              ^
+src/evaluation/linear_probe.py:169:16: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        ) -> Tuple[np.ndarray, np.ndarray]:
+                   ^
+src/evaluation/linear_probe.py:187:24: error: "Tensor" not callable  [operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/linear_probe.py: note: In member "train_probe" of class "LinearProbeEvaluator":
+src/evaluation/linear_probe.py:203:23: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+            train_loader: DataLoader,
+                          ^
+src/evaluation/linear_probe.py:204:30: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+            val_loader: Optional[DataLoader] = None,
+                                 ^
+src/evaluation/linear_probe.py:240:25: error: Incompatible types in assignment
+(expression has type "StepLR", variable has type "CosineAnnealingLR")
+[assignment]
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, ste...
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/evaluation/linear_probe.py:247:19: error: Need type annotation for
+"history"  [var-annotated]
+            history = {
+                      ^
+src/evaluation/linear_probe.py:268:32: error: "Tensor" not callable  [operator]
+                        features = self.model.extract_features(
+                                   ^
+src/evaluation/linear_probe.py:290:21: error: Item "DataLoader[Any]" of
+"Any | DataLoader[Any]" has no attribute "set_postfix"  [union-attr]
+                        pbar.set_postfix(
+                        ^~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py:292:51: error: Item "DataLoader[Any]" of
+"Any | DataLoader[Any]" has no attribute "n"  [union-attr]
+                                "loss": train_loss / (pbar.n + 1),
+                                                      ^~~~~~
+src/evaluation/linear_probe.py: note: In member "evaluate" of class "LinearProbeEvaluator":
+src/evaluation/linear_probe.py:331:21: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+            dataloader: DataLoader,
+                        ^
+src/evaluation/linear_probe.py:363:24: error: "Tensor" not callable  [operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/linear_probe.py: note: In member "k_fold_cross_validation" of class "LinearProbeEvaluator":
+src/evaluation/linear_probe.py:413:18: error: Missing type parameters for
+generic type "Dataset"  [type-arg]
+            dataset: torch.utils.data.Dataset,
+                     ^
+src/evaluation/linear_probe.py:472:13: error: Call to untyped function
+"_init_weights" in typed context  [no-untyped-call]
+                self.probe._init_weights()
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py:486:13: error: "object" has no attribute
+"append"  [attr-defined]
+                results["fold_accuracies"].append(metrics["accuracy"])
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py:487:13: error: "object" has no attribute
+"append"  [attr-defined]
+                results["fold_losses"].append(metrics["loss"])
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py:493:36: error: No overload variant of "mean"
+matches argument type "object"  [call-overload]
+            results["mean_accuracy"] = np.mean(results["fold_accuracies"])
+                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py:493:36: note: Possible overload variants:
+src/evaluation/linear_probe.py:493:36: note:     def mean(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any]]]] | bool | int | float | _NestedSequence[bool | int | float], axis: None = ..., dtype: None = ..., out: None = ..., keepdims: Literal[False] = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> floating[Any]
+src/evaluation/linear_probe.py:493:36: note:     def mean(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex], axis: None = ..., dtype: None = ..., out: None = ..., keepdims: Literal[False] = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> complexfloating[Any, Any]
+src/evaluation/linear_probe.py:493:36: note:     def mean(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: SupportsIndex | Sequence[SupportsIndex] | None = ..., dtype: None = ..., out: None = ..., keepdims: bool = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> Any
+src/evaluation/linear_probe.py:493:36: note:     def [_SCT: generic] mean(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: None = ..., dtype: dtype[_SCT] | type[_SCT] | _SupportsDType[dtype[_SCT]] = ..., out: None = ..., keepdims: Literal[False] = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> _SCT
+src/evaluation/linear_probe.py:493:36: note:     def mean(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: SupportsIndex | Sequence[SupportsIndex] | None = ..., dtype: dtype[Any] | type[Any] | _SupportsDType[dtype[Any]] | str | tuple[Any, int] | tuple[Any, SupportsIndex | Sequence[SupportsIndex]] | list[Any] | _DTypeDict | tuple[Any, Any] | None = ..., out: None = ..., keepdims: bool = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> Any
+src/evaluation/linear_probe.py:493:36: note:     def [_ArrayType: ndarray[Any, dtype[Any]]] mean(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: SupportsIndex | Sequence[SupportsIndex] | None = ..., dtype: dtype[Any] | type[Any] | _SupportsDType[dtype[Any]] | str | tuple[Any, int] | tuple[Any, SupportsIndex | Sequence[SupportsIndex]] | list[Any] | _DTypeDict | tuple[Any, Any] | None = ..., out: _ArrayType = ..., keepdims: bool = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> _ArrayType
+src/evaluation/linear_probe.py:494:35: error: No overload variant of "std"
+matches argument type "object"  [call-overload]
+            results["std_accuracy"] = np.std(results["fold_accuracies"])
+                                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/linear_probe.py:494:35: note: Possible overload variants:
+src/evaluation/linear_probe.py:494:35: note:     def std(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex], axis: None = ..., dtype: None = ..., out: None = ..., ddof: float = ..., keepdims: Literal[False] = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> floating[Any]
+src/evaluation/linear_probe.py:494:35: note:     def std(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: SupportsIndex | Sequence[SupportsIndex] | None = ..., dtype: None = ..., out: None = ..., ddof: float = ..., keepdims: bool = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> Any
+src/evaluation/linear_probe.py:494:35: note:     def [_SCT: generic] std(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: None = ..., dtype: dtype[_SCT] | type[_SCT] | _SupportsDType[dtype[_SCT]] = ..., out: None = ..., ddof: float = ..., keepdims: Literal[False] = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> _SCT
+src/evaluation/linear_probe.py:494:35: note:     def std(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: SupportsIndex | Sequence[SupportsIndex] | None = ..., dtype: dtype[Any] | type[Any] | _SupportsDType[dtype[Any]] | str | tuple[Any, int] | tuple[Any, SupportsIndex | Sequence[SupportsIndex]] | list[Any] | _DTypeDict | tuple[Any, Any] | None = ..., out: None = ..., ddof: float = ..., keepdims: bool = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> Any
+src/evaluation/linear_probe.py:494:35: note:     def [_ArrayType: ndarray[Any, dtype[Any]]] std(a: _SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]] | _NestedSequence[_SupportsArray[dtype[bool_ | integer[Any] | floating[Any] | complexfloating[Any, Any]]]] | bool | int | float | complex | _NestedSequence[bool | int | float | complex] | _SupportsArray[dtype[object_]] | _NestedSequence[_SupportsArray[dtype[object_]]], axis: SupportsIndex | Sequence[SupportsIndex] | None = ..., dtype: dtype[Any] | type[Any] | _SupportsDType[dtype[Any]] | str | tuple[Any, int] | tuple[Any, SupportsIndex | Sequence[SupportsIndex]] | list[Any] | _DTypeDict | tuple[Any, Any] | None = ..., out: _ArrayType = ..., ddof: float = ..., keepdims: bool = ..., *, where: _SupportsArray[dtype[bool_]] | _NestedSequence[_SupportsArray[dtype[bool_]]] | bool | _NestedSequence[bool] = ...) -> _ArrayType
+src/evaluation/linear_probe.py:505:16: error: Incompatible return value type
+(got "dict[str, object]", expected "dict[str, list[float]]")  [return-value]
+            return results
+                   ^~~~~~~
+src/evaluation/linear_probe.py: note: In function "linear_probe_eval":
+src/evaluation/linear_probe.py:510:19: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+        train_loader: DataLoader,
+                      ^
+src/evaluation/linear_probe.py:511:17: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+        val_loader: DataLoader,
+                    ^
+src/evaluation/linear_probe.py:543:19: error: Argument "input_dim" to
+"LinearProbeEvaluator" has incompatible type "Tensor | Module"; expected "int"
+[arg-type]
+            input_dim=input_dim,
+                      ^~~~~~~~~
+src/evaluation/knn_eval.py: note: In member "extract_features" of class "KNNEvaluator":
+src/evaluation/knn_eval.py:86:27: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            self, dataloader: DataLoader, normalize: bool = True, desc: st...
+                              ^
+src/evaluation/knn_eval.py:87:16: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+        ) -> Tuple[np.ndarray, np.ndarray]:
+                   ^
+src/evaluation/knn_eval.py:106:24: error: "Tensor" not callable  [operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/knn_eval.py: note: In member "build_knn_index" of class "KNNEvaluator":
+src/evaluation/knn_eval.py:127:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def build_knn_index(
+        ^
+src/evaluation/knn_eval.py:129:23: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            train_loader: DataLoader,
+                          ^
+src/evaluation/knn_eval.py:140:50: error: Incompatible types in assignment
+(expression has type "ndarray[Any, Any]", variable has type "None")
+[assignment]
+            self.train_features, self.train_labels = self.extract_features...
+                                                     ^
+src/evaluation/knn_eval.py:157:9: error: "None" has no attribute "fit"
+[attr-defined]
+            self.knn_index.fit(self.train_features)
+            ^~~~~~~~~~~~~~~~~~
+src/evaluation/knn_eval.py:159:44: error: Argument 1 to "len" has incompatible
+type "None"; expected "Sized"  [arg-type]
+            print(f"Built k-NN index with {len(self.train_features)} sampl...
+                                               ^~~~~~~~~~~~~~~~~~~
+src/evaluation/knn_eval.py: note: In member "predict" of class "KNNEvaluator":
+src/evaluation/knn_eval.py:163:24: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+            test_features: np.ndarray,
+                           ^
+src/evaluation/knn_eval.py:165:16: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+        ) -> Tuple[np.ndarray, np.ndarray]:
+                   ^
+src/evaluation/knn_eval.py:180:9: error: Statement is unreachable
+[unreachable]
+            distances, indices = self.knn_index.kneighbors(test_features)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/knn_eval.py: note: In member "evaluate" of class "KNNEvaluator":
+src/evaluation/knn_eval.py:214:22: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            test_loader: DataLoader,
+                         ^
+src/evaluation/knn_eval.py:237:9: error: Statement is unreachable
+[unreachable]
+            test_features, test_labels = self.extract_features(
+            ^
+src/evaluation/knn_eval.py: note: In member "evaluate_multiple_k" of class "KNNEvaluator":
+src/evaluation/knn_eval.py:271:22: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+            test_loader: DataLoader,
+                         ^
+src/evaluation/knn_eval.py:298:24: error: Argument 1 to "len" has incompatible
+type "None"; expected "Sized"  [arg-type]
+                if k > len(self.train_features):
+                           ^~~~~~~~~~~~~~~~~~~
+src/evaluation/knn_eval.py:304:13: error: "None" has no attribute "n_neighbors"
+ [attr-defined]
+                self.knn_index.n_neighbors = k
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~
+src/evaluation/knn_eval.py: note: In function "knn_eval":
+src/evaluation/knn_eval.py:326:19: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+        train_loader: DataLoader,
+                      ^
+src/evaluation/knn_eval.py:327:18: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+        test_loader: DataLoader,
+                     ^
+src/evaluation/knn_eval.py: note: In function "sweep_knn_params":
+src/evaluation/knn_eval.py:378:19: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+        train_loader: DataLoader,
+                      ^
+src/evaluation/knn_eval.py:379:18: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+        test_loader: DataLoader,
+                     ^
+src/evaluation/knn_eval.py:386:16: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+    ) -> Dict[str, Dict]:
+                   ^
+src/evaluation/knn_eval.py:460:30: error: Invalid index type "str | None" for
+"dict[str, dict[str, object]]"; expected type "str"  [index]
+        print(f"Config: {results[best_config]['config']}")
+                                 ^~~~~~~~~~~
+src/evaluation/feature_quality.py: note: In member "extract_features" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:57:21: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+            dataloader: DataLoader,
+                        ^
+src/evaluation/feature_quality.py:62:16: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        ) -> Tuple[np.ndarray, np.ndarray]:
+                   ^
+src/evaluation/feature_quality.py:87:24: error: "Tensor" not callable
+[operator]
+                features = self.model.extract_features(
+                           ^
+src/evaluation/feature_quality.py: note: In member "compute_effective_rank" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:119:48: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        def compute_effective_rank(self, features: np.ndarray) -> float:
+                                                   ^
+src/evaluation/feature_quality.py:150:9: error: Returning Any from function
+declared to return "float"  [no-any-return]
+            return effective_rank
+            ^~~~~~~~~~~~~~~~~~~~~
+src/evaluation/feature_quality.py: note: In member "compute_rank_analysis" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:153:25: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            self, features: np.ndarray, variance_threshold: float = 0.99
+                            ^
+src/evaluation/feature_quality.py: note: In member "compute_feature_statistics" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:202:52: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+    ...  def compute_feature_statistics(self, features: np.ndarray) -> Dict[s...
+                                                        ^
+src/evaluation/feature_quality.py: note: In member "compute_isotropy" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:239:42: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        def compute_isotropy(self, features: np.ndarray) -> Dict[str, floa...
+                                             ^
+src/evaluation/feature_quality.py: note: In member "detect_collapse" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:284:19: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            features: np.ndarray,
+                      ^
+src/evaluation/feature_quality.py: note: In member "compute_all_metrics" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:322:21: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+            dataloader: DataLoader,
+                        ^
+src/evaluation/feature_quality.py:324:20: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+        ) -> Dict[str, Dict]:
+                       ^
+src/evaluation/feature_quality.py:361:16: error: Incompatible return value type
+(got "dict[str, object]", expected "dict[str, dict[Any, Any]]")  [return-value]
+            return results
+                   ^~~~~~~
+src/evaluation/feature_quality.py: note: In member "visualize_features_tsne" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:365:19: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            features: np.ndarray,
+                      ^
+src/evaluation/feature_quality.py:366:17: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            labels: np.ndarray,
+                    ^
+src/evaluation/feature_quality.py:370:10: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        ) -> np.ndarray:
+             ^
+src/evaluation/feature_quality.py:395:9: error: Returning Any from function
+declared to return "ndarray[Any, Any]"  [no-any-return]
+            return embeddings
+            ^~~~~~~~~~~~~~~~~
+src/evaluation/feature_quality.py: note: In member "visualize_features_umap" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:399:19: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            features: np.ndarray,
+                      ^
+src/evaluation/feature_quality.py:400:17: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            labels: np.ndarray,
+                    ^
+src/evaluation/feature_quality.py:405:10: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        ) -> np.ndarray:
+             ^
+src/evaluation/feature_quality.py:435:9: error: Returning Any from function
+declared to return "ndarray[Any, Any]"  [no-any-return]
+            return embeddings
+            ^~~~~~~~~~~~~~~~~
+src/evaluation/feature_quality.py: note: In member "compute_pca" of class "FeatureQualityAnalyzer":
+src/evaluation/feature_quality.py:439:19: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            features: np.ndarray,
+                      ^
+src/evaluation/feature_quality.py:441:16: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        ) -> Tuple[np.ndarray, PCA]:
+                   ^
+src/evaluation/feature_quality.py: note: In function "analyze_feature_quality":
+src/evaluation/feature_quality.py:465:17: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+        dataloader: DataLoader,
+                    ^
+src/evaluation/feature_quality.py:469:16: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    ) -> Dict[str, Dict]:
+                   ^
+src/evaluation/feature_quality.py: note: In function "print_quality_report":
+src/evaluation/feature_quality.py:497:1: error: Function is missing a return
+type annotation  [no-untyped-def]
+    def print_quality_report(metrics: Dict[str, Dict], verbose: bool = Tru...
+    ^
+src/evaluation/feature_quality.py:497:45: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    def print_quality_report(metrics: Dict[str, Dict], verbose: bool = Tru...
+                                                ^
+src/evaluation/feature_quality.py: note: In function "compare_hierarchy_levels":
+src/evaluation/feature_quality.py:559:17: error: Missing type parameters for
+generic type "DataLoader"  [type-arg]
+        dataloader: DataLoader,
+                    ^
+src/evaluation/feature_quality.py:563:16: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    ) -> Dict[int, Dict]:
+                   ^
+src/evaluation/feature_quality.py:578:22: error: Incompatible types in
+assignment (expression has type "Tensor | Module", variable has type
+"int | None")  [assignment]
+            num_levels = model.num_hierarchies
+                         ^~~~~~~~~~~~~~~~~~~~~
+src/evaluation/feature_quality.py:582:24: error: Argument 1 to "range" has
+incompatible type "int | None"; expected "SupportsIndex"  [arg-type]
+        for level in range(num_levels):
+                           ^~~~~~~~~~
+src/data/multicrop_transforms.py: note: In member "__call__" of class "MultiCropTransform":
+src/data/multicrop_transforms.py:147:50: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        def __call__(self, image: Union[Image.Image, np.ndarray]) -> List[...
+                                                     ^
+src/data/multicrop_transforms.py: note: In member "__call__" of class "MultiCropEvalTransform":
+src/data/multicrop_transforms.py:208:50: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        def __call__(self, image: Union[Image.Image, np.ndarray]) -> torch...
+                                                     ^
+src/data/multicrop_transforms.py:218:9: error: Returning Any from function
+declared to return "Tensor"  [no-any-return]
+            return self.transform(image)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/multicrop_transforms.py: note: In member "__init__" of class "AdaptiveMultiCropTransform":
+src/data/multicrop_transforms.py:235:5: error: Function is missing a type
+annotation for one or more arguments  [no-untyped-def]
+        def __init__(
+        ^
+src/data/multicrop_transforms.py: note: In member "__call__" of class "AdaptiveMultiCropTransform":
+src/data/multicrop_transforms.py:268:50: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        def __call__(self, image: Union[Image.Image, np.ndarray]) -> List[...
+                                                     ^
+src/data/download.py: note: In function "download_dataset":
+src/data/download.py:250:40: error: Argument 2 to "check_disk_space" has
+incompatible type "object"; expected "float"  [arg-type]
+        if not check_disk_space(data_path, info["size_gb"]):
+                                           ^~~~~~~~~~~~~~~
+src/data/download.py: note: In function "print_manual_download_instructions":
+src/data/download.py:307:1: error: Function is missing a return type annotation
+ [no-untyped-def]
+    def print_manual_download_instructions(dataset_name: str):
+    ^
+src/data/download.py: note: In function "print_dataset_summary":
+src/data/download.py:392:1: error: Function is missing a return type annotation
+ [no-untyped-def]
+    def print_dataset_summary():
+    ^
+src/data/download.py:392:1: note: Use "-> None" if function does not return a value
+src/data/download.py:406:23: error: Unsupported operand types for + ("float"
+and "object")  [operator]
+            total_size += info["size_gb"]
+                          ^~~~~~~~~~~~~~~
+src/data/download.py: note: In function "main":
+src/data/download.py:417:1: error: Function is missing a return type annotation
+ [no-untyped-def]
+    def main():
+    ^
+src/data/download.py:417:1: note: Use "-> None" if function does not return a value
+src/data/download.py:446:9: error: Call to untyped function
+"print_dataset_summary" in typed context  [no-untyped-call]
+            print_dataset_summary()
+            ^~~~~~~~~~~~~~~~~~~~~~~
+src/data/download.py: note: At top level:
+src/data/download.py:482:5: error: Call to untyped function "main" in typed
+context  [no-untyped-call]
+        main()
+        ^~~~~~
+src/data/datasets.py: note: In member "__call__" of class "JEPATransform":
+src/data/datasets.py:88:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __call__(self, img):
+        ^
+src/data/datasets.py: note: In member "__call__" of class "JEPAEvalTransform":
+src/data/datasets.py:122:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __call__(self, img):
+        ^
+src/data/datasets.py: note: At top level:
+src/data/datasets.py:126:23: error: Missing type parameters for generic type
+"Dataset"  [type-arg]
+    class ImageNetDataset(Dataset):
+                          ^
+src/data/datasets.py: note: In member "__init__" of class "ImageNetDataset":
+src/data/datasets.py:152:29: error: Missing type parameters for generic type
+"Callable"  [type-arg]
+            transform: Optional[Callable] = None,
+                                ^
+src/data/datasets.py: note: In member "__len__" of class "ImageNetDataset":
+src/data/datasets.py:195:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/datasets.py: note: In member "__getitem__" of class "ImageNetDataset":
+src/data/datasets.py:198:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/datasets.py: note: In member "classes" of class "ImageNetDataset":
+src/data/datasets.py:202:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def classes(self):
+        ^
+src/data/datasets.py: note: In member "class_to_idx" of class "ImageNetDataset":
+src/data/datasets.py:206:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def class_to_idx(self):
+        ^
+src/data/datasets.py: note: In member "__init__" of class "ImageNet100Dataset":
+src/data/datasets.py:330:29: error: Missing type parameters for generic type
+"Callable"  [type-arg]
+            transform: Optional[Callable] = None,
+                                ^
+src/data/datasets.py:350:9: error: Call to untyped function "_filter_classes"
+in typed context  [no-untyped-call]
+            self._filter_classes()
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/data/datasets.py: note: In member "_filter_classes" of class "ImageNet100Dataset":
+src/data/datasets.py:357:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def _filter_classes(self):
+        ^
+src/data/datasets.py:357:5: note: Use "-> None" if function does not return a value
+src/data/datasets.py: note: In member "__len__" of class "ImageNet100Dataset":
+src/data/datasets.py:371:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/datasets.py: note: In member "__getitem__" of class "ImageNet100Dataset":
+src/data/datasets.py:374:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/datasets.py: note: At top level:
+src/data/datasets.py:379:22: error: Missing type parameters for generic type
+"Dataset"  [type-arg]
+    class CIFAR10Dataset(Dataset):
+                         ^
+src/data/datasets.py: note: In member "__init__" of class "CIFAR10Dataset":
+src/data/datasets.py:393:29: error: Missing type parameters for generic type
+"Callable"  [type-arg]
+            transform: Optional[Callable] = None,
+                                ^
+src/data/datasets.py: note: In member "__len__" of class "CIFAR10Dataset":
+src/data/datasets.py:432:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/datasets.py: note: In member "__getitem__" of class "CIFAR10Dataset":
+src/data/datasets.py:435:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/datasets.py: note: In member "classes" of class "CIFAR10Dataset":
+src/data/datasets.py:439:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def classes(self):
+        ^
+src/data/datasets.py: note: At top level:
+src/data/datasets.py:443:23: error: Missing type parameters for generic type
+"Dataset"  [type-arg]
+    class CIFAR100Dataset(Dataset):
+                          ^
+src/data/datasets.py: note: In member "__init__" of class "CIFAR100Dataset":
+src/data/datasets.py:457:29: error: Missing type parameters for generic type
+"Callable"  [type-arg]
+            transform: Optional[Callable] = None,
+                                ^
+src/data/datasets.py: note: In member "__len__" of class "CIFAR100Dataset":
+src/data/datasets.py:496:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/datasets.py: note: In member "__getitem__" of class "CIFAR100Dataset":
+src/data/datasets.py:499:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/datasets.py: note: In member "classes" of class "CIFAR100Dataset":
+src/data/datasets.py:503:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def classes(self):
+        ^
+src/data/datasets.py: note: At top level:
+src/data/datasets.py:507:20: error: Missing type parameters for generic type
+"Dataset"  [type-arg]
+    class STL10Dataset(Dataset):
+                       ^
+src/data/datasets.py: note: In member "__init__" of class "STL10Dataset":
+src/data/datasets.py:521:29: error: Missing type parameters for generic type
+"Callable"  [type-arg]
+            transform: Optional[Callable] = None,
+                                ^
+src/data/datasets.py: note: In member "__len__" of class "STL10Dataset":
+src/data/datasets.py:570:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/datasets.py: note: In member "__getitem__" of class "STL10Dataset":
+src/data/datasets.py:573:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/datasets.py: note: In member "classes" of class "STL10Dataset":
+src/data/datasets.py:577:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def classes(self):
+        ^
+src/data/datasets.py: note: In function "build_dataset":
+src/data/datasets.py:581:1: error: Function is missing a type annotation for
+one or more arguments  [no-untyped-def]
+    def build_dataset(
+    ^
+src/data/datasets.py:589:6: error: Missing type parameters for generic type
+"Dataset"  [type-arg]
+    ) -> Dataset:
+         ^
+src/data/datasets.py: note: In function "build_dataloader":
+src/data/datasets.py:661:1: error: Function is missing a type annotation for
+one or more arguments  [no-untyped-def]
+    def build_dataloader(
+    ^
+src/data/datasets.py:662:14: error: Missing type parameters for generic type
+"Dataset"  [type-arg]
+        dataset: Dataset,
+                 ^
+src/data/datasets.py:669:6: error: Missing type parameters for generic type
+"DataLoader"  [type-arg]
+    ) -> DataLoader:
+         ^
+src/data/datasets.py: note: At top level:
+src/data/datasets.py:700:32: error: Argument 1 to "len" has incompatible type
+"Dataset[Any]"; expected "Sized"  [arg-type]
+        print(f"Dataset size: {len(dataset)}")
+                                   ^~~~~~~
+src/data/datasets.py:706:32: error: Argument 1 to "len" has incompatible type
+"Dataset[Any]"; expected "Sized"  [arg-type]
+        print(f"Dataset size: {len(dataset)}")
+                                   ^~~~~~~
+src/visualization/masking_viz.py: note: In function "rearrange":
+src/visualization/masking_viz.py:20:5: error: Function is missing a type
+annotation  [no-untyped-def]
+        def rearrange(tensor, pattern, **axes_lengths):
+        ^
+src/visualization/masking_viz.py:20:5: error: All conditional function variants
+must have identical signatures  [misc]
+        def rearrange(tensor, pattern, **axes_lengths):
+        ^
+src/visualization/masking_viz.py:20:5: note: Original:
+src/visualization/masking_viz.py:20:5: note:     def [Tensor] rearrange(tensor: Tensor | list[Tensor], pattern: str, **axes_lengths: Any) -> Tensor
+src/visualization/masking_viz.py:20:5: note: Redefinition:
+src/visualization/masking_viz.py:20:5: note:     def rearrange(tensor: Any, pattern: Any, **axes_lengths: Any) -> Any
+src/visualization/masking_viz.py: note: In function "visualize_masking_strategy":
+src/visualization/masking_viz.py:32:21: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        image: Optional[np.ndarray] = None,
+                        ^
+src/visualization/masking_viz.py:54:16: error: Incompatible types in assignment
+(expression has type "ndarray[Any, Any]", variable has type "Tensor")
+[assignment]
+            mask = mask.cpu().numpy()
+                   ^~~~~~~~~~~~~~~~~~
+src/visualization/masking_viz.py: note: In function "visualize_masked_image":
+src/visualization/masking_viz.py:153:17: error: Incompatible types in
+assignment (expression has type "ndarray[Any, Any]", variable has type "Tensor")
+ [assignment]
+            image = image.cpu().numpy()
+                    ^~~~~~~~~~~~~~~~~~~
+src/visualization/masking_viz.py:156:17: error: Incompatible types in
+assignment (expression has type "ndarray[Any, dtype[Any]]", variable has type
+"Tensor")  [assignment]
+            image = np.transpose(image, (1, 2, 0))
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/masking_viz.py:163:16: error: Incompatible types in
+assignment (expression has type "ndarray[Any, Any]", variable has type "Tensor")
+ [assignment]
+            mask = mask.cpu().numpy()
+                   ^~~~~~~~~~~~~~~~~~
+src/visualization/masking_viz.py:170:20: error: "Tensor" has no attribute
+"copy"  [attr-defined]
+        masked_image = image.copy()
+                       ^~~~~~~~~~
+src/visualization/masking_viz.py: note: In function "visualize_context_target_regions":
+src/visualization/masking_viz.py:209:21: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        image: Optional[np.ndarray] = None,
+                        ^
+src/visualization/masking_viz.py:229:16: error: Incompatible types in
+assignment (expression has type "ndarray[Any, Any]", variable has type "Tensor")
+ [assignment]
+            mask = mask.cpu().numpy()
+                   ^~~~~~~~~~~~~~~~~~
+src/visualization/masking_viz.py: note: In function "compare_masking_strategies":
+src/visualization/masking_viz.py:283:21: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        image: Optional[np.ndarray] = None,
+                        ^
+src/visualization/masking_viz.py:315:13: error: Statement is unreachable
+[unreachable]
+                mask_np = mask
+                ^~~~~~~~~~~~~~
+src/visualization/masking_viz.py: note: In function "animate_masking_process":
+src/visualization/masking_viz.py:350:21: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        image: Optional[np.ndarray] = None,
+                        ^
+src/visualization/masking_viz.py:386:5: error: Function is missing a type
+annotation  [no-untyped-def]
+        def update(frame):
+        ^
+src/visualization/attention_viz.py: note: In function "rearrange":
+src/visualization/attention_viz.py:20:5: error: Function is missing a type
+annotation  [no-untyped-def]
+        def rearrange(tensor, pattern, **axes_lengths):
+        ^
+src/visualization/attention_viz.py:20:5: error: All conditional function
+variants must have identical signatures  [misc]
+        def rearrange(tensor, pattern, **axes_lengths):
+        ^
+src/visualization/attention_viz.py:20:5: note: Original:
+src/visualization/attention_viz.py:20:5: note:     def [Tensor] rearrange(tensor: Tensor | list[Tensor], pattern: str, **axes_lengths: Any) -> Tensor
+src/visualization/attention_viz.py:20:5: note: Redefinition:
+src/visualization/attention_viz.py:20:5: note:     def rearrange(tensor: Any, pattern: Any, **axes_lengths: Any) -> Any
+src/visualization/attention_viz.py: note: In function "extract_attention_maps":
+src/visualization/attention_viz.py:55:5: error: Function is missing a type
+annotation  [no-untyped-def]
+        def get_attention_hook(name):
+        ^
+src/visualization/attention_viz.py:56:9: error: Function is missing a type
+annotation  [no-untyped-def]
+            def hook(module, input, output):
+            ^
+src/visualization/attention_viz.py:64:15: error: Item "Tensor" of
+"Tensor | Module" has no attribute "vit"  [union-attr]
+        encoder = model.context_encoder.vit
+                  ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:65:14: error: Item "Tensor" of
+"Any | Tensor | Module" has no attribute "blocks"  [union-attr]
+        blocks = encoder.blocks
+                 ^~~~~~~~~~~~~~
+src/visualization/attention_viz.py:68:40: error: Argument 1 to "len" has
+incompatible type "Any | Tensor | Module"; expected "Sized"  [arg-type]
+            layer_indices = list(range(len(blocks)))
+                                           ^~~~~~
+src/visualization/attention_viz.py:71:16: error: Value of type
+"Any | Tensor | Module" is not indexable  [index]
+            hook = blocks[idx].attn.register_forward_hook(get_attention_ho...
+                   ^~~~~~~~~~~
+src/visualization/attention_viz.py:71:16: error: Item "Tensor" of
+"Any | Tensor" has no attribute "attn"  [union-attr]
+            hook = blocks[idx].attn.register_forward_hook(get_attention_ho...
+                   ^~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:71:55: error: Call to untyped function
+"get_attention_hook" in typed context  [no-untyped-call]
+    ...   hook = blocks[idx].attn.register_forward_hook(get_attention_hook(f"...
+                                                        ^~~~~~~~~~~~~~~~~~~~~...
+src/visualization/attention_viz.py:76:9: error: "Tensor" not callable
+[operator]
+            model.context_encoder(images)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py: note: In function "visualize_attention_maps":
+src/visualization/attention_viz.py:87:21: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        image: Optional[np.ndarray] = None,
+                        ^
+src/visualization/attention_viz.py: note: In function "visualize_multihead_attention":
+src/visualization/attention_viz.py:183:27: error: Item "Tensor" of
+"Tensor | Module" has no attribute "vit"  [union-attr]
+            else f"layer_{len(model.context_encoder.vit.blocks) + layer_id...
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:183:27: error: Item "Tensor" of
+"Any | Tensor | Module" has no attribute "blocks"  [union-attr]
+            else f"layer_{len(model.context_encoder.vit.blocks) + layer_id...
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:183:27: error: Argument 1 to "len" has
+incompatible type "Any | Tensor | Module"; expected "Sized"  [arg-type]
+            else f"layer_{len(model.context_encoder.vit.blocks) + layer_id...
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py: note: In function "visualize_attention_rollout":
+src/visualization/attention_viz.py:229:30: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        original_image: Optional[np.ndarray] = None,
+                                 ^
+src/visualization/attention_viz.py:249:22: error: Item "Tensor" of
+"Tensor | Module" has no attribute "vit"  [union-attr]
+        num_layers = len(model.context_encoder.vit.blocks)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:249:22: error: Item "Tensor" of
+"Any | Tensor | Module" has no attribute "blocks"  [union-attr]
+        num_layers = len(model.context_encoder.vit.blocks)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:249:22: error: Argument 1 to "len" has
+incompatible type "Any | Tensor | Module"; expected "Sized"  [arg-type]
+        num_layers = len(model.context_encoder.vit.blocks)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:275:19: error: Value of type "Tensor | None"
+is not indexable  [index]
+        rollout_cls = rollout[0, 1:].cpu().numpy()  # [num_patches]
+                      ^~~~~~~~~~~~~~
+src/visualization/attention_viz.py: note: In function "visualize_hierarchical_attention":
+src/visualization/attention_viz.py:323:30: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        original_image: Optional[np.ndarray] = None,
+                                 ^
+src/visualization/attention_viz.py:340:22: error: Item "Tensor" of
+"Tensor | Module" has no attribute "vit"  [union-attr]
+        num_layers = len(model.context_encoder.vit.blocks)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:340:22: error: Item "Tensor" of
+"Any | Tensor | Module" has no attribute "blocks"  [union-attr]
+        num_layers = len(model.context_encoder.vit.blocks)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:340:22: error: Argument 1 to "len" has
+incompatible type "Any | Tensor | Module"; expected "Sized"  [arg-type]
+        num_layers = len(model.context_encoder.vit.blocks)
+                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py: note: In function "visualize_patch_to_patch_attention":
+src/visualization/attention_viz.py:407:30: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        original_image: Optional[np.ndarray] = None,
+                                 ^
+src/visualization/attention_viz.py:428:25: error: Item "Tensor" of
+"Tensor | Module" has no attribute "vit"  [union-attr]
+            layer_idx = len(model.context_encoder.vit.blocks) + layer_idx
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:428:25: error: Item "Tensor" of
+"Any | Tensor | Module" has no attribute "blocks"  [union-attr]
+            layer_idx = len(model.context_encoder.vit.blocks) + layer_idx
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/visualization/attention_viz.py:428:25: error: Argument 1 to "len" has
+incompatible type "Any | Tensor | Module"; expected "Sized"  [arg-type]
+            layer_idx = len(model.context_encoder.vit.blocks) + layer_idx
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/predictor.py: note: In member "_init_weights" of class "Predictor":
+src/models/predictor.py:176:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def _init_weights(self, m):
+        ^
+src/models/predictor.py: note: In member "forward" of class "Predictor":
+src/models/predictor.py:215:27: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "Parameter")  [assignment]
+                mask_tokens = mask_tokens + mask_pos_embed
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/predictor.py:218:27: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "Parameter")  [assignment]
+                mask_tokens = mask_tokens + self.pos_embed_predictor
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/predictor.py:243:9: error: Returning Any from function declared to
+return "Tensor"  [no-any-return]
+            return x
+            ^~~~~~~~
+src/masks/multicrop_masking.py: note: In member "__init__" of class "MultiCropMaskGenerator":
+src/masks/multicrop_masking.py:118:35: error: Incompatible types in assignment
+(expression has type "None", variable has type "HierarchicalMaskGenerator")
+[assignment]
+                self.local_mask_gen = None
+                                      ^~~~
+src/masks/multicrop_masking.py: note: In member "__call__" of class "MultiCropMaskGenerator":
+src/masks/multicrop_masking.py:120:76: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    ...all__(self, batch_size: int, device: str = "cuda") -> Dict[str, Dict]:
+                                                                       ^
+src/masks/multicrop_masking.py:146:26: error: Argument 1 to "update" of
+"MutableMapping" has incompatible type "dict[str, dict[Any, Any]]"; expected
+"SupportsKeysAndGetItem[str, Literal['global_only', 'global_with_local_context', 'cross_crop_prediction'] | int]"
+ [arg-type]
+                masks.update(self._generate_global_only_masks(batch_size, ...
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/masks/multicrop_masking.py:148:26: error: Argument 1 to "update" of
+"MutableMapping" has incompatible type "dict[str, dict[Any, Any]]"; expected
+"SupportsKeysAndGetItem[str, Literal['global_only', 'global_with_local_context', 'cross_crop_prediction'] | int]"
+ [arg-type]
+                masks.update(self._generate_global_with_local_masks(batch_...
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/masks/multicrop_masking.py:150:26: error: Argument 1 to "update" of
+"MutableMapping" has incompatible type "dict[str, dict[Any, Any]]"; expected
+"SupportsKeysAndGetItem[str, Literal['global_only', 'global_with_local_context', 'cross_crop_prediction'] | int]"
+ [arg-type]
+                masks.update(self._generate_cross_crop_masks(batch_size, d...
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/masks/multicrop_masking.py:154:16: error: Incompatible return value type
+(got
+"dict[str, Literal['global_only', 'global_with_local_context', 'cross_crop_prediction'] | int]",
+expected "dict[str, dict[Any, Any]]")  [return-value]
+            return masks
+                   ^~~~~
+src/masks/multicrop_masking.py: note: In member "_generate_global_only_masks" of class "MultiCropMaskGenerator":
+src/masks/multicrop_masking.py:156:86: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    ...bal_only_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
+                                                                       ^
+src/masks/multicrop_masking.py:171:13: error: Dict entry 1 has incompatible
+type "str": "None"; expected "str": "dict[Any, Any]"  [dict-item]
+                "local_masks": None,
+                ^~~~~~~~~~~~~~~~~~~
+src/masks/multicrop_masking.py: note: In member "_generate_global_with_local_masks" of class "MultiCropMaskGenerator":
+src/masks/multicrop_masking.py:174:92: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    ...th_local_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
+                                                                       ^
+src/masks/multicrop_masking.py: note: In member "_generate_cross_crop_masks" of class "MultiCropMaskGenerator":
+src/masks/multicrop_masking.py:204:85: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+    ...oss_crop_masks(self, batch_size: int, device: str) -> Dict[str, Dict]:
+                                                                       ^
+src/masks/multicrop_masking.py:234:21: error: Dict entry 0 has incompatible
+type "str": "Tensor"; expected "str": "dict[str, Tensor]"  [dict-item]
+                        "context": local_context,
+                        ^~~~~~~~~~~~~~~~~~~~~~~~
+src/masks/multicrop_masking.py:235:21: error: Dict entry 1 has incompatible
+type "str": "None"; expected "str": "dict[str, Tensor]"  [dict-item]
+                        "targets": None,
+                        ^~~~~~~~~~~~~~~
+src/masks/multicrop_masking.py: note: In member "visualize_multicrop_masks" of class "MultiCropMaskGenerator":
+src/masks/multicrop_masking.py:262:26: error: Missing type parameters for
+generic type "Dict"  [type-arg]
+            masks: Dict[str, Dict],
+                             ^
+src/masks/multicrop_masking.py: note: In function "demo":
+src/masks/multicrop_masking.py:400:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    def demo():
+    ^
+src/masks/multicrop_masking.py:400:1: note: Use "-> None" if function does not return a value
+src/masks/multicrop_masking.py:418:30: error: Argument "masking_strategy" to
+"MultiCropMaskGenerator" has incompatible type "str"; expected
+"Literal['global_only', 'global_with_local_context', 'cross_crop_prediction']"
+[arg-type]
+                masking_strategy=strategy,
+                                 ^~~~~~~~
+src/masks/multicrop_masking.py: note: At top level:
+src/masks/multicrop_masking.py:452:5: error: Call to untyped function "demo" in
+typed context  [no-untyped-call]
+        demo()
+        ^~~~~~
+src/losses/sigreg.py: note: In member "forward" of class "EppsPulleyTest":
+src/losses/sigreg.py:137:13: error: "Tensor" not callable  [operator]
+            g = self.reference_points.unsqueeze(0).expand(batch_size, -1) ...
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/losses/sigreg.py: note: In member "_generate_random_slices" of class "SIGRegLoss":
+src/losses/sigreg.py:255:13: error: Statement is unreachable  [unreachable]
+                if self._fixed_random_slices.shape == (self.num_slices, em...
+                ^
+src/losses/sigreg.py:270:41: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "None")  [assignment]
+                self._fixed_random_slices = slices.detach().cpu()
+                                            ^~~~~~~~~~~~~~~~~~~~~
+src/data/transforms.py: note: In member "_shear_x" of class "RandAugment":
+src/data/transforms.py:139:13: error: Module has no attribute "AFFINE"
+[attr-defined]
+                Image.AFFINE,
+                ^~~~~~~~~~~~
+src/data/transforms.py: note: In member "_shear_y" of class "RandAugment":
+src/data/transforms.py:149:13: error: Module has no attribute "AFFINE"
+[attr-defined]
+                Image.AFFINE,
+                ^~~~~~~~~~~~
+src/data/transforms.py: note: In member "_translate_x" of class "RandAugment":
+src/data/transforms.py:160:13: error: Module has no attribute "AFFINE"
+[attr-defined]
+                Image.AFFINE,
+                ^~~~~~~~~~~~
+src/data/transforms.py: note: In member "_translate_y" of class "RandAugment":
+src/data/transforms.py:171:13: error: Module has no attribute "AFFINE"
+[attr-defined]
+                Image.AFFINE,
+                ^~~~~~~~~~~~
+src/data/transforms.py: note: In member "__call__" of class "RandAugment":
+src/data/transforms.py:184:32: error: Argument 2 has incompatible type
+"float | None"; expected "float"  [arg-type]
+                img = op_func(img, magnitude)
+                                   ^~~~~~~~~
+src/data/transforms.py: note: In member "__call__" of class "RandomErasing":
+src/data/transforms.py:475:52: error: Incompatible types in assignment
+(expression has type "float | str", target has type
+"Tensor | int | float | bool")  [assignment]
+                        img[:, y : y + h, x : x + w] = self.value
+                                                       ^~~~~~~~~~
+src/data/transforms.py: note: In member "__call__" of class "DeiTIIIAugmentation":
+src/data/transforms.py:652:9: error: Returning Any from function declared to
+return "Tensor"  [no-any-return]
+            return self.image_transform(img)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/transforms.py: note: In member "__call__" of class "DeiTIIIEvalTransform":
+src/data/transforms.py:690:9: error: Returning Any from function declared to
+return "Tensor"  [no-any-return]
+            return self.transform(img)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/transforms.py: note: In function "build_deit3_transform":
+src/data/transforms.py:747:38: error: Argument 1 to "DeiTIIIAugmentation" has
+incompatible type "**dict[str, float]"; expected "int"  [arg-type]
+            return DeiTIIIAugmentation(**default_config)
+                                         ^~~~~~~~~~~~~~
+src/data/transforms.py:747:38: error: Argument 1 to "DeiTIIIAugmentation" has
+incompatible type "**dict[str, float]"; expected "bool"  [arg-type]
+            return DeiTIIIAugmentation(**default_config)
+                                         ^~~~~~~~~~~~~~
+src/data/transforms.py:747:38: error: Argument 1 to "DeiTIIIAugmentation" has
+incompatible type "**dict[str, float]"; expected "tuple[float, float, float]"
+[arg-type]
+            return DeiTIIIAugmentation(**default_config)
+                                         ^~~~~~~~~~~~~~
+src/data/transforms.py:747:38: error: Argument 1 to "DeiTIIIAugmentation" has
+incompatible type "**dict[str, float]"; expected "tuple[float, float]"
+[arg-type]
+            return DeiTIIIAugmentation(**default_config)
+                                         ^~~~~~~~~~~~~~
+src/data/transforms.py:750:24: error: Argument "image_size" to
+"DeiTIIIEvalTransform" has incompatible type "float"; expected "int"  [arg-type]
+                image_size=default_config["image_size"],
+                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py:22:24: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+    class MultiCropDataset(Dataset):
+                           ^
+src/data/multicrop_dataset.py: note: In member "__init__" of class "MultiCropDataset":
+src/data/multicrop_dataset.py:44:23: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+            base_dataset: Dataset,
+                          ^
+src/data/multicrop_dataset.py: note: In member "__len__" of class "MultiCropDataset":
+src/data/multicrop_dataset.py:53:20: error: Argument 1 to "len" has
+incompatible type "Dataset[Any]"; expected "Sized"  [arg-type]
+            return len(self.base_dataset)
+                       ^~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py: note: In member "classes" of class "MultiCropDataset":
+src/data/multicrop_dataset.py:97:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def classes(self):
+        ^
+src/data/multicrop_dataset.py: note: At top level:
+src/data/multicrop_dataset.py:119:27: error: Missing type parameters for
+generic type "Dataset"  [type-arg]
+    class MultiCropDatasetRaw(Dataset):
+                              ^
+src/data/multicrop_dataset.py: note: In member "__init__" of class "MultiCropDatasetRaw":
+src/data/multicrop_dataset.py:153:36: error: Missing type parameters for
+generic type "dict"  [type-arg]
+            multicrop_config: Optional[dict] = None,
+                                       ^
+src/data/multicrop_dataset.py:176:30: error: Incompatible types in assignment
+(expression has type "MultiCropEvalTransform", variable has type
+"MultiCropTransform")  [assignment]
+                self.transform = MultiCropEvalTransform(
+                                 ^
+src/data/multicrop_dataset.py: note: In member "__len__" of class "MultiCropDatasetRaw":
+src/data/multicrop_dataset.py:192:20: error: Argument 1 to "len" has
+incompatible type "Dataset[Any]"; expected "Sized"  [arg-type]
+            return len(self.base_dataset)
+                       ^~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py: note: In member "__getitem__" of class "MultiCropDatasetRaw":
+src/data/multicrop_dataset.py:205:16: error: "Dataset[Any]" has no attribute
+"dataset"  [attr-defined]
+            item = self.base_dataset.dataset[idx]
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py: note: In member "classes" of class "MultiCropDatasetRaw":
+src/data/multicrop_dataset.py:224:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def classes(self):
+        ^
+src/data/multicrop_dataset.py:226:16: error: "Dataset[Any]" has no attribute
+"classes"  [attr-defined]
+            return self.base_dataset.classes
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py: note: In function "multicrop_collate_fn":
+src/data/multicrop_dataset.py:243:38: error: Missing type parameters for
+generic type "Tuple"  [type-arg]
+    def multicrop_collate_fn(batch: List[Tuple]) -> Tuple[List[torch.Tenso...
+                                         ^
+src/data/multicrop_dataset.py:268:18: error: Incompatible types in assignment
+(expression has type "Tensor", variable has type "tuple[Any, ...]")
+[assignment]
+            labels = torch.tensor(labels)
+                     ^~~~~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py:270:9: error: Statement is unreachable
+[unreachable]
+            crops_batch = batch
+            ^~~~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py:282:12: error: Incompatible return value type
+(got "tuple[list[Tensor], tuple[Any, ...]]", expected
+"tuple[list[Tensor], Tensor]")  [return-value]
+        return batched_crops, labels
+               ^~~~~~~~~~~~~~~~~~~~~
+src/data/multicrop_dataset.py: note: In function "build_multicrop_dataset":
+src/data/multicrop_dataset.py:285:1: error: Function is missing a type
+annotation for one or more arguments  [no-untyped-def]
+    def build_multicrop_dataset(
+    ^
+src/data/multicrop_dataset.py: note: In function "build_multicrop_dataloader":
+src/data/multicrop_dataset.py:354:1: error: Function is missing a type
+annotation for one or more arguments  [no-untyped-def]
+    def build_multicrop_dataloader(
+    ^
+src/data/multicrop_dataset.py:362:6: error: Missing type parameters for generic
+type "DataLoader"  [type-arg]
+    ) -> DataLoader:
+         ^
+src/data/multi_dataset.py:17:28: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+    class WeightedMultiDataset(Dataset):
+                               ^
+src/data/multi_dataset.py: note: In member "__init__" of class "WeightedMultiDataset":
+src/data/multi_dataset.py:46:24: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+            datasets: List[Dataset],
+                           ^
+src/data/multi_dataset.py:61:35: error: Argument 1 to "len" has incompatible
+type "Dataset[Any]"; expected "Sized"  [arg-type]
+            self.dataset_sizes = [len(d) for d in datasets]
+                                      ^
+src/data/multi_dataset.py:91:31: error: Call to untyped function
+"_compute_effective_size" in typed context  [no-untyped-call]
+            self.effective_size = self._compute_effective_size()
+                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/data/multi_dataset.py: note: In member "_compute_effective_size" of class "WeightedMultiDataset":
+src/data/multi_dataset.py:101:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _compute_effective_size(self):
+        ^
+src/data/multi_dataset.py: note: In member "__len__" of class "WeightedMultiDataset":
+src/data/multi_dataset.py:112:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/multi_dataset.py: note: In member "__getitem__" of class "WeightedMultiDataset":
+src/data/multi_dataset.py:115:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/multi_dataset.py: note: In member "get_dataset_stats" of class "WeightedMultiDataset":
+src/data/multi_dataset.py:138:46: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+        def get_dataset_stats(self) -> Dict[str, Dict]:
+                                                 ^
+src/data/multi_dataset.py: note: At top level:
+src/data/multi_dataset.py:150:28: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+    class BalancedMultiDataset(Dataset):
+                               ^
+src/data/multi_dataset.py: note: In member "__init__" of class "BalancedMultiDataset":
+src/data/multi_dataset.py:169:24: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+            datasets: List[Dataset],
+                           ^
+src/data/multi_dataset.py:181:35: error: Argument 1 to "len" has incompatible
+type "Dataset[Any]"; expected "Sized"  [arg-type]
+            self.dataset_sizes = [len(d) for d in datasets]
+                                      ^
+src/data/multi_dataset.py:193:9: error: Call to untyped function
+"resample_indices" in typed context  [no-untyped-call]
+            self.resample_indices()
+            ^~~~~~~~~~~~~~~~~~~~~~~
+src/data/multi_dataset.py: note: In member "resample_indices" of class "BalancedMultiDataset":
+src/data/multi_dataset.py:200:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def resample_indices(self):
+        ^
+src/data/multi_dataset.py:200:5: note: Use "-> None" if function does not return a value
+src/data/multi_dataset.py: note: In member "__len__" of class "BalancedMultiDataset":
+src/data/multi_dataset.py:219:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __len__(self):
+        ^
+src/data/multi_dataset.py: note: In member "__getitem__" of class "BalancedMultiDataset":
+src/data/multi_dataset.py:222:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __getitem__(self, idx):
+        ^
+src/data/multi_dataset.py: note: In function "build_multi_dataset":
+src/data/multi_dataset.py:233:1: error: Function is missing a type annotation
+for one or more arguments  [no-untyped-def]
+    def build_multi_dataset(
+    ^
+src/data/multi_dataset.py:234:27: error: Missing type parameters for generic
+type "Dict"  [type-arg]
+        dataset_configs: List[Dict],
+                              ^
+src/data/multi_dataset.py:239:6: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+    ) -> Dataset:
+         ^
+src/data/multi_dataset.py: note: In function "create_foundation_model_dataset":
+src/data/multi_dataset.py:307:1: error: Function is missing a type annotation
+for one or more arguments  [no-untyped-def]
+    def create_foundation_model_dataset(
+    ^
+src/data/multi_dataset.py:312:6: error: Missing type parameters for generic
+type "Dataset"  [type-arg]
+    ) -> Dataset:
+         ^
+src/losses/combined.py: note: In member "forward" of class "CombinedLoss":
+src/losses/combined.py:214:32: error: Unsupported operand types for * ("Tensor"
+and Module)  [operator]
+                weighted_vicreg = (vicreg_losses_tensor * self._vicreg_wei...
+                                   ^
+src/losses/combined.py:214:32: note: Right operand is of type "Tensor | Module"
+src/losses/combined.py: note: In member "__init__" of class "HierarchicalCombinedLoss":
+src/losses/combined.py:311:5: error: Function is missing a type annotation for
+one or more arguments  [no-untyped-def]
+        def __init__(
+        ^
+src/losses/combined.py:318:39: error: Missing type parameters for generic type
+"Dict"  [type-arg]
+            vicreg_configs: Optional[List[Dict]] = None,
+                                          ^
+src/losses/combined.py: note: In member "forward" of class "HierarchicalCombinedLoss":
+src/losses/combined.py:385:28: error: Unsupported operand types for * ("Tensor"
+and Module)  [operator]
+            weighted_vicreg = (vicreg_losses_tensor * self._vicreg_weights...
+                               ^
+src/losses/combined.py:385:28: note: Right operand is of type "Tensor | Module"
+src/losses/combined.py: note: In function "create_loss_from_config":
+src/losses/combined.py:402:37: error: Missing type parameters for generic type
+"Dict"  [type-arg]
+    def create_loss_from_config(config: Dict) -> nn.Module:
+                                        ^
+src/models/encoder.py: note: In member "forward" of class "VisionRoPE2D":
+src/models/encoder.py:192:36: error: Incompatible types in assignment
+(expression has type "Tensor | Module", variable has type "Tensor")
+[assignment]
+                    freqs_h, freqs_w = self.freqs_h, self.freqs_w
+                                       ^~~~~~~~~~~~
+src/models/encoder.py:194:32: error: Incompatible types in assignment
+(expression has type "Tensor | Module", variable has type "Tensor")
+[assignment]
+                freqs_h, freqs_w = self.freqs_h, self.freqs_w
+                                   ^~~~~~~~~~~~
+src/models/encoder.py: note: In member "_compute_freqs_dynamic" of class "VisionRoPE2D":
+src/models/encoder.py:234:79: error: Argument "device" to "arange" has
+incompatible type "device | Tensor | Module"; expected
+"str | device | int | None"  [arg-type]
+    ...range(0, half_dim, 2, dtype=torch.float32, device=self.freqs_h.device)
+                                                         ^~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:238:73: error: Argument "device" to "arange" has
+incompatible type "device | Tensor | Module"; expected
+"str | device | int | None"  [arg-type]
+    ...arange(num_patches_h, dtype=torch.float32, device=self.freqs_h.device)
+                                                         ^~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:239:73: error: Argument "device" to "arange" has
+incompatible type "device | Tensor | Module"; expected
+"str | device | int | None"  [arg-type]
+    ...arange(num_patches_w, dtype=torch.float32, device=self.freqs_w.device)
+                                                         ^~~~~~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "forward" of class "RoPEAttentionWrapper":
+src/models/encoder.py:309:15: error: "Tensor" not callable  [operator]
+            qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_d...
+                  ^~~~~~~~~~~
+src/models/encoder.py:314:17: error: "Tensor" not callable  [operator]
+                q = self.q_norm(q)
+                    ^~~~~~~~~~~~~~
+src/models/encoder.py:316:17: error: "Tensor" not callable  [operator]
+                k = self.k_norm(k)
+                    ^~~~~~~~~~~~~~
+src/models/encoder.py:347:27: error: Item "Tensor" of "Tensor | Module" has no
+attribute "p"  [union-attr]
+                    dropout_p=self.attn_drop.p if self.training else 0.0,
+                              ^~~~~~~~~~~~~~~~
+src/models/encoder.py:347:27: error: Argument "dropout_p" to
+"scaled_dot_product_attention" has incompatible type
+"Any | Tensor | Module | float"; expected "float"  [arg-type]
+                    dropout_p=self.attn_drop.p if self.training else 0.0,
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:348:23: error: Argument "scale" to
+"scaled_dot_product_attention" has incompatible type "Tensor | Module"; expected
+"float | None"  [arg-type]
+                    scale=self.scale,
+                          ^~~~~~~~~~
+src/models/encoder.py:355:20: error: "Tensor" not callable  [operator]
+                attn = self.attn_drop(attn)
+                       ^~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:361:13: error: "Tensor" not callable  [operator]
+            x = self.proj(x)
+                ^~~~~~~~~~~~
+src/models/encoder.py:362:13: error: "Tensor" not callable  [operator]
+            x = self.proj_drop(x)
+                ^~~~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "__init__" of class "ContextEncoder":
+src/models/encoder.py:415:28: error: Item "Tensor" of "Tensor | Module" has no
+attribute "num_patches"  [union-attr]
+            self.num_patches = self.vit.patch_embed.num_patches
+                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:416:27: error: Item "Tensor" of "Tensor | Module" has no
+attribute "patch_size"  [union-attr]
+            self.patch_size = self.vit.patch_embed.patch_size[0]
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:416:27: error: Value of type "Any | Tensor | Module" is
+not indexable  [index]
+            self.patch_size = self.vit.patch_embed.patch_size[0]
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:419:40: error: Argument 1 to "sqrt" has incompatible type
+"Any | Tensor | Module"; expected "SupportsFloat | SupportsIndex"  [arg-type]
+            self.grid_size = int(math.sqrt(self.num_patches))
+                                           ^~~~~~~~~~~~~~~~
+src/models/encoder.py:435:25: error: Value of type "Tensor | Module" is not
+indexable  [index]
+                num_heads = self.vit.blocks[0].attn.num_heads
+                            ^~~~~~~~~~~~~~~~~~
+src/models/encoder.py:435:25: error: Item "Tensor" of "Tensor | Any" has no
+attribute "attn"  [union-attr]
+                num_heads = self.vit.blocks[0].attn.num_heads
+                            ^~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:441:28: error: Argument "patch_size" to "VisionRoPE2D"
+has incompatible type "Any | Tensor"; expected "int"  [arg-type]
+                    patch_size=self.patch_size,
+                               ^~~~~~~~~~~~~~~
+src/models/encoder.py:447:26: error: Item Module of "Tensor | Module" has no
+attribute "__iter__" (not iterable)  [union-attr]
+                for block in self.vit.blocks:
+                             ^~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "forward" of class "ContextEncoder":
+src/models/encoder.py:472:13: error: "Tensor" not callable  [operator]
+            x = self.vit.patch_embed(x)
+                ^~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:475:21: error: "Tensor" not callable  [operator]
+            cls_token = self.vit.cls_token.expand(x.shape[0], -1, -1)
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:481:13: error: Unsupported operand types for + ("Tensor"
+and Module)  [operator]
+            x = x + self.vit.pos_embed
+                ^
+src/models/encoder.py:481:13: note: Right operand is of type "Tensor | Module"
+src/models/encoder.py:482:13: error: "Tensor" not callable  [operator]
+            x = self.vit.pos_drop(x)
+                ^~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:501:26: error: Item Module of "Tensor | Module" has no
+attribute "__iter__" (not iterable)  [union-attr]
+                for block in self.vit.blocks:
+                             ^~~~~~~~~~~~~~~
+src/models/encoder.py:506:17: error: "Tensor" not callable  [operator]
+                x = self.vit.blocks(x)
+                    ^~~~~~~~~~~~~~~~~~
+src/models/encoder.py:508:13: error: "Tensor" not callable  [operator]
+            x = self.vit.norm(x)
+                ^~~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "get_num_patches" of class "ContextEncoder":
+src/models/encoder.py:514:9: error: Returning Any from function declared to
+return "int"  [no-any-return]
+            return (img_size // self.patch_size) ** 2
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "get_patch_size" of class "ContextEncoder":
+src/models/encoder.py:518:16: error: Incompatible return value type (got
+"Any | Tensor", expected "int")  [return-value]
+            return self.patch_size
+                   ^~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "__init__" of class "TargetEncoder":
+src/models/encoder.py:573:28: error: Item "Tensor" of "Tensor | Module" has no
+attribute "num_patches"  [union-attr]
+            self.num_patches = self.vit.patch_embed.num_patches
+                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:574:27: error: Item "Tensor" of "Tensor | Module" has no
+attribute "patch_size"  [union-attr]
+            self.patch_size = self.vit.patch_embed.patch_size[0]
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:574:27: error: Value of type "Any | Tensor | Module" is
+not indexable  [index]
+            self.patch_size = self.vit.patch_embed.patch_size[0]
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:577:40: error: Argument 1 to "sqrt" has incompatible type
+"Any | Tensor | Module"; expected "SupportsFloat | SupportsIndex"  [arg-type]
+            self.grid_size = int(math.sqrt(self.num_patches))
+                                           ^~~~~~~~~~~~~~~~
+src/models/encoder.py:595:25: error: Value of type "Tensor | Module" is not
+indexable  [index]
+                num_heads = self.vit.blocks[0].attn.num_heads
+                            ^~~~~~~~~~~~~~~~~~
+src/models/encoder.py:595:25: error: Item "Tensor" of "Tensor | Any" has no
+attribute "attn"  [union-attr]
+                num_heads = self.vit.blocks[0].attn.num_heads
+                            ^~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:601:28: error: Argument "patch_size" to "VisionRoPE2D"
+has incompatible type "Any | Tensor"; expected "int"  [arg-type]
+                    patch_size=self.patch_size,
+                               ^~~~~~~~~~~~~~~
+src/models/encoder.py:607:26: error: Item Module of "Tensor | Module" has no
+attribute "__iter__" (not iterable)  [union-attr]
+                for block in self.vit.blocks:
+                             ^~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "forward" of class "TargetEncoder":
+src/models/encoder.py:628:13: error: "Tensor" not callable  [operator]
+            x = self.vit.patch_embed(x)
+                ^~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:631:21: error: "Tensor" not callable  [operator]
+            cls_token = self.vit.cls_token.expand(x.shape[0], -1, -1)
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:635:13: error: Unsupported operand types for + ("Tensor"
+and Module)  [operator]
+            x = x + self.vit.pos_embed
+                ^
+src/models/encoder.py:635:13: note: Right operand is of type "Tensor | Module"
+src/models/encoder.py:636:13: error: "Tensor" not callable  [operator]
+            x = self.vit.pos_drop(x)
+                ^~~~~~~~~~~~~~~~~~~~
+src/models/encoder.py:639:13: error: "Tensor" not callable  [operator]
+            x = self.vit.blocks(x)
+                ^~~~~~~~~~~~~~~~~~
+src/models/encoder.py:640:13: error: "Tensor" not callable  [operator]
+            x = self.vit.norm(x)
+                ^~~~~~~~~~~~~~~~
+src/models/encoder.py: note: In member "copy_from_context_encoder" of class "TargetEncoder":
+src/models/encoder.py:676:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def copy_from_context_encoder(self, context_encoder: ContextEncode...
+        ^
+src/models/hjepa.py: note: In member "__init__" of class "HJEPA":
+src/models/hjepa.py:153:13: error: Call to untyped function "_build_fpn" in
+typed context  [no-untyped-call]
+                self._build_fpn()
+                ^~~~~~~~~~~~~~~~~
+src/models/hjepa.py: note: In member "_init_weights" of class "HJEPA":
+src/models/hjepa.py:157:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def _init_weights(self, m):
+        ^
+src/models/hjepa.py: note: In member "_build_fpn" of class "HJEPA":
+src/models/hjepa.py:185:5: error: Function is missing a return type annotation
+[no-untyped-def]
+        def _build_fpn(self):
+        ^
+src/models/hjepa.py:185:5: note: Use "-> None" if function does not return a value
+src/models/hjepa.py: note: In member "_apply_fpn" of class "HJEPA":
+src/models/hjepa.py:300:26: error: "None" has no attribute "shape"
+[attr-defined]
+                top_down_n = top_down.shape[1]
+                             ^~~~~~~~~~~~~~
+src/models/hjepa.py:328:16: error: Incompatible return value type (got
+"list[None]", expected "list[Tensor]")  [return-value]
+            return fpn_features
+                   ^~~~~~~~~~~~
+src/models/hjepa.py: note: In member "forward" of class "HJEPA":
+src/models/hjepa.py:370:36: error: Argument 1 to "zeros" has incompatible type
+"tuple[int, int | float]"; expected "Sequence[int | SymInt]"  [arg-type]
+            mask_indices = torch.zeros((B, max_masked), dtype=torch.long, ...
+                                       ^~~~~~~~~~~~~~~
+src/models/hjepa.py:379:21: error: Value of type "Tensor | Module" is not
+indexable  [index]
+            pos_embed = self.context_encoder.vit.pos_embed[:, 1:, :].expan...
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/hjepa.py: note: In member "extract_features" of class "HJEPA":
+src/models/hjepa.py:497:9: error: Returning Any from function declared to
+return "Tensor"  [no-any-return]
+            return features
+            ^~~~~~~~~~~~~~~
+src/models/hjepa.py: note: In member "get_num_patches" of class "HJEPA":
+src/models/hjepa.py:513:16: error: Incompatible return value type (got
+"Any | Tensor | Module", expected "int")  [return-value]
+            return self.context_encoder.num_patches
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/hjepa.py: note: In member "get_patch_size" of class "HJEPA":
+src/models/hjepa.py:517:16: error: Incompatible return value type (got
+"Any | Tensor", expected "int")  [return-value]
+            return self.context_encoder.patch_size
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/models/hjepa.py: note: In function "create_hjepa_from_config":
+src/models/hjepa.py:591:38: error: Missing type parameters for generic type
+"Dict"  [type-arg]
+    def create_hjepa_from_config(config: Dict) -> HJEPA:
+                                         ^
+src/serving/model_server.py: note: In member "preprocess_image" of class "ModelServer":
+src/serving/model_server.py:179:9: error: Returning Any from function declared
+to return "Tensor"  [no-any-return]
+            return image_tensor.unsqueeze(0)  # Add batch dimension
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/serving/model_server.py: note: In member "extract_features" of class "ModelServer":
+src/serving/model_server.py:186:10: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+        ) -> np.ndarray:
+             ^
+src/serving/model_server.py:215:16: error: Incompatible return value type (got
+"tuple[ndarray[Any, Any], float]", expected "ndarray[Any, Any]")  [return-value]
+            return features_np, inference_time
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/serving/model_server.py: note: In member "extract_features_batch" of class "ModelServer":
+src/serving/model_server.py:222:10: error: Missing type parameters for generic
+type "ndarray"  [type-arg]
+        ) -> np.ndarray:
+             ^
+src/serving/model_server.py:251:16: error: Incompatible return value type (got
+"tuple[ndarray[Any, Any], float]", expected "ndarray[Any, Any]")  [return-value]
+            return features_np, inference_time
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/serving/model_server.py: note: In function "startup_event":
+src/serving/model_server.py:277:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def startup_event():
+    ^
+src/serving/model_server.py:277:1: note: Use "-> None" if function does not return a value
+src/serving/model_server.py: note: In function "root":
+src/serving/model_server.py:291:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def root():
+    ^
+src/serving/model_server.py: note: In function "health_check":
+src/serving/model_server.py:301:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def health_check():
+    ^
+src/serving/model_server.py: note: In function "extract_features":
+src/serving/model_server.py:327:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def extract_features(
+    ^
+src/serving/model_server.py: note: In function "extract_features_batch":
+src/serving/model_server.py:381:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def extract_features_batch(
+    ^
+src/serving/model_server.py: note: In function "metrics":
+src/serving/model_server.py:443:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def metrics():
+    ^
+src/serving/model_server.py: note: In function "model_info":
+src/serving/model_server.py:449:1: error: Function is missing a return type
+annotation  [no-untyped-def]
+    async def model_info():
+    ^
+src/inference/optimized_model.py: note: In member "forward" of class "OptimizedHJEPA":
+src/inference/optimized_model.py:83:9: error: Returning Any from function
+declared to return "Tensor"  [no-any-return]
+            return features
+            ^~~~~~~~~~~~~~~
+src/inference/optimized_model.py: note: In function "export_to_torchscript":
+src/inference/optimized_model.py:125:28: error: Call to untyped function
+"trace" in typed context  [no-untyped-call]
+                traced_model = torch.jit.trace(model, example_input)
+                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:132:9: error: Call to untyped function "save"
+in typed context  [no-untyped-call]
+            torch.jit.save(traced_model, output_path)
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:135:9: error: Returning Any from function
+declared to return "ScriptModule"  [no-any-return]
+            return traced_model
+            ^~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py: note: In function "export_to_onnx":
+src/inference/optimized_model.py:189:13: error: Argument 2 to "export" has
+incompatible type "Tensor"; expected "tuple[Any, ...]"  [arg-type]
+                example_input,
+                ^~~~~~~~~~~~~
+src/inference/optimized_model.py: note: In function "quantize_model":
+src/inference/optimized_model.py:239:31: error: Module has no attribute
+"quantize_dynamic"  [attr-defined]
+                quantized_model = torch.quantization.quantize_dynamic(
+                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:249:29: error: Module has no attribute
+"get_default_qconfig"  [attr-defined]
+                model.qconfig = torch.quantization.get_default_qconfig("fb...
+                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:250:13: error: Module has no attribute
+"prepare"  [attr-defined]
+                torch.quantization.prepare(model, inplace=True)
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:257:31: error: Module has no attribute
+"convert"  [attr-defined]
+                quantized_model = torch.quantization.convert(model, inplac...
+                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:266:9: error: Returning Any from function
+declared to return Module  [no-any-return]
+            return quantized_model
+            ^~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py: note: In member "extract_features" of class "BatchInference":
+src/inference/optimized_model.py:309:37: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+            images: Union[torch.Tensor, np.ndarray, List[torch.Tensor]],
+                                        ^
+src/inference/optimized_model.py:311:30: error: Missing type parameters for
+generic type "ndarray"  [type-arg]
+        ) -> Union[torch.Tensor, np.ndarray]:
+                                 ^
+src/inference/optimized_model.py:340:24: error: Incompatible types in
+assignment (expression has type "Tensor", variable has type "list[Any]")
+[assignment]
+            all_features = torch.cat(all_features, dim=0)
+                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:343:13: error: Returning Any from function
+declared to return "Tensor | ndarray[Any, Any]"  [no-any-return]
+                return all_features.cpu().numpy()
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:343:20: error: "list[Any]" has no attribute
+"cpu"  [attr-defined]
+                return all_features.cpu().numpy()
+                       ^~~~~~~~~~~~~~~~
+src/inference/optimized_model.py:344:16: error: Incompatible return value type
+(got "list[Any]", expected "Tensor | ndarray[Any, Any]")  [return-value]
+            return all_features
+                   ^~~~~~~~~~~~
+src/inference/optimized_model.py: note: In member "benchmark" of class "BatchInference":
+src/inference/optimized_model.py:391:17: error: Incompatible types in
+assignment (expression has type "ndarray[Any, dtype[Any]]", variable has type
+"list[float]")  [assignment]
+            times = np.array(times)
+                    ^~~~~~~~~~~~~~~
+src/inference/optimized_model.py:402:16: error: Incompatible return value type
+(got "dict[str, object]", expected "dict[str, float]")  [return-value]
+            return results
+                   ^~~~~~~
+src/utils/logging.py:34:5: error: Module "torch.utils.tensorboard" does not
+explicitly export attribute "SummaryWriter"  [attr-defined]
+        from torch.utils.tensorboard import SummaryWriter
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "__init__" of class "MetricsLogger":
+src/utils/logging.py:105:34: error: Call to untyped function "SummaryWriter" in
+typed context  [no-untyped-call]
+                    self.tb_writer = SummaryWriter(log_dir=str(tb_dir))
+                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py:112:9: error: Need type annotation for "metrics_buffer"
+[var-annotated]
+            self.metrics_buffer = defaultdict(list)
+            ^~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "log_metrics" of class "MetricsLogger":
+src/utils/logging.py:115:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_metrics(
+        ^
+src/utils/logging.py:149:21: error: Call to untyped function "add_scalar" in
+typed context  [no-untyped-call]
+                        self.tb_writer.add_scalar(name, value, self.step)
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "log_image" of class "MetricsLogger":
+src/utils/logging.py:155:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_image(
+        ^
+src/utils/logging.py:158:22: error: Missing type parameters for generic type
+"ndarray"  [type-arg]
+            image: Union[np.ndarray, torch.Tensor],
+                         ^
+src/utils/logging.py:188:17: error: Call to untyped function "add_image" in
+typed context  [no-untyped-call]
+                    self.tb_writer.add_image(name, image, step)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "log_images" of class "MetricsLogger":
+src/utils/logging.py:192:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_images(
+        ^
+src/utils/logging.py:195:28: error: Missing type parameters for generic type
+"ndarray"  [type-arg]
+            images: List[Union[np.ndarray, torch.Tensor]],
+                               ^
+src/utils/logging.py:242:17: error: Call to untyped function "add_image" in
+typed context  [no-untyped-call]
+                    self.tb_writer.add_image(name, grid, step)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "log_histogram" of class "MetricsLogger":
+src/utils/logging.py:246:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_histogram(
+        ^
+src/utils/logging.py:249:23: error: Missing type parameters for generic type
+"ndarray"  [type-arg]
+            values: Union[np.ndarray, torch.Tensor],
+                          ^
+src/utils/logging.py:270:50: error: Argument 1 to "Histogram" has incompatible
+type "ndarray[Any, Any]"; expected "Sequence[Any] | None"  [arg-type]
+                    wandb.log({name: wandb.Histogram(values)}, step=step)
+                                                     ^~~~~~
+src/utils/logging.py:277:17: error: Call to untyped function "add_histogram" in
+typed context  [no-untyped-call]
+                    self.tb_writer.add_histogram(name, values, step)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "log_model_gradients" of class "MetricsLogger":
+src/utils/logging.py:281:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_model_gradients(
+        ^
+src/utils/logging.py: note: In member "log_model_weights" of class "MetricsLogger":
+src/utils/logging.py:304:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_model_weights(
+        ^
+src/utils/logging.py: note: In member "log_hierarchical_losses" of class "MetricsLogger":
+src/utils/logging.py:326:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_hierarchical_losses(
+        ^
+src/utils/logging.py:350:17: error: Incompatible types in assignment
+(expression has type "float", variable has type "int")  [assignment]
+                    total_loss += value
+                    ^~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "log_prediction_comparison" of class "MetricsLogger":
+src/utils/logging.py:365:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_prediction_comparison(
+        ^
+src/utils/logging.py: note: In member "log_embeddings" of class "MetricsLogger":
+src/utils/logging.py:423:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_embeddings(
+        ^
+src/utils/logging.py:453:17: error: Call to untyped function "add_embedding" in
+typed context  [no-untyped-call]
+                    self.tb_writer.add_embedding(
+                    ^
+src/utils/logging.py: note: In member "accumulate_metrics" of class "MetricsLogger":
+src/utils/logging.py:463:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def accumulate_metrics(
+        ^
+src/utils/logging.py: note: In member "log_accumulated_metrics" of class "MetricsLogger":
+src/utils/logging.py:478:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_accumulated_metrics(
+        ^
+src/utils/logging.py: note: In member "log_system_metrics" of class "MetricsLogger":
+src/utils/logging.py:511:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def log_system_metrics(
+        ^
+src/utils/logging.py: note: In member "watch_model" of class "MetricsLogger":
+src/utils/logging.py:547:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def watch_model(
+        ^
+src/utils/logging.py: note: In member "finish" of class "MetricsLogger":
+src/utils/logging.py:566:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def finish(self):
+        ^
+src/utils/logging.py:566:5: note: Use "-> None" if function does not return a value
+src/utils/logging.py:577:17: error: Call to untyped function "close" in typed
+context  [no-untyped-call]
+                    self.tb_writer.close()
+                    ^~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "__enter__" of class "MetricsLogger":
+src/utils/logging.py:582:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __enter__(self):
+        ^
+src/utils/logging.py: note: In member "__exit__" of class "MetricsLogger":
+src/utils/logging.py:586:5: error: Function is missing a type annotation
+[no-untyped-def]
+        def __exit__(self, exc_type, exc_val, exc_tb):
+        ^
+src/utils/logging.py:588:9: error: Call to untyped function "finish" in typed
+context  [no-untyped-call]
+            self.finish()
+            ^~~~~~~~~~~~~
+src/utils/logging.py: note: In member "__init__" of class "ProgressTracker":
+src/utils/logging.py:611:9: error: Need type annotation for "step_times" (hint:
+"step_times: list[<type>] = ...")  [var-annotated]
+            self.step_times = []
+            ^~~~~~~~~~~~~~~
+src/utils/logging.py: note: In member "start_epoch" of class "ProgressTracker":
+src/utils/logging.py:613:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def start_epoch(self):
+        ^
+src/utils/logging.py:613:5: note: Use "-> None" if function does not return a value
+src/utils/logging.py:615:33: error: Incompatible types in assignment
+(expression has type "float", variable has type "None")  [assignment]
+            self.epoch_start_time = time.time()
+                                    ^~~~~~~~~~~
+src/utils/logging.py: note: In member "step" of class "ProgressTracker":
+src/utils/logging.py:617:5: error: Function is missing a return type annotation
+ [no-untyped-def]
+        def step(self):
+        ^
+src/utils/logging.py:617:5: note: Use "-> None" if function does not return a value
+src/utils/logging.py:620:13: error: Statement is unreachable  [unreachable]
+                step_time = time.time() - self.epoch_start_time
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/utils/logging.py: note: In function "setup_logging":
+src/utils/logging.py:668:1: error: Function is missing a return type annotation
+ [no-untyped-def]
+    def setup_logging(log_file: Optional[str] = None, level: int = logging...
+    ^
+src/trainers/trainer.py: note: In member "__init__" of class "HJEPATrainer":
+src/trainers/trainer.py:60:23: error: Missing type parameters for generic type
+"DataLoader"  [type-arg]
+            train_loader: torch.utils.data.DataLoader,
+                          ^
+src/trainers/trainer.py:61:30: error: Missing type parameters for generic type
+"DataLoader"  [type-arg]
+            val_loader: Optional[torch.utils.data.DataLoader],
+                                 ^
+src/trainers/trainer.py: note: In member "train" of class "HJEPATrainer":
+src/trainers/trainer.py:162:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def train(self):
+        ^
+src/trainers/trainer.py:162:5: note: Use "-> None" if function does not return a value
+src/trainers/trainer.py:173:13: error: Call to untyped function "start_epoch"
+in typed context  [no-untyped-call]
+                self.progress_tracker.start_epoch()
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/trainers/trainer.py:218:9: error: Call to untyped function "finish" in
+typed context  [no-untyped-call]
+            self.metrics_logger.finish()
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/trainers/trainer.py: note: In member "_train_epoch" of class "HJEPATrainer":
+src/trainers/trainer.py:249:17: error: Item "None" of "GradScaler | None" has
+no attribute "scale"  [union-attr]
+                    self.scaler.scale(loss).backward()
+                    ^~~~~~~~~~~~~~~~~
+src/trainers/trainer.py:251:17: error: Call to untyped function "backward" in
+typed context  [no-untyped-call]
+                    loss.backward()
+                    ^~~~~~~~~~~~~~~
+src/trainers/trainer.py:258:25: error: Item "None" of "GradScaler | None" has
+no attribute "unscale_"  [union-attr]
+                            self.scaler.unscale_(self.optimizer)
+                            ^~~~~~~~~~~~~~~~~~~~
+src/trainers/trainer.py:267:21: error: Item "None" of "GradScaler | None" has
+no attribute "step"  [union-attr]
+                        self.scaler.step(self.optimizer)
+                        ^~~~~~~~~~~~~~~~
+src/trainers/trainer.py:268:21: error: Item "None" of "GradScaler | None" has
+no attribute "update"  [union-attr]
+                        self.scaler.update()
+                        ^~~~~~~~~~~~~~~~~~
+src/trainers/trainer.py:333:17: error: Dict entry 0 has incompatible type
+"str": "floating[Any]"; expected "str": "float"  [dict-item]
+            return {"loss": avg_loss}
+                    ^~~~~~~~~~~~~~~~
+src/trainers/trainer.py: note: In member "_validate_epoch" of class "HJEPATrainer":
+src/trainers/trainer.py:447:38: error: "Tensor" not callable  [operator]
+                    context_embeddings = self.model.encode_context(images,...
+                                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/trainers/trainer.py:448:37: error: "Tensor" not callable  [operator]
+                    target_embeddings = self.model.encode_target(images, t...
+                                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src/trainers/trainer.py:450:31: error: "Tensor" not callable  [operator]
+                    predictions = self.model.predict(
+                                  ^
+src/trainers/trainer.py: note: In member "_update_target_encoder" of class "HJEPATrainer":
+src/trainers/trainer.py:468:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _update_target_encoder(self, momentum: float):
+        ^
+src/trainers/trainer.py:481:26: error: Item "Tensor" of "Tensor | Module" has
+no attribute "parameters"  [union-attr]
+            context_params = self.model.context_encoder.parameters()
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/trainers/trainer.py:482:25: error: Item "Tensor" of "Tensor | Module" has
+no attribute "parameters"  [union-attr]
+            target_params = self.model.target_encoder.parameters()
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/trainers/trainer.py: note: In member "_log_epoch_visualizations" of class "HJEPATrainer":
+src/trainers/trainer.py:561:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _log_epoch_visualizations(self, epoch: int):
+        ^
+src/trainers/trainer.py: note: In member "_save_checkpoint" of class "HJEPATrainer":
+src/trainers/trainer.py:636:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _save_checkpoint(
+        ^
+src/trainers/trainer.py:652:35: error: Incompatible types in assignment
+(expression has type "float", target has type "int")  [assignment]
+                metrics["val_loss"] = val_loss
+                                      ^~~~~~~~
+src/trainers/trainer.py:666:21: error: Argument "metrics" to "save_checkpoint"
+of "CheckpointManager" has incompatible type "dict[str, int]"; expected
+"dict[str, float] | None"  [arg-type]
+                metrics=metrics,
+                        ^~~~~~~
+src/trainers/trainer.py:666:21: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+src/trainers/trainer.py:666:21: note: Consider using "Mapping" instead, which is covariant in the value type
+src/trainers/trainer.py: note: In member "_resume_from_checkpoint" of class "HJEPATrainer":
+src/trainers/trainer.py:671:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _resume_from_checkpoint(self, checkpoint_path: str):
+        ^
+src/trainers/trainer.py: note: In member "_print_epoch_summary" of class "HJEPATrainer":
+src/trainers/trainer.py:695:5: error: Function is missing a return type
+annotation  [no-untyped-def]
+        def _print_epoch_summary(
+        ^
+src/trainers/trainer.py: note: In function "create_optimizer":
+src/trainers/trainer.py:754:21: error: Incompatible types in assignment
+(expression has type "Adam", variable has type "AdamW")  [assignment]
+            optimizer = torch.optim.Adam(
+                        ^
+src/trainers/trainer.py:761:21: error: Incompatible types in assignment
+(expression has type "SGD", variable has type "AdamW")  [assignment]
+            optimizer = torch.optim.SGD(
+                        ^
+Found 487 errors in 30 files (checked 42 source files)

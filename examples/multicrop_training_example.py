@@ -22,15 +22,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import torch
 import matplotlib.pyplot as plt
+import torch
 from PIL import Image
 
-from src.data import (
-    build_multicrop_dataset,
-    build_multicrop_dataloader,
-    MultiCropTransform,
-)
+from src.data import MultiCropTransform, build_multicrop_dataloader, build_multicrop_dataset
 from src.masks import MultiCropMaskGenerator
 from src.models import create_hjepa_from_config
 
@@ -42,7 +38,7 @@ def example_1_basic_multicrop_transform():
     print("=" * 70)
 
     # Create a dummy image
-    image = Image.new('RGB', (256, 256), color=(128, 128, 128))
+    image = Image.new("RGB", (256, 256), color=(128, 128, 128))
 
     # Create multi-crop transform
     transform = MultiCropTransform(
@@ -77,14 +73,14 @@ def example_1_basic_multicrop_transform():
 
         axes[i].imshow(crop_vis)
         crop_type = "Global" if i < 2 else "Local"
-        axes[i].set_title(f'{crop_type} Crop {i}', fontsize=10)
-        axes[i].axis('off')
+        axes[i].set_title(f"{crop_type} Crop {i}", fontsize=10)
+        axes[i].axis("off")
 
-    plt.suptitle('Multi-Crop Augmentation Example', fontsize=14)
+    plt.suptitle("Multi-Crop Augmentation Example", fontsize=14)
     plt.tight_layout()
 
-    save_path = '/tmp/multicrop_example.png'
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    save_path = "/tmp/multicrop_example.png"
+    plt.savefig(save_path, dpi=150, bbox_inches="tight")
     print(f"\nVisualization saved to: {save_path}")
     plt.close()
 
@@ -97,9 +93,9 @@ def example_2_multicrop_dataset():
 
     # Build multi-crop dataset
     dataset = build_multicrop_dataset(
-        dataset_name='cifar10',
-        data_path='/tmp/data',
-        split='train',
+        dataset_name="cifar10",
+        data_path="/tmp/data",
+        split="train",
         num_global_crops=2,
         num_local_crops=6,
         global_crop_size=224,
@@ -133,9 +129,9 @@ def example_3_multicrop_dataloader():
 
     # Build dataset
     dataset = build_multicrop_dataset(
-        dataset_name='cifar10',
-        data_path='/tmp/data',
-        split='train',
+        dataset_name="cifar10",
+        data_path="/tmp/data",
+        split="train",
         num_global_crops=2,
         num_local_crops=6,
         download=True,
@@ -175,7 +171,7 @@ def example_4_multicrop_masking():
     print("Example 4: Multi-Crop Masking Strategy")
     print("=" * 70)
 
-    strategies = ['global_only', 'global_with_local_context', 'cross_crop_prediction']
+    strategies = ["global_only", "global_with_local_context", "cross_crop_prediction"]
 
     for strategy in strategies:
         print(f"\n{strategy.upper()}:")
@@ -194,28 +190,24 @@ def example_4_multicrop_masking():
 
         # Generate masks
         batch_size = 2
-        masks = mask_gen(batch_size=batch_size, device='cpu')
+        masks = mask_gen(batch_size=batch_size, device="cpu")
 
         print(f"  Strategy: {masks['strategy']}")
         print(f"  Global crops: {masks['num_global_crops']}")
         print(f"  Local crops: {masks['num_local_crops']}")
 
-        if masks['global_masks']:
+        if masks["global_masks"]:
             print(f"  Global mask keys: {list(masks['global_masks'].keys())}")
             # Check structure of first global crop
-            first_crop = masks['global_masks']['crop_0']
+            first_crop = masks["global_masks"]["crop_0"]
             print(f"  Global crop 0 levels: {list(first_crop.keys())}")
 
-        if masks['local_masks']:
+        if masks["local_masks"]:
             print(f"  Local mask keys: {list(masks['local_masks'].keys())}")
 
         # Visualize
-        save_path = f'/tmp/multicrop_masking_{strategy}.png'
-        fig = mask_gen.visualize_multicrop_masks(
-            masks,
-            sample_idx=0,
-            save_path=save_path
-        )
+        save_path = f"/tmp/multicrop_masking_{strategy}.png"
+        fig = mask_gen.visualize_multicrop_masks(masks, sample_idx=0, save_path=save_path)
         plt.close(fig)
         print(f"  Visualization saved to: {save_path}")
 
@@ -228,31 +220,31 @@ def example_5_training_workflow():
 
     # Configuration
     config = {
-        'model': {
-            'encoder_type': 'vit_small_patch16_224',
-            'embed_dim': 384,
-            'num_hierarchies': 3,
-            'predictor': {
-                'depth': 6,
-                'num_heads': 6,
-                'mlp_ratio': 4.0,
+        "model": {
+            "encoder_type": "vit_small_patch16_224",
+            "embed_dim": 384,
+            "num_hierarchies": 3,
+            "predictor": {
+                "depth": 6,
+                "num_heads": 6,
+                "mlp_ratio": 4.0,
             },
-            'ema': {
-                'momentum': 0.996,
-                'momentum_end': 1.0,
-                'momentum_warmup_epochs': 30,
+            "ema": {
+                "momentum": 0.996,
+                "momentum_end": 1.0,
+                "momentum_warmup_epochs": 30,
             },
         },
-        'data': {
-            'image_size': 224,
+        "data": {
+            "image_size": 224,
         },
     }
 
     print("\nStep 1: Build multi-crop dataset")
     dataset = build_multicrop_dataset(
-        dataset_name='cifar10',
-        data_path='/tmp/data',
-        split='train',
+        dataset_name="cifar10",
+        data_path="/tmp/data",
+        split="train",
         num_global_crops=2,
         num_local_crops=6,
         download=True,
@@ -280,7 +272,7 @@ def example_5_training_workflow():
         num_global_crops=2,
         num_local_crops=6,
         num_hierarchies=3,
-        masking_strategy='global_only',
+        masking_strategy="global_only",
     )
     print(f"  Masking strategy: {mask_gen.masking_strategy}")
 
@@ -293,7 +285,7 @@ def example_5_training_workflow():
     print(f"  Local crop 0 shape: {batch_crops[2].shape}")
 
     # Generate masks
-    masks = mask_gen(batch_size=batch_crops[0].shape[0], device='cpu')
+    masks = mask_gen(batch_size=batch_crops[0].shape[0], device="cpu")
     print(f"  Generated masks for {batch_crops[0].shape[0]} samples")
 
     print("\nStep 6: Training considerations")
@@ -332,13 +324,16 @@ def main():
         except Exception as e:
             print(f"\nError in example '{name}': {e}")
             import traceback
+
             traceback.print_exc()
 
     print("\n" + "=" * 70)
     print("All examples completed!")
     print("=" * 70)
     print("\nNext steps:")
-    print("  1. Try training with: python scripts/train.py --config configs/multicrop_training.yaml")
+    print(
+        "  1. Try training with: python scripts/train.py --config configs/multicrop_training.yaml"
+    )
     print("  2. Experiment with different masking strategies")
     print("  3. Adjust number of crops based on your GPU memory")
     print("  4. Compare performance with standard single-crop training")

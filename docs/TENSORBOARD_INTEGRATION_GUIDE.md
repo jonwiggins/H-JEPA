@@ -562,4 +562,3 @@ for level in range(num_hierarchies):
 - H-JEPA Paper: [Link to paper]
 - I-JEPA (Original JEPA): https://arxiv.org/abs/2301.08243
 - VICReg (Collapse Prevention): https://arxiv.org/abs/2105.04906
-

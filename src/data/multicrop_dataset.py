@@ -6,7 +6,7 @@ to existing datasets, enabling multi-crop training with minimal code changes.
 """
 
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -19,7 +19,7 @@ from .multicrop_transforms import (
 )
 
 
-class MultiCropDataset(Dataset):
+class MultiCropDataset(Dataset[Union[List[torch.Tensor], Tuple[List[torch.Tensor], int]]]):
     """
     Dataset wrapper that applies multi-crop augmentation.
 
@@ -41,16 +41,16 @@ class MultiCropDataset(Dataset):
 
     def __init__(
         self,
-        base_dataset: Dataset,
+        base_dataset: Dataset[Any],
         multicrop_transform: MultiCropTransform,
         return_labels: bool = True,
-    ):
+    ) -> None:
         self.base_dataset = base_dataset
         self.multicrop_transform = multicrop_transform
         self.return_labels = return_labels
 
     def __len__(self) -> int:
-        return len(self.base_dataset)
+        return len(self.base_dataset)  # type: ignore[arg-type]
 
     def __getitem__(self, idx: int) -> Union[List[torch.Tensor], Tuple[List[torch.Tensor], int]]:
         """
@@ -94,10 +94,10 @@ class MultiCropDataset(Dataset):
             self.multicrop_transform.set_epoch(epoch)
 
     @property
-    def classes(self):
+    def classes(self) -> Optional[List[str]]:
         """Get classes from base dataset."""
         if hasattr(self.base_dataset, "classes"):
-            return self.base_dataset.classes
+            return cast(List[str], self.base_dataset.classes)
         return None
 
     @property
@@ -116,7 +116,7 @@ class MultiCropDataset(Dataset):
         return self.num_global_crops + self.num_local_crops
 
 
-class MultiCropDatasetRaw(Dataset):
+class MultiCropDatasetRaw(Dataset[Tuple[Union[List[torch.Tensor], torch.Tensor], int]]):
     """
     Multi-crop dataset that loads raw images without pre-transforms.
 
@@ -150,9 +150,9 @@ class MultiCropDatasetRaw(Dataset):
         dataset_name: str,
         data_path: Union[str, Path],
         split: str = "train",
-        multicrop_config: Optional[dict] = None,
+        multicrop_config: Optional[Dict[str, Any]] = None,
         download: bool = True,
-    ):
+    ) -> None:
         self.dataset_name = dataset_name.lower()
         self.data_path = Path(data_path)
         self.split = split
@@ -170,7 +170,9 @@ class MultiCropDatasetRaw(Dataset):
 
         # Build multi-crop transform
         if split == "train":
-            self.transform = build_multicrop_transform(**multicrop_config)
+            self.transform: Union[
+                MultiCropTransform, MultiCropEvalTransform
+            ] = build_multicrop_transform(**multicrop_config)
         else:
             # For validation, use single-crop evaluation transform
             self.transform = MultiCropEvalTransform(
@@ -189,7 +191,7 @@ class MultiCropDatasetRaw(Dataset):
         )
 
     def __len__(self) -> int:
-        return len(self.base_dataset)
+        return len(self.base_dataset)  # type: ignore[arg-type]
 
     def __getitem__(self, idx: int) -> Tuple[Union[List[torch.Tensor], torch.Tensor], int]:
         """
@@ -202,7 +204,8 @@ class MultiCropDatasetRaw(Dataset):
             (crops, label) where crops is a list of tensors (train) or single tensor (val)
         """
         # Get raw image and label from base dataset
-        item = self.base_dataset.dataset[idx]
+        # The base_dataset has a .dataset attribute that holds the actual dataset
+        item = getattr(self.base_dataset, "dataset")[idx]
 
         if isinstance(item, tuple):
             image, label = item
@@ -221,26 +224,26 @@ class MultiCropDatasetRaw(Dataset):
             self.transform.set_epoch(epoch)
 
     @property
-    def classes(self):
+    def classes(self) -> List[str]:
         """Get classes from base dataset."""
-        return self.base_dataset.classes
+        return cast(List[str], cast(Any, self.base_dataset).classes)
 
     @property
     def num_global_crops(self) -> int:
         """Number of global crops."""
-        if self.split == "train":
+        if self.split == "train" and isinstance(self.transform, MultiCropTransform):
             return self.transform.num_global_crops
         return 1
 
     @property
     def num_local_crops(self) -> int:
         """Number of local crops."""
-        if self.split == "train":
+        if self.split == "train" and isinstance(self.transform, MultiCropTransform):
             return self.transform.num_local_crops
         return 0
 
 
-def multicrop_collate_fn(batch: List[Tuple]) -> Tuple[List[torch.Tensor], torch.Tensor]:
+def multicrop_collate_fn(batch: List[Any]) -> Tuple[List[torch.Tensor], torch.Tensor]:
     """
     Custom collate function for multi-crop datasets.
 
@@ -264,22 +267,23 @@ def multicrop_collate_fn(batch: List[Tuple]) -> Tuple[List[torch.Tensor], torch.
 
     # Check if items are (crops, label) or just crops
     if isinstance(batch[0], tuple):
-        crops_batch, labels = zip(*batch)
-        labels = torch.tensor(labels)
+        crops_batch, labels_tuple = zip(*batch)
+        labels_tensor = torch.tensor(labels_tuple)
+        crops_list: Any = crops_batch
     else:
-        crops_batch = batch
-        labels = torch.tensor([])
+        crops_list = batch
+        labels_tensor = torch.tensor([])
 
     # Determine number of crops from first item
-    num_crops = len(crops_batch[0])
+    num_crops = len(crops_list[0])
 
     # Stack each crop type across the batch
-    batched_crops = []
+    batched_crops: List[torch.Tensor] = []
     for crop_idx in range(num_crops):
-        crop_tensors = [item[crop_idx] for item in crops_batch]
+        crop_tensors = [item[crop_idx] for item in crops_list]
         batched_crops.append(torch.stack(crop_tensors))
 
-    return batched_crops, labels
+    return batched_crops, labels_tensor
 
 
 def build_multicrop_dataset(
@@ -296,7 +300,7 @@ def build_multicrop_dataset(
     local_color_jitter: float = 0.4,
     adaptive: bool = False,
     download: bool = True,
-    **kwargs,
+    **kwargs: Any,
 ) -> MultiCropDatasetRaw:
     """
     Factory function to build multi-crop datasets.
@@ -358,8 +362,8 @@ def build_multicrop_dataloader(
     pin_memory: bool = True,
     shuffle: bool = True,
     drop_last: bool = True,
-    **kwargs,
-) -> DataLoader:
+    **kwargs: Any,
+) -> DataLoader[Tuple[Union[List[torch.Tensor], torch.Tensor], int]]:
     """
     Build a DataLoader for multi-crop datasets.
 

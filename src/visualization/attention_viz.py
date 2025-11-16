@@ -5,11 +5,13 @@ Provides functions to visualize attention maps, multi-head patterns,
 and hierarchical attention across different levels.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import matplotlib.figure as mfigure
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 
@@ -17,8 +19,12 @@ try:
     from einops import rearrange
 except ImportError:
 
-    def rearrange(tensor, pattern, **axes_lengths):
+    def rearrange(  # type: ignore[misc]
+        tensor: Union[torch.Tensor, List[torch.Tensor]], pattern: str, **axes_lengths: Any
+    ) -> torch.Tensor:
         """Fallback rearrange for basic patterns."""
+        if not isinstance(tensor, torch.Tensor):
+            raise NotImplementedError("Fallback rearrange only supports single tensors")
         if pattern == "b n d -> b d n":
             return tensor.transpose(1, 2)
         elif pattern == "b d n -> b n d":
@@ -49,20 +55,21 @@ def extract_attention_maps(
     Returns:
         Dictionary containing attention maps per layer
     """
-    attention_maps = {}
-    hooks = []
+    attention_maps: Dict[str, torch.Tensor] = {}
+    hooks: List[torch.utils.hooks.RemovableHandle] = []
 
-    def get_attention_hook(name):
-        def hook(module, input, output):
+    def get_attention_hook(name: str) -> Callable[[nn.Module, Any, Any], None]:
+        def hook(module: nn.Module, input: Any, output: Any) -> None:
             # For timm ViT, attention weights are in attn_drop
             if hasattr(module, "attn"):
-                attention_maps[name] = module.attn.detach().cpu()
+                attn_module: Any = module.attn
+                attention_maps[name] = attn_module.detach().cpu()
 
         return hook
 
     # Register hooks for transformer blocks
-    encoder = model.context_encoder.vit
-    blocks = encoder.blocks
+    encoder: Any = model.context_encoder.vit  # type: ignore
+    blocks: Any = encoder.blocks
 
     if layer_indices is None:
         layer_indices = list(range(len(blocks)))
@@ -73,7 +80,7 @@ def extract_attention_maps(
 
     # Forward pass
     with torch.no_grad():
-        model.context_encoder(images)
+        _ = model.context_encoder(images)  # type: ignore[operator]
 
     # Remove hooks
     for hook in hooks:
@@ -84,12 +91,12 @@ def extract_attention_maps(
 
 def visualize_attention_maps(
     attention_maps: Dict[str, torch.Tensor],
-    image: Optional[np.ndarray] = None,
+    image: Optional[npt.NDArray[np.float64]] = None,
     layer_indices: Optional[List[int]] = None,
     head_indices: Optional[List[int]] = None,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 12),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize attention maps from multiple layers and heads.
 
@@ -159,7 +166,7 @@ def visualize_multihead_attention(
     layer_idx: int = -1,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 10),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize all attention heads from a specific layer.
 
@@ -177,11 +184,12 @@ def visualize_multihead_attention(
     attention_maps = extract_attention_maps(model, image, [layer_idx])
 
     # Get attention for specified layer
-    attn_key = (
-        f"layer_{layer_idx}"
-        if layer_idx >= 0
-        else f"layer_{len(model.context_encoder.vit.blocks) + layer_idx}"
-    )
+    if layer_idx >= 0:
+        attn_key = f"layer_{layer_idx}"
+    else:
+        encoder_vit: Any = model.context_encoder.vit  # type: ignore
+        num_blocks: int = len(encoder_vit.blocks)
+        attn_key = f"layer_{num_blocks + layer_idx}"
     attn = attention_maps[attn_key][0]  # [num_heads, seq_len, seq_len]
 
     num_heads = attn.shape[0]
@@ -226,11 +234,11 @@ def visualize_multihead_attention(
 def visualize_attention_rollout(
     model: nn.Module,
     image: torch.Tensor,
-    original_image: Optional[np.ndarray] = None,
+    original_image: Optional[npt.NDArray[np.float64]] = None,
     start_layer: int = 0,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Compute and visualize attention rollout (accumulated attention across layers).
 
@@ -246,12 +254,13 @@ def visualize_attention_rollout(
         Matplotlib figure
     """
     # Extract all attention maps
-    num_layers = len(model.context_encoder.vit.blocks)
+    encoder_vit: Any = model.context_encoder.vit  # type: ignore
+    num_layers: int = len(encoder_vit.blocks)
     layer_indices = list(range(start_layer, num_layers))
     attention_maps = extract_attention_maps(model, image, layer_indices)
 
     # Compute attention rollout
-    rollout = None
+    rollout: Optional[torch.Tensor] = None
     for layer_idx in layer_indices:
         attn = attention_maps[f"layer_{layer_idx}"][0]  # [num_heads, seq_len, seq_len]
 
@@ -272,6 +281,7 @@ def visualize_attention_rollout(
             rollout = torch.matmul(attn_avg, rollout)
 
     # Get attention from CLS token
+    assert rollout is not None, "Rollout should be computed"
     rollout_cls = rollout[0, 1:].cpu().numpy()  # [num_patches]
 
     # Reshape to 2D
@@ -320,10 +330,10 @@ def visualize_attention_rollout(
 def visualize_hierarchical_attention(
     model: nn.Module,
     image: torch.Tensor,
-    original_image: Optional[np.ndarray] = None,
+    original_image: Optional[npt.NDArray[np.float64]] = None,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize attention patterns at different hierarchical levels.
 
@@ -337,7 +347,8 @@ def visualize_hierarchical_attention(
     Returns:
         Matplotlib figure
     """
-    num_layers = len(model.context_encoder.vit.blocks)
+    encoder_vit: Any = model.context_encoder.vit  # type: ignore
+    num_layers: int = len(encoder_vit.blocks)
 
     # Select layers at different depths (early, middle, late)
     if num_layers >= 12:
@@ -404,10 +415,10 @@ def visualize_patch_to_patch_attention(
     image: torch.Tensor,
     patch_idx: int,
     layer_idx: int = -1,
-    original_image: Optional[np.ndarray] = None,
+    original_image: Optional[npt.NDArray[np.float64]] = None,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (10, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize attention from a specific patch to all other patches.
 
@@ -425,7 +436,8 @@ def visualize_patch_to_patch_attention(
     """
     # Extract attention maps
     if layer_idx < 0:
-        layer_idx = len(model.context_encoder.vit.blocks) + layer_idx
+        encoder_vit: Any = model.context_encoder.vit  # type: ignore
+        layer_idx = len(encoder_vit.blocks) + layer_idx
 
     attention_maps = extract_attention_maps(model, image, [layer_idx])
     attn = attention_maps[f"layer_{layer_idx}"][0]  # [num_heads, seq_len, seq_len]

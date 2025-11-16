@@ -5,10 +5,12 @@ Test script to verify mask semantics in H-JEPA.
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent))
 
-import torch
 import numpy as np
+import torch
+
 from src.masks import HierarchicalMaskGenerator
 
 # Create mask generator with config values
@@ -23,11 +25,11 @@ mask_gen = HierarchicalMaskGenerator(
 
 # Generate masks
 batch_size = 8
-masks_dict = mask_gen(batch_size=batch_size, device='cpu')
+masks_dict = mask_gen(batch_size=batch_size, device="cpu")
 
 # Extract level 0 masks
-context_masks = masks_dict['level_0']['context']  # [B, N]
-target_masks = masks_dict['level_0']['targets']   # [B, num_targets, N]
+context_masks = masks_dict["level_0"]["context"]  # [B, N]
+target_masks = masks_dict["level_0"]["targets"]  # [B, num_targets, N]
 
 print("=" * 80)
 print("MASK SEMANTICS VERIFICATION")
@@ -48,7 +50,7 @@ overlap_counts = []
 
 for i in range(batch_size):
     context = context_masks[i]  # [N]
-    targets = target_masks[i]   # [num_targets, N]
+    targets = target_masks[i]  # [num_targets, N]
 
     # Count True values
     context_count = context.sum().item()
@@ -118,7 +120,7 @@ print("TRAINER MASK TRANSFORMATION:")
 print("=" * 80)
 
 # Simulate what the trainer does (line 356 in trainer.py)
-target_masks_from_dict = masks_dict['level_0']['targets']
+target_masks_from_dict = masks_dict["level_0"]["targets"]
 context_mask_in_trainer = target_masks_from_dict.any(dim=1)
 
 print("\nIn trainer.py line 356:")

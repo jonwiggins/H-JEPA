@@ -6,13 +6,14 @@ few-shot learning, and domain adaptation evaluation.
 """
 
 import copy
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, RandomSampler, Subset
+from torch.utils.data import DataLoader, Dataset, RandomSampler, Subset
 from tqdm import tqdm
 
 
@@ -40,7 +41,7 @@ class TransferHead(nn.Module):
         self.pooling = pooling
 
         # Build MLP
-        layers = []
+        layers: List[nn.Module] = []
         prev_dim = input_dim
 
         for hidden_dim in hidden_dims:
@@ -70,7 +71,8 @@ class TransferHead(nn.Module):
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """Forward pass."""
         features = self.pool_features(features)
-        return self.mlp(features)
+        logits: torch.Tensor = self.mlp(features)
+        return logits
 
 
 class FineTuneEvaluator:
@@ -113,7 +115,7 @@ class FineTuneEvaluator:
                 param.requires_grad = True
 
         # Create classification head
-        input_dim = self.model.embed_dim
+        input_dim: int = int(self.model.embed_dim)  # type: ignore[arg-type]
         self.classifier = TransferHead(
             input_dim=input_dim,
             num_classes=num_classes,
@@ -124,28 +126,29 @@ class FineTuneEvaluator:
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Forward pass through encoder and classifier."""
         # Extract features
+        features: torch.Tensor
         if self.freeze_encoder:
             with torch.no_grad():
-                features = self.model.extract_features(
+                features = self.model.extract_features(  # type: ignore[operator]
                     images,
                     level=self.hierarchy_level,
                     use_target_encoder=True,
                 )
         else:
             # Use context encoder for fine-tuning (has gradients)
-            features = self.model.extract_features(
+            features = self.model.extract_features(  # type: ignore[operator]
                 images,
                 level=self.hierarchy_level,
                 use_target_encoder=False,
             )
 
         # Classify
-        logits = self.classifier(features)
+        logits: torch.Tensor = self.classifier(features)
         return logits
 
     def train_epoch(
         self,
-        train_loader: DataLoader,
+        train_loader: DataLoader[Any],
         optimizer: torch.optim.Optimizer,
         criterion: nn.Module,
         epoch: int,
@@ -156,10 +159,12 @@ class FineTuneEvaluator:
         self.classifier.train()
 
         total_loss = 0.0
-        correct = 0
+        correct = 0.0
         total = 0
 
-        pbar = tqdm(train_loader, desc=f"Epoch {epoch}") if verbose else train_loader
+        pbar: Union[tqdm[Any], DataLoader[Any]] = (
+            tqdm(train_loader, desc=f"Epoch {epoch}") if verbose else train_loader
+        )
 
         for images, labels in pbar:
             images, labels = images.to(self.device), labels.to(self.device)
@@ -179,7 +184,7 @@ class FineTuneEvaluator:
             total += labels.size(0)
             correct += predicted.eq(labels).sum().item()
 
-            if verbose:
+            if verbose and isinstance(pbar, tqdm):
                 pbar.set_postfix(
                     {"loss": total_loss / (pbar.n + 1), "acc": 100.0 * correct / total}
                 )
@@ -194,7 +199,7 @@ class FineTuneEvaluator:
     @torch.no_grad()
     def evaluate(
         self,
-        test_loader: DataLoader,
+        test_loader: DataLoader[Any],
         criterion: nn.Module,
         verbose: bool = True,
     ) -> Dict[str, float]:
@@ -203,7 +208,7 @@ class FineTuneEvaluator:
         self.classifier.eval()
 
         total_loss = 0.0
-        correct = 0
+        correct = 0.0
         total = 0
 
         all_preds = []
@@ -236,8 +241,8 @@ class FineTuneEvaluator:
 
     def fine_tune(
         self,
-        train_loader: DataLoader,
-        val_loader: Optional[DataLoader] = None,
+        train_loader: DataLoader[Any],
+        val_loader: Optional[DataLoader[Any]] = None,
         epochs: int = 50,
         lr: float = 1e-3,
         weight_decay: float = 1e-4,
@@ -260,6 +265,7 @@ class FineTuneEvaluator:
             Training history
         """
         # Setup optimizer
+        params: Union[Any, List[Dict[str, Any]]]
         if self.freeze_encoder:
             # Only optimize classifier
             params = self.classifier.parameters()
@@ -273,17 +279,18 @@ class FineTuneEvaluator:
         optimizer = torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
 
         # Setup scheduler
+        scheduler: Optional[
+            Union[torch.optim.lr_scheduler.CosineAnnealingLR, torch.optim.lr_scheduler.StepLR]
+        ] = None
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
         elif scheduler_type == "step":
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=epochs // 3, gamma=0.1)
-        else:
-            scheduler = None
 
         criterion = nn.CrossEntropyLoss()
 
         # Training history
-        history = {
+        history: Dict[str, List[float]] = {
             "train_loss": [],
             "train_acc": [],
             "val_loss": [],
@@ -367,12 +374,12 @@ class FewShotEvaluator:
 
     def sample_few_shot_episodes(
         self,
-        dataset: torch.utils.data.Dataset,
+        dataset: Dataset[Any],
         n_way: int,
         k_shot: int,
         n_query: int,
         n_episodes: int,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Sample few-shot learning episodes.
 
@@ -387,25 +394,27 @@ class FewShotEvaluator:
             List of episode dictionaries
         """
         # Get all labels
-        all_labels = []
-        for i in range(len(dataset)):
+        all_labels_list: List[Any] = []
+        for i in range(len(dataset)):  # type: ignore[arg-type]
             _, label = dataset[i]
-            all_labels.append(label)
-        all_labels = np.array(all_labels)
+            all_labels_list.append(label)
+        all_labels: npt.NDArray[np.int64] = np.array(all_labels_list)
 
         # Get indices for each class
-        class_indices = {}
+        class_indices: Dict[int, npt.NDArray[np.int64]] = {}
         for class_idx in range(self.num_classes):
             class_indices[class_idx] = np.where(all_labels == class_idx)[0]
 
-        episodes = []
+        episodes: List[Dict[str, Any]] = []
 
         for _ in range(n_episodes):
             # Sample n_way classes
-            selected_classes = np.random.choice(self.num_classes, size=n_way, replace=False)
+            selected_classes: npt.NDArray[np.int64] = np.random.choice(
+                self.num_classes, size=n_way, replace=False
+            )
 
-            support_indices = []
-            query_indices = []
+            support_indices: List[Any] = []
+            query_indices: List[Any] = []
 
             for class_idx in selected_classes:
                 # Sample k_shot + n_query examples
@@ -428,8 +437,8 @@ class FewShotEvaluator:
     @torch.no_grad()
     def evaluate_episode(
         self,
-        dataset: torch.utils.data.Dataset,
-        episode: Dict,
+        dataset: Dataset[Any],
+        episode: Dict[str, Any],
         metric: str = "cosine",
     ) -> float:
         """
@@ -444,36 +453,36 @@ class FewShotEvaluator:
             Accuracy on this episode
         """
         # Extract support features
-        support_features = []
-        support_labels = []
+        support_features_list: List[torch.Tensor] = []
+        support_labels_list: List[Any] = []
 
         for idx in episode["support_indices"]:
             image, label = dataset[idx]
             image = image.unsqueeze(0).to(self.device)
 
-            features = self.model.extract_features(
+            features: torch.Tensor = self.model.extract_features(  # type: ignore[operator]
                 image, level=self.hierarchy_level, use_target_encoder=True
             )
             features = features.mean(dim=1)  # Pool
             features = F.normalize(features, p=2, dim=-1)
 
-            support_features.append(features)
-            support_labels.append(label)
+            support_features_list.append(features)
+            support_labels_list.append(label)
 
-        support_features = torch.cat(support_features, dim=0)
-        support_labels = torch.tensor(support_labels)
+        support_features: torch.Tensor = torch.cat(support_features_list, dim=0)
+        support_labels: torch.Tensor = torch.tensor(support_labels_list)
 
         # Compute class centroids
         class_to_new_label = {c: i for i, c in enumerate(episode["classes"])}
         n_way = len(episode["classes"])
 
-        centroids = []
+        centroids_list: List[torch.Tensor] = []
         for class_idx in episode["classes"]:
             mask = support_labels == class_idx
             centroid = support_features[mask].mean(dim=0)
-            centroids.append(centroid)
+            centroids_list.append(centroid)
 
-        centroids = torch.stack(centroids)  # [n_way, D]
+        centroids: torch.Tensor = torch.stack(centroids_list)  # [n_way, D]
 
         # Evaluate on query set
         correct = 0
@@ -483,22 +492,23 @@ class FewShotEvaluator:
             image, true_label = dataset[idx]
             image = image.unsqueeze(0).to(self.device)
 
-            features = self.model.extract_features(
+            features_query: torch.Tensor = self.model.extract_features(  # type: ignore[operator]
                 image, level=self.hierarchy_level, use_target_encoder=True
             )
-            features = features.mean(dim=1)
-            features = F.normalize(features, p=2, dim=-1)
+            features_query = features_query.mean(dim=1)
+            features_query = F.normalize(features_query, p=2, dim=-1)
 
             # Compute similarity to centroids
+            predicted_idx: int
             if metric == "cosine":
-                similarities = features @ centroids.T
-                predicted = similarities.argmax(dim=-1).item()
+                similarities = features_query @ centroids.T
+                predicted_idx = int(similarities.argmax(dim=-1).item())
             else:
-                distances = torch.cdist(features, centroids.unsqueeze(0)).squeeze(0)
-                predicted = distances.argmin(dim=-1).item()
+                distances = torch.cdist(features_query, centroids.unsqueeze(0)).squeeze(0)
+                predicted_idx = int(distances.argmin(dim=-1).item())
 
             # Map back to original label
-            predicted_label = episode["classes"][predicted]
+            predicted_label = episode["classes"][predicted_idx]
 
             if predicted_label == true_label:
                 correct += 1
@@ -509,13 +519,13 @@ class FewShotEvaluator:
 
     def evaluate_few_shot(
         self,
-        dataset: torch.utils.data.Dataset,
+        dataset: Dataset[Any],
         n_way: int = 5,
         k_shot: int = 5,
         n_query: int = 15,
         n_episodes: int = 100,
         verbose: bool = True,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """
         Evaluate few-shot learning performance.
 
@@ -566,8 +576,8 @@ class FewShotEvaluator:
 
 def fine_tune_eval(
     model: nn.Module,
-    train_loader: DataLoader,
-    val_loader: DataLoader,
+    train_loader: DataLoader[Any],
+    val_loader: DataLoader[Any],
     num_classes: int,
     hierarchy_level: int = 0,
     freeze_encoder: bool = False,
@@ -620,7 +630,7 @@ def fine_tune_eval(
 
 def few_shot_eval(
     model: nn.Module,
-    dataset: torch.utils.data.Dataset,
+    dataset: Dataset[Any],
     num_classes: int,
     n_way: int = 5,
     k_shot_list: List[int] = [1, 5, 10],
@@ -628,7 +638,7 @@ def few_shot_eval(
     hierarchy_level: int = 0,
     device: str = "cuda",
     verbose: bool = True,
-) -> Dict[int, Dict[str, float]]:
+) -> Dict[int, Dict[str, Any]]:
     """
     Convenience function for few-shot evaluation.
 

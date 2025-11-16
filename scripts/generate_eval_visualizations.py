@@ -23,8 +23,8 @@ import seaborn as sns
 
 # Set style
 sns.set_style("whitegrid")
-plt.rcParams['figure.dpi'] = 150
-plt.rcParams['savefig.dpi'] = 150
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["savefig.dpi"] = 150
 
 
 def parse_args():
@@ -53,7 +53,7 @@ def parse_args():
 
 def load_results(results_path):
     """Load evaluation results from JSON."""
-    with open(results_path, 'r') as f:
+    with open(results_path, "r") as f:
         results = json.load(f)
     return results
 
@@ -85,26 +85,30 @@ def plot_hierarchy_comparison(results, output_dir, fmt="png"):
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    bars1 = ax.bar(x - width/2, level_0_values, width, label='Level 0 (Fine)', color='steelblue')
-    bars2 = ax.bar(x + width/2, level_1_values, width, label='Level 1 (Coarse)', color='coral')
+    bars1 = ax.bar(x - width / 2, level_0_values, width, label="Level 0 (Fine)", color="steelblue")
+    bars2 = ax.bar(x + width / 2, level_1_values, width, label="Level 1 (Coarse)", color="coral")
 
-    ax.set_xlabel('Metric', fontsize=12)
-    ax.set_ylabel('Value', fontsize=12)
-    ax.set_title('Performance Across Hierarchy Levels', fontsize=14, fontweight='bold')
+    ax.set_xlabel("Metric", fontsize=12)
+    ax.set_ylabel("Value", fontsize=12)
+    ax.set_title("Performance Across Hierarchy Levels", fontsize=14, fontweight="bold")
     ax.set_xticks(x)
-    ax.set_xticklabels(metrics, rotation=15, ha='right')
+    ax.set_xticklabels(metrics, rotation=15, ha="right")
     ax.legend()
-    ax.grid(axis='y', alpha=0.3)
+    ax.grid(axis="y", alpha=0.3)
 
     # Add value labels on bars
     for bars in [bars1, bars2]:
         for bar in bars:
             height = bar.get_height()
-            ax.annotate(f'{height:.1f}',
-                       xy=(bar.get_x() + bar.get_width() / 2, height),
-                       xytext=(0, 3),
-                       textcoords="offset points",
-                       ha='center', va='bottom', fontsize=9)
+            ax.annotate(
+                f"{height:.1f}",
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
 
     plt.tight_layout()
     output_path = os.path.join(output_dir, f"hierarchy_comparison.{fmt}")
@@ -154,23 +158,37 @@ def plot_knn_sweep(results, output_dir, fmt="png"):
     # Create plot
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    ax.plot(k_values, accuracies, 'o-', linewidth=2, markersize=8,
-            label='Top-1 Accuracy', color='steelblue')
+    ax.plot(
+        k_values,
+        accuracies,
+        "o-",
+        linewidth=2,
+        markersize=8,
+        label="Top-1 Accuracy",
+        color="steelblue",
+    )
 
     if any(top5_accuracies):
-        ax.plot(k_values, top5_accuracies, 's--', linewidth=2, markersize=8,
-                label='Top-5 Accuracy', color='coral', alpha=0.7)
+        ax.plot(
+            k_values,
+            top5_accuracies,
+            "s--",
+            linewidth=2,
+            markersize=8,
+            label="Top-5 Accuracy",
+            color="coral",
+            alpha=0.7,
+        )
 
     # Mark optimal k
     optimal_k = knn_results.get("optimal_k", k_values[np.argmax(accuracies)])
     optimal_acc = max(accuracies)
-    ax.axvline(x=optimal_k, color='red', linestyle='--', alpha=0.5,
-               label=f'Optimal k={optimal_k}')
-    ax.plot(optimal_k, optimal_acc, 'r*', markersize=15)
+    ax.axvline(x=optimal_k, color="red", linestyle="--", alpha=0.5, label=f"Optimal k={optimal_k}")
+    ax.plot(optimal_k, optimal_acc, "r*", markersize=15)
 
-    ax.set_xlabel('k (Number of Neighbors)', fontsize=12)
-    ax.set_ylabel('Accuracy (%)', fontsize=12)
-    ax.set_title('k-NN Performance vs k', fontsize=14, fontweight='bold')
+    ax.set_xlabel("k (Number of Neighbors)", fontsize=12)
+    ax.set_ylabel("Accuracy (%)", fontsize=12)
+    ax.set_title("k-NN Performance vs k", fontsize=14, fontweight="bold")
     ax.legend()
     ax.grid(alpha=0.3)
 
@@ -207,25 +225,26 @@ def plot_per_class_accuracy(results, output_dir, fmt="png"):
     # Create plot
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    colors = ['darkgreen' if acc >= 80 else 'steelblue' if acc >= 70 else 'coral'
-              for acc in accuracies]
+    colors = [
+        "darkgreen" if acc >= 80 else "steelblue" if acc >= 70 else "coral" for acc in accuracies
+    ]
 
     bars = ax.barh(classes, accuracies, color=colors, alpha=0.8)
 
     # Add accuracy labels
     for i, (bar, acc) in enumerate(zip(bars, accuracies)):
-        ax.text(acc + 1, i, f'{acc:.1f}%', va='center', fontsize=10)
+        ax.text(acc + 1, i, f"{acc:.1f}%", va="center", fontsize=10)
 
     # Add vertical lines for thresholds
-    ax.axvline(x=80, color='green', linestyle='--', alpha=0.5, label='Excellent (≥80%)')
-    ax.axvline(x=70, color='blue', linestyle='--', alpha=0.5, label='Good (≥70%)')
+    ax.axvline(x=80, color="green", linestyle="--", alpha=0.5, label="Excellent (≥80%)")
+    ax.axvline(x=70, color="blue", linestyle="--", alpha=0.5, label="Good (≥70%)")
 
-    ax.set_xlabel('Accuracy (%)', fontsize=12)
-    ax.set_ylabel('Class', fontsize=12)
-    ax.set_title('Per-Class Linear Probe Accuracy', fontsize=14, fontweight='bold')
+    ax.set_xlabel("Accuracy (%)", fontsize=12)
+    ax.set_ylabel("Class", fontsize=12)
+    ax.set_title("Per-Class Linear Probe Accuracy", fontsize=14, fontweight="bold")
     ax.set_xlim(0, 100)
-    ax.legend(loc='lower right')
-    ax.grid(axis='x', alpha=0.3)
+    ax.legend(loc="lower right")
+    ax.grid(axis="x", alpha=0.3)
 
     plt.tight_layout()
     output_path = os.path.join(output_dir, f"per_class_accuracy.{fmt}")
@@ -259,82 +278,104 @@ def plot_feature_quality_summary(results, output_dir, fmt="png"):
 
     # 1. Rank metrics
     ax = axes[0, 0]
-    metrics = ['Effective\nRank', 'Rank\nRatio', 'Components\nfor 95%', 'Components\nfor 99%']
+    metrics = ["Effective\nRank", "Rank\nRatio", "Components\nfor 95%", "Components\nfor 99%"]
     values = [
         rank.get("effective_rank", 0),
         rank.get("rank_ratio", 0) * 100,  # Convert to percentage
         rank.get("num_components_95", 0),
-        rank.get("num_components_99", 0)
+        rank.get("num_components_99", 0),
     ]
-    colors = ['steelblue', 'coral', 'lightgreen', 'gold']
+    colors = ["steelblue", "coral", "lightgreen", "gold"]
     bars = ax.bar(metrics, values, color=colors, alpha=0.8)
 
     for bar, val in zip(bars, values):
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{val:.1f}', ha='center', va='bottom', fontsize=10)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height,
+            f"{val:.1f}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
 
-    ax.set_ylabel('Value', fontsize=11)
-    ax.set_title('Rank Analysis', fontsize=12, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
+    ax.set_ylabel("Value", fontsize=11)
+    ax.set_title("Rank Analysis", fontsize=12, fontweight="bold")
+    ax.grid(axis="y", alpha=0.3)
 
     # 2. Singular values (if available)
     ax = axes[0, 1]
     if "singular_values_top_10" in rank:
         sv = rank["singular_values_top_10"]
-        ax.plot(range(1, len(sv) + 1), sv, 'o-', linewidth=2,
-                markersize=8, color='steelblue')
-        ax.set_xlabel('Component Index', fontsize=11)
-        ax.set_ylabel('Singular Value', fontsize=11)
-        ax.set_title('Top 10 Singular Values', fontsize=12, fontweight='bold')
+        ax.plot(range(1, len(sv) + 1), sv, "o-", linewidth=2, markersize=8, color="steelblue")
+        ax.set_xlabel("Component Index", fontsize=11)
+        ax.set_ylabel("Singular Value", fontsize=11)
+        ax.set_title("Top 10 Singular Values", fontsize=12, fontweight="bold")
         ax.grid(alpha=0.3)
     else:
-        ax.text(0.5, 0.5, 'No singular value data', ha='center', va='center',
-                transform=ax.transAxes, fontsize=12)
-        ax.axis('off')
+        ax.text(
+            0.5,
+            0.5,
+            "No singular value data",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            fontsize=12,
+        )
+        ax.axis("off")
 
     # 3. Variance statistics
     ax = axes[1, 0]
-    stat_names = ['Mean\nVariance', 'Std\nVariance', 'Coeff. of\nVariation']
+    stat_names = ["Mean\nVariance", "Std\nVariance", "Coeff. of\nVariation"]
     stat_values = [
         stats.get("mean_variance", 0),
         stats.get("std_variance", 0),
-        stats.get("coefficient_variation", 0)
+        stats.get("coefficient_variation", 0),
     ]
-    bars = ax.bar(stat_names, stat_values, color='coral', alpha=0.8)
+    bars = ax.bar(stat_names, stat_values, color="coral", alpha=0.8)
 
     for bar, val in zip(bars, stat_values):
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{val:.3f}', ha='center', va='bottom', fontsize=10)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height,
+            f"{val:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
 
-    ax.set_ylabel('Value', fontsize=11)
-    ax.set_title('Variance Statistics', fontsize=12, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
+    ax.set_ylabel("Value", fontsize=11)
+    ax.set_title("Variance Statistics", fontsize=12, fontweight="bold")
+    ax.grid(axis="y", alpha=0.3)
 
     # 4. Isotropy metrics
     ax = axes[1, 1]
-    iso_metrics = ['Uniformity', 'Mean Cosine\nSimilarity']
-    iso_values = [
-        isotropy.get("uniformity", 0),
-        isotropy.get("mean_cosine_similarity", 0)
+    iso_metrics = ["Uniformity", "Mean Cosine\nSimilarity"]
+    iso_values = [isotropy.get("uniformity", 0), isotropy.get("mean_cosine_similarity", 0)]
+    colors = [
+        "lightgreen" if isotropy.get("uniformity", 0) < -2.0 else "coral",
+        "lightgreen" if isotropy.get("mean_cosine_similarity", 1) < 0.3 else "coral",
     ]
-    colors = ['lightgreen' if isotropy.get("uniformity", 0) < -2.0 else 'coral',
-              'lightgreen' if isotropy.get("mean_cosine_similarity", 1) < 0.3 else 'coral']
     bars = ax.bar(iso_metrics, iso_values, color=colors, alpha=0.8)
 
     for bar, val in zip(bars, iso_values):
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{val:.3f}', ha='center', va='bottom' if val > 0 else 'top',
-                fontsize=10)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height,
+            f"{val:.3f}",
+            ha="center",
+            va="bottom" if val > 0 else "top",
+            fontsize=10,
+        )
 
-    ax.set_ylabel('Value', fontsize=11)
-    ax.set_title('Isotropy Metrics', fontsize=12, fontweight='bold')
-    ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
+    ax.set_ylabel("Value", fontsize=11)
+    ax.set_title("Isotropy Metrics", fontsize=12, fontweight="bold")
+    ax.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
     ax.grid(alpha=0.3)
 
-    plt.suptitle('Feature Quality Analysis Summary', fontsize=14, fontweight='bold', y=0.995)
+    plt.suptitle("Feature Quality Analysis Summary", fontsize=14, fontweight="bold", y=0.995)
     plt.tight_layout()
 
     output_path = os.path.join(output_dir, f"feature_quality_summary.{fmt}")
@@ -360,7 +401,7 @@ def plot_evaluation_summary(results, output_dir, fmt="png"):
 
     # 1. Main metrics card
     ax1 = fig.add_subplot(gs[0, :])
-    ax1.axis('off')
+    ax1.axis("off")
 
     main_metrics_text = f"""
 H-JEPA Evaluation Summary
@@ -380,97 +421,147 @@ Key Results:
   • Best Level: {summary.get('best_hierarchy_level', 0)}
 """
 
-    ax1.text(0.05, 0.5, main_metrics_text, fontfamily='monospace',
-             fontsize=11, verticalalignment='center',
-             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+    ax1.text(
+        0.05,
+        0.5,
+        main_metrics_text,
+        fontfamily="monospace",
+        fontsize=11,
+        verticalalignment="center",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
+    )
 
     # 2. Linear probe and k-NN comparison
     ax2 = fig.add_subplot(gs[1, 0])
-    methods = ['Linear\nProbe', 'k-NN']
-    accuracies = [
-        summary.get('best_linear_probe_accuracy', 0),
-        summary.get('best_knn_accuracy', 0)
-    ]
-    bars = ax2.bar(methods, accuracies, color=['steelblue', 'coral'], alpha=0.8)
+    methods = ["Linear\nProbe", "k-NN"]
+    accuracies = [summary.get("best_linear_probe_accuracy", 0), summary.get("best_knn_accuracy", 0)]
+    bars = ax2.bar(methods, accuracies, color=["steelblue", "coral"], alpha=0.8)
     for bar, acc in zip(bars, accuracies):
         height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2., height,
-                f'{acc:.1f}%', ha='center', va='bottom', fontsize=11)
-    ax2.set_ylabel('Accuracy (%)', fontsize=11)
-    ax2.set_title('Primary Metrics', fontsize=12, fontweight='bold')
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height,
+            f"{acc:.1f}%",
+            ha="center",
+            va="bottom",
+            fontsize=11,
+        )
+    ax2.set_ylabel("Accuracy (%)", fontsize=11)
+    ax2.set_title("Primary Metrics", fontsize=12, fontweight="bold")
     ax2.set_ylim(0, 100)
-    ax2.grid(axis='y', alpha=0.3)
+    ax2.grid(axis="y", alpha=0.3)
 
     # 3. Comparison to baselines (if available)
     ax3 = fig.add_subplot(gs[1, 1])
     if "comparison_to_baselines" in results:
         comp = results["comparison_to_baselines"]
-        baseline_names = ['Random', 'H-JEPA\n(Ours)', 'Supervised']
+        baseline_names = ["Random", "H-JEPA\n(Ours)", "Supervised"]
         baseline_accs = [
             comp.get("vs_random_init", {}).get("random_accuracy", 30),
-            summary.get('best_linear_probe_accuracy', 0),
-            comp.get("vs_supervised_upper_bound", {}).get("supervised_accuracy", 95)
+            summary.get("best_linear_probe_accuracy", 0),
+            comp.get("vs_supervised_upper_bound", {}).get("supervised_accuracy", 95),
         ]
-        colors = ['red', 'steelblue', 'green']
+        colors = ["red", "steelblue", "green"]
         bars = ax3.bar(baseline_names, baseline_accs, color=colors, alpha=0.7)
         for bar, acc in zip(bars, baseline_accs):
             height = bar.get_height()
-            ax3.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{acc:.1f}%', ha='center', va='bottom', fontsize=11)
-        ax3.set_ylabel('Accuracy (%)', fontsize=11)
-        ax3.set_title('vs Baselines', fontsize=12, fontweight='bold')
+            ax3.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height,
+                f"{acc:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=11,
+            )
+        ax3.set_ylabel("Accuracy (%)", fontsize=11)
+        ax3.set_title("vs Baselines", fontsize=12, fontweight="bold")
         ax3.set_ylim(0, 100)
-        ax3.grid(axis='y', alpha=0.3)
+        ax3.grid(axis="y", alpha=0.3)
     else:
-        ax3.text(0.5, 0.5, 'No baseline\ncomparison', ha='center', va='center',
-                transform=ax3.transAxes, fontsize=12)
-        ax3.axis('off')
+        ax3.text(
+            0.5,
+            0.5,
+            "No baseline\ncomparison",
+            ha="center",
+            va="center",
+            transform=ax3.transAxes,
+            fontsize=12,
+        )
+        ax3.axis("off")
 
     # 4. Recommendations
     ax4 = fig.add_subplot(gs[1, 2])
-    ax4.axis('off')
+    ax4.axis("off")
     recs = summary.get("recommendations", [])[:4]  # Top 4 recommendations
     recs_text = "Top Recommendations:\n\n" + "\n\n".join([f"• {rec}" for rec in recs])
-    ax4.text(0.05, 0.95, recs_text, fontsize=9, verticalalignment='top',
-             wrap=True, bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3))
+    ax4.text(
+        0.05,
+        0.95,
+        recs_text,
+        fontsize=9,
+        verticalalignment="top",
+        wrap=True,
+        bbox=dict(boxstyle="round", facecolor="lightblue", alpha=0.3),
+    )
 
     # 5-7. Status indicators
     axes_bottom = [fig.add_subplot(gs[2, i]) for i in range(3)]
 
     # Status 1: Linear Probe Status
     ax = axes_bottom[0]
-    linear_acc = summary.get('best_linear_probe_accuracy', 0)
-    status = '✅ Excellent' if linear_acc >= 75 else '✅ Good' if linear_acc >= 70 else '⚠️ Moderate'
-    color = 'green' if linear_acc >= 75 else 'blue' if linear_acc >= 70 else 'orange'
-    ax.text(0.5, 0.5, f'{status}\n\nLinear Probe\n{linear_acc:.1f}%',
-            ha='center', va='center', fontsize=14, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor=color, alpha=0.3))
-    ax.axis('off')
+    linear_acc = summary.get("best_linear_probe_accuracy", 0)
+    status = "✅ Excellent" if linear_acc >= 75 else "✅ Good" if linear_acc >= 70 else "⚠️ Moderate"
+    color = "green" if linear_acc >= 75 else "blue" if linear_acc >= 70 else "orange"
+    ax.text(
+        0.5,
+        0.5,
+        f"{status}\n\nLinear Probe\n{linear_acc:.1f}%",
+        ha="center",
+        va="center",
+        fontsize=14,
+        fontweight="bold",
+        bbox=dict(boxstyle="round", facecolor=color, alpha=0.3),
+    )
+    ax.axis("off")
 
     # Status 2: Collapse Check
     ax = axes_bottom[1]
-    collapse = summary.get('collapse_status', 'Unknown')
-    has_collapse = 'collapse detected' in collapse.lower()
-    status_text = '✅ Healthy' if not has_collapse else '❌ Collapse'
-    color = 'green' if not has_collapse else 'red'
-    ax.text(0.5, 0.5, f'{status_text}\n\nRepresentations\n{collapse}',
-            ha='center', va='center', fontsize=14, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor=color, alpha=0.3))
-    ax.axis('off')
+    collapse = summary.get("collapse_status", "Unknown")
+    has_collapse = "collapse detected" in collapse.lower()
+    status_text = "✅ Healthy" if not has_collapse else "❌ Collapse"
+    color = "green" if not has_collapse else "red"
+    ax.text(
+        0.5,
+        0.5,
+        f"{status_text}\n\nRepresentations\n{collapse}",
+        ha="center",
+        va="center",
+        fontsize=14,
+        fontweight="bold",
+        bbox=dict(boxstyle="round", facecolor=color, alpha=0.3),
+    )
+    ax.axis("off")
 
     # Status 3: Overall Status
     ax = axes_bottom[2]
-    overall = summary.get('overall_status', 'Unknown')
-    tier = summary.get('performance_tier', 'Unknown')
-    ax.text(0.5, 0.5, f'Overall Status\n\n{overall}\n\n{tier}',
-            ha='center', va='center', fontsize=14, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.3))
-    ax.axis('off')
+    overall = summary.get("overall_status", "Unknown")
+    tier = summary.get("performance_tier", "Unknown")
+    ax.text(
+        0.5,
+        0.5,
+        f"Overall Status\n\n{overall}\n\n{tier}",
+        ha="center",
+        va="center",
+        fontsize=14,
+        fontweight="bold",
+        bbox=dict(boxstyle="round", facecolor="lightgreen", alpha=0.3),
+    )
+    ax.axis("off")
 
-    plt.suptitle('H-JEPA Evaluation Dashboard', fontsize=16, fontweight='bold', y=0.98)
+    plt.suptitle("H-JEPA Evaluation Dashboard", fontsize=16, fontweight="bold", y=0.98)
 
     output_path = os.path.join(output_dir, f"evaluation_dashboard.{fmt}")
-    plt.savefig(output_path, bbox_inches='tight')
+    plt.savefig(output_path, bbox_inches="tight")
     plt.close()
     print(f"  Saved to {output_path}")
 

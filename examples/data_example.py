@@ -10,37 +10,38 @@ This script shows how to:
 
 import argparse
 from pathlib import Path
+
 import torch
 
 from src.data import (
-    build_dataset,
+    DATASET_INFO,
     build_dataloader,
+    build_dataset,
     print_dataset_summary,
     verify_dataset,
-    DATASET_INFO,
 )
 
 
 def example_basic_usage():
     """Basic dataset usage example."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 1: Basic Dataset Usage")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     # Build CIFAR-10 dataset
     print("Building CIFAR-10 dataset...")
     train_dataset = build_dataset(
-        dataset_name='cifar10',
-        data_path='./data/cifar10',
-        split='train',
+        dataset_name="cifar10",
+        data_path="./data/cifar10",
+        split="train",
         image_size=224,
         download=True,
     )
 
     val_dataset = build_dataset(
-        dataset_name='cifar10',
-        data_path='./data/cifar10',
-        split='val',
+        dataset_name="cifar10",
+        data_path="./data/cifar10",
+        split="val",
         image_size=224,
         download=True,
     )
@@ -58,15 +59,15 @@ def example_basic_usage():
 
 def example_dataloader():
     """Dataloader usage example."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 2: DataLoader Usage")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     # Build dataset
     dataset = build_dataset(
-        dataset_name='cifar10',
-        data_path='./data/cifar10',
-        split='train',
+        dataset_name="cifar10",
+        data_path="./data/cifar10",
+        split="train",
         download=True,
     )
 
@@ -96,13 +97,13 @@ def example_dataloader():
 
 def example_multiple_datasets():
     """Example using multiple datasets."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 3: Multiple Datasets")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     datasets_to_try = [
-        ('cifar10', './data/cifar10'),
-        ('cifar100', './data/cifar100'),
+        ("cifar10", "./data/cifar10"),
+        ("cifar100", "./data/cifar100"),
     ]
 
     for dataset_name, data_path in datasets_to_try:
@@ -113,7 +114,7 @@ def example_multiple_datasets():
             dataset = build_dataset(
                 dataset_name=dataset_name,
                 data_path=data_path,
-                split='train',
+                split="train",
                 download=True,
             )
 
@@ -130,16 +131,16 @@ def example_multiple_datasets():
 
 def example_custom_config():
     """Example with custom configuration."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 4: Custom Configuration")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     # Build dataset with custom settings
     print("Building dataset with custom settings...")
     dataset = build_dataset(
-        dataset_name='cifar10',
-        data_path='./data/cifar10',
-        split='train',
+        dataset_name="cifar10",
+        data_path="./data/cifar10",
+        split="train",
         image_size=192,  # Custom image size
         color_jitter=0.2,  # Reduced color jitter
         download=True,
@@ -166,13 +167,13 @@ def example_custom_config():
 
 def example_verification():
     """Example of dataset verification."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 5: Dataset Verification")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     datasets_to_verify = [
-        ('cifar10', './data/cifar10'),
-        ('cifar100', './data/cifar100'),
+        ("cifar10", "./data/cifar10"),
+        ("cifar100", "./data/cifar100"),
     ]
 
     for dataset_name, data_path in datasets_to_verify:
@@ -187,19 +188,19 @@ def example_verification():
 
 def example_imagenet_loading():
     """Example of ImageNet loading (if available)."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 6: ImageNet Loading (if available)")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
-    imagenet_path = './data/imagenet'
+    imagenet_path = "./data/imagenet"
 
     print(f"Checking for ImageNet at {imagenet_path}...")
 
     try:
         dataset = build_dataset(
-            dataset_name='imagenet',
+            dataset_name="imagenet",
             data_path=imagenet_path,
-            split='train',
+            split="train",
             download=False,  # ImageNet cannot be auto-downloaded
         )
 
@@ -219,30 +220,31 @@ def example_imagenet_loading():
 
 def example_performance_comparison():
     """Example comparing data loading performance."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("EXAMPLE 7: Performance Comparison")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     import time
 
     # Build dataset
     dataset = build_dataset(
-        dataset_name='cifar10',
-        data_path='./data/cifar10',
-        split='train',
+        dataset_name="cifar10",
+        data_path="./data/cifar10",
+        split="train",
         download=True,
     )
 
     # Test different configurations
     configs = [
-        {'num_workers': 0, 'pin_memory': False},
-        {'num_workers': 4, 'pin_memory': False},
-        {'num_workers': 4, 'pin_memory': True},
+        {"num_workers": 0, "pin_memory": False},
+        {"num_workers": 4, "pin_memory": False},
+        {"num_workers": 4, "pin_memory": True},
     ]
 
     for config in configs:
-        print(f"\nTesting: num_workers={config['num_workers']}, "
-              f"pin_memory={config['pin_memory']}")
+        print(
+            f"\nTesting: num_workers={config['num_workers']}, " f"pin_memory={config['pin_memory']}"
+        )
 
         dataloader = build_dataloader(
             dataset,
@@ -266,42 +268,46 @@ def example_performance_comparison():
 
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(description='Dataset usage examples for H-JEPA')
+    parser = argparse.ArgumentParser(description="Dataset usage examples for H-JEPA")
     parser.add_argument(
-        '--example',
+        "--example",
         type=str,
-        choices=['basic', 'dataloader', 'multiple', 'custom', 'verify',
-                 'imagenet', 'performance', 'all'],
-        default='all',
-        help='Which example to run'
+        choices=[
+            "basic",
+            "dataloader",
+            "multiple",
+            "custom",
+            "verify",
+            "imagenet",
+            "performance",
+            "all",
+        ],
+        default="all",
+        help="Which example to run",
     )
-    parser.add_argument(
-        '--summary',
-        action='store_true',
-        help='Show dataset summary'
-    )
+    parser.add_argument("--summary", action="store_true", help="Show dataset summary")
 
     args = parser.parse_args()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("H-JEPA Dataset Usage Examples")
-    print("="*70)
+    print("=" * 70)
 
     if args.summary:
         print_dataset_summary()
         return
 
     examples = {
-        'basic': example_basic_usage,
-        'dataloader': example_dataloader,
-        'multiple': example_multiple_datasets,
-        'custom': example_custom_config,
-        'verify': example_verification,
-        'imagenet': example_imagenet_loading,
-        'performance': example_performance_comparison,
+        "basic": example_basic_usage,
+        "dataloader": example_dataloader,
+        "multiple": example_multiple_datasets,
+        "custom": example_custom_config,
+        "verify": example_verification,
+        "imagenet": example_imagenet_loading,
+        "performance": example_performance_comparison,
     }
 
-    if args.example == 'all':
+    if args.example == "all":
         # Run all examples
         for name, func in examples.items():
             try:
@@ -312,10 +318,10 @@ def main():
         # Run specific example
         examples[args.example]()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Examples completed!")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

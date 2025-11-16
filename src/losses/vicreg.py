@@ -22,7 +22,7 @@ References:
     https://arxiv.org/abs/2105.04906
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -68,12 +68,12 @@ class VICRegLoss(nn.Module):
         variance_threshold: float = 1.0,
         eps: float = 1e-4,
         flatten_patches: bool = True,
-    ):
+    ) -> None:
         super().__init__()
 
-        self.invariance_weight = invariance_weight
-        self.variance_weight = variance_weight
-        self.covariance_weight = covariance_weight
+        self.invariance_weight: Union[float, nn.Parameter] = invariance_weight
+        self.variance_weight: Union[float, nn.Parameter] = variance_weight
+        self.covariance_weight: Union[float, nn.Parameter] = covariance_weight
         self.variance_threshold = variance_threshold
         self.eps = eps
         self.flatten_patches = flatten_patches
@@ -155,7 +155,7 @@ class VICRegLoss(nn.Module):
         off_diagonal_cov = cov[off_diagonal_mask]
 
         # Mean of squared off-diagonal elements
-        covariance_loss = (off_diagonal_cov**2).mean()
+        covariance_loss: torch.Tensor = (off_diagonal_cov**2).mean()
 
         return covariance_loss
 
@@ -281,7 +281,7 @@ class AdaptiveVICRegLoss(VICRegLoss):
         flatten_patches: bool = True,
         adaptive_weights: bool = False,
         weight_momentum: float = 0.99,
-    ):
+    ) -> None:
         super().__init__(
             invariance_weight=invariance_weight,
             variance_weight=variance_weight,
@@ -331,16 +331,19 @@ class AdaptiveVICRegLoss(VICRegLoss):
             target_var = (1.0 - var / total) * 30
             target_cov = (1.0 - cov / total) * 2
 
-            # EMA update
-            self.invariance_weight.data = (
-                self.weight_momentum * self.invariance_weight.data
-                + (1 - self.weight_momentum) * target_inv
-            )
-            self.variance_weight.data = (
-                self.weight_momentum * self.variance_weight.data
-                + (1 - self.weight_momentum) * target_var
-            )
-            self.covariance_weight.data = (
-                self.weight_momentum * self.covariance_weight.data
-                + (1 - self.weight_momentum) * target_cov
-            )
+            # EMA update (only for Parameters, not floats)
+            if isinstance(self.invariance_weight, nn.Parameter):
+                self.invariance_weight.data = (
+                    self.weight_momentum * self.invariance_weight.data
+                    + (1 - self.weight_momentum) * target_inv
+                )
+            if isinstance(self.variance_weight, nn.Parameter):
+                self.variance_weight.data = (
+                    self.weight_momentum * self.variance_weight.data
+                    + (1 - self.weight_momentum) * target_var
+                )
+            if isinstance(self.covariance_weight, nn.Parameter):
+                self.covariance_weight.data = (
+                    self.weight_momentum * self.covariance_weight.data
+                    + (1 - self.weight_momentum) * target_cov
+                )

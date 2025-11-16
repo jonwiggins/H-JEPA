@@ -5,11 +5,13 @@ Test script to verify LayerScale implementation.
 This script demonstrates how to use LayerScale regularization in H-JEPA.
 """
 
-import torch
 import sys
-sys.path.insert(0, '/Users/jon/repos/H-JEPA')
 
-from src.models.encoder import LayerScale, ContextEncoder, TargetEncoder, create_encoder
+import torch
+
+sys.path.insert(0, "/Users/jon/repos/H-JEPA")
+
+from src.models.encoder import ContextEncoder, LayerScale, TargetEncoder, create_encoder
 
 
 def test_layerscale_module():
@@ -32,7 +34,9 @@ def test_layerscale_module():
     print(f"  - Init value: {init_value}")
     print(f"  - Scale parameter shape: {layerscale.scale.shape}")
     print(f"  - Scale parameter values (first 5): {layerscale.scale[:5].tolist()}")
-    print(f"  - All values equal to init_value: {torch.allclose(layerscale.scale, torch.ones(dim) * init_value)}")
+    print(
+        f"  - All values equal to init_value: {torch.allclose(layerscale.scale, torch.ones(dim) * init_value)}"
+    )
 
     # Test forward pass
     x = torch.randn(batch_size, seq_len, dim)
@@ -97,16 +101,22 @@ def test_encoder_with_layerscale():
     first_block = encoder_with_ls.vit.blocks[0]
     print(f"   - Block attention type: {type(first_block.attn)}")
     print(f"   - Block MLP type: {type(first_block.mlp)}")
-    print(f"   - Attention is wrapped in Sequential: {isinstance(first_block.attn, torch.nn.Sequential)}")
+    print(
+        f"   - Attention is wrapped in Sequential: {isinstance(first_block.attn, torch.nn.Sequential)}"
+    )
     print(f"   - MLP is wrapped in Sequential: {isinstance(first_block.mlp, torch.nn.Sequential)}")
 
     if isinstance(first_block.attn, torch.nn.Sequential):
         print(f"   - Attention wrapper length: {len(first_block.attn)}")
-        print(f"   - Last module in attention is LayerScale: {isinstance(first_block.attn[-1], LayerScale)}")
+        print(
+            f"   - Last module in attention is LayerScale: {isinstance(first_block.attn[-1], LayerScale)}"
+        )
 
     if isinstance(first_block.mlp, torch.nn.Sequential):
         print(f"   - MLP wrapper length: {len(first_block.mlp)}")
-        print(f"   - Last module in MLP is LayerScale: {isinstance(first_block.mlp[-1], LayerScale)}")
+        print(
+            f"   - Last module in MLP is LayerScale: {isinstance(first_block.mlp[-1], LayerScale)}"
+        )
 
 
 def test_encoder_factory():
@@ -125,7 +135,9 @@ def test_encoder_factory():
 
     print(f"Context encoder parameters: {sum(p.numel() for p in context_encoder.parameters()):,}")
     print(f"Target encoder parameters: {sum(p.numel() for p in target_encoder.parameters()):,}")
-    print(f"Both encoders have same number of parameters: {sum(p.numel() for p in context_encoder.parameters()) == sum(p.numel() for p in target_encoder.parameters())}")
+    print(
+        f"Both encoders have same number of parameters: {sum(p.numel() for p in context_encoder.parameters()) == sum(p.numel() for p in target_encoder.parameters())}"
+    )
 
     # Verify LayerScale is in both encoders
     context_has_ls = isinstance(context_encoder.vit.blocks[0].attn, torch.nn.Sequential)
@@ -164,7 +176,9 @@ def test_forward_pass():
 
     print(f"Output shape: {output.shape}")
     print(f"Expected output shape: ({batch_size}, {encoder.num_patches + 1}, {encoder.embed_dim})")
-    print(f"Shape is correct: {output.shape == (batch_size, encoder.num_patches + 1, encoder.embed_dim)}")
+    print(
+        f"Shape is correct: {output.shape == (batch_size, encoder.num_patches + 1, encoder.embed_dim)}"
+    )
     print(f"Output contains valid values (not NaN): {not torch.isnan(output).any()}")
     print(f"Output has reasonable magnitude: {output.abs().mean().item():.4f}")
 
@@ -193,4 +207,5 @@ if __name__ == "__main__":
         print(f"ERROR: {str(e)}")
         print(f"{'!' * 70}")
         import traceback
+
         traceback.print_exc()

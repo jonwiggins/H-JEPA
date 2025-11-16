@@ -15,26 +15,26 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import torch
 from torch.utils.data import DataLoader
 
-from src.models.hjepa import create_hjepa
-from src.data import build_dataset, build_dataloader
+from src.data import build_dataloader, build_dataset
 from src.evaluation import (
-    linear_probe_eval,
-    knn_eval,
-    analyze_feature_quality,
-    print_quality_report,
-    fine_tune_eval,
-    few_shot_eval,
-    LinearProbeEvaluator,
-    KNNEvaluator,
     FeatureQualityAnalyzer,
+    KNNEvaluator,
+    LinearProbeEvaluator,
+    analyze_feature_quality,
+    few_shot_eval,
+    fine_tune_eval,
+    knn_eval,
+    linear_probe_eval,
+    print_quality_report,
 )
+from src.models.hjepa import create_hjepa
 
 
 def example_1_linear_probe():
     """Example 1: Linear probe evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 1: Linear Probe Evaluation")
-    print("="*80)
+    print("=" * 80)
 
     # Create model
     model = create_hjepa(
@@ -79,9 +79,9 @@ def example_1_linear_probe():
 
 def example_2_knn_evaluation():
     """Example 2: k-NN evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 2: k-NN Evaluation")
-    print("="*80)
+    print("=" * 80)
 
     # Create model
     model = create_hjepa()
@@ -117,9 +117,9 @@ def example_2_knn_evaluation():
 
 def example_3_feature_quality():
     """Example 3: Feature quality analysis."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 3: Feature Quality Analysis")
-    print("="*80)
+    print("=" * 80)
 
     # Create model
     model = create_hjepa()
@@ -147,9 +147,9 @@ def example_3_feature_quality():
 
 def example_4_compare_hierarchies():
     """Example 4: Compare multiple hierarchy levels."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 4: Compare Hierarchy Levels")
-    print("="*80)
+    print("=" * 80)
 
     # Create model
     model = create_hjepa(num_hierarchies=3)
@@ -189,9 +189,9 @@ def example_4_compare_hierarchies():
 
 def example_5_advanced_knn():
     """Example 5: Advanced k-NN with hyperparameter sweeping."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 5: Advanced k-NN Hyperparameter Sweeping")
-    print("="*80)
+    print("=" * 80)
 
     # Create model and data
     model = create_hjepa()
@@ -202,7 +202,7 @@ def example_5_advanced_knn():
     test_loader = build_dataloader(test_dataset, batch_size=256, num_workers=4, shuffle=False)
 
     # Create k-NN evaluator
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("\nSweeping k-NN hyperparameters...")
     print("Note: Load a trained checkpoint for real evaluation.")
@@ -237,9 +237,9 @@ def example_5_advanced_knn():
 
 def example_6_fine_tuning():
     """Example 6: Fine-tuning evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 6: Fine-tuning Evaluation")
-    print("="*80)
+    print("=" * 80)
 
     # Create model
     model = create_hjepa()
@@ -287,9 +287,9 @@ def example_6_fine_tuning():
 
 def example_7_few_shot():
     """Example 7: Few-shot learning evaluation."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Example 7: Few-shot Learning Evaluation")
-    print("="*80)
+    print("=" * 80)
 
     # Create model
     model = create_hjepa()
@@ -321,9 +321,9 @@ def example_7_few_shot():
 
 def main():
     """Run all examples."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("H-JEPA Evaluation Framework - Examples")
-    print("="*80)
+    print("=" * 80)
     print("\nThese examples demonstrate how to use the evaluation framework.")
     print("Uncomment the evaluation code in each example to run actual evaluations.")
     print("\nMake sure to:")
@@ -340,9 +340,9 @@ def main():
     example_6_fine_tuning()
     example_7_few_shot()
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("All examples complete!")
-    print("="*80)
+    print("=" * 80)
     print("\nTo run actual evaluations, use the main script:")
     print("  python scripts/evaluate.py --checkpoint model.pth --dataset cifar10")
     print("\nOr uncomment the code in the examples above and load a trained checkpoint.")

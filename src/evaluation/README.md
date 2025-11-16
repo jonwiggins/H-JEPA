@@ -20,15 +20,15 @@ from src.evaluation import (
     # Linear probe
     linear_probe_eval,
     LinearProbeEvaluator,
-    
+
     # k-NN
     knn_eval,
     KNNEvaluator,
-    
+
     # Feature quality
     analyze_feature_quality,
     print_quality_report,
-    
+
     # Transfer learning
     fine_tune_eval,
     few_shot_eval,
@@ -40,4 +40,3 @@ from src.evaluation import (
 - **EVALUATION_GUIDE.md**: Comprehensive usage guide
 - **examples/evaluation_examples.py**: Code examples
 - **scripts/evaluate.py**: Main evaluation script
-

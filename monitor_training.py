@@ -2,26 +2,28 @@
 """Real-time training monitoring dashboard for H-JEPA."""
 
 import re
-import time
 import sys
-from pathlib import Path
+import time
 from datetime import datetime, timedelta
+from pathlib import Path
+
 
 def clear_screen():
     """Clear the terminal screen."""
     print("\033[2J\033[H", end="")
+
 
 def parse_log_file(log_path):
     """Parse the training log file and extract metrics."""
     if not log_path.exists():
         return None
 
-    with open(log_path, 'r') as f:
+    with open(log_path, "r") as f:
         content = f.read()
 
     # Extract progress information from the most recent line
     # Pattern: Epoch 1/100:  20%|█▉        | 312/1562 [06:33<24:39,  1.18s/it, loss=0.0035, lr=1.92e-06]
-    progress_pattern = r'Epoch (\d+)/(\d+):\s+(\d+)%.*?\|\s*(\d+)/(\d+)\s+\[([\d:]+)<([\d:]+),\s+([\d.]+).*?loss=([\d.]+).*?lr=([\d.e+-]+)'
+    progress_pattern = r"Epoch (\d+)/(\d+):\s+(\d+)%.*?\|\s*(\d+)/(\d+)\s+\[([\d:]+)<([\d:]+),\s+([\d.]+).*?loss=([\d.]+).*?lr=([\d.e+-]+)"
 
     matches = list(re.finditer(progress_pattern, content))
     if not matches:
@@ -42,7 +44,7 @@ def parse_log_file(log_path):
     lr = float(match.group(10))
 
     # Extract all losses for trend calculation
-    loss_pattern = r'loss=([\d.]+)'
+    loss_pattern = r"loss=([\d.]+)"
     all_losses = [float(l) for l in re.findall(loss_pattern, content)]
 
     # Calculate statistics
@@ -55,37 +57,40 @@ def parse_log_file(log_path):
     improvement = ((initial_loss - loss) / initial_loss * 100) if initial_loss > 0 else 0
 
     return {
-        'current_epoch': current_epoch,
-        'total_epochs': total_epochs,
-        'progress_pct': progress_pct,
-        'current_step': current_step,
-        'total_steps': total_steps,
-        'elapsed': elapsed,
-        'remaining': remaining,
-        'iter_time': iter_time,
-        'loss': loss,
-        'lr': lr,
-        'initial_loss': initial_loss,
-        'min_loss': min_loss,
-        'avg_recent_loss': avg_recent_loss,
-        'improvement': improvement,
-        'total_data_points': len(all_losses),
+        "current_epoch": current_epoch,
+        "total_epochs": total_epochs,
+        "progress_pct": progress_pct,
+        "current_step": current_step,
+        "total_steps": total_steps,
+        "elapsed": elapsed,
+        "remaining": remaining,
+        "iter_time": iter_time,
+        "loss": loss,
+        "lr": lr,
+        "initial_loss": initial_loss,
+        "min_loss": min_loss,
+        "avg_recent_loss": avg_recent_loss,
+        "improvement": improvement,
+        "total_data_points": len(all_losses),
     }
+
 
 def format_time(time_str):
     """Format time string to be more readable."""
-    parts = time_str.split(':')
+    parts = time_str.split(":")
     if len(parts) == 3:
         hours, minutes, seconds = parts
         return f"{hours}h {minutes}m {seconds}s"
     return time_str
 
+
 def create_progress_bar(current, total, width=40):
     """Create a text-based progress bar."""
     filled = int(width * current / total)
-    bar = '█' * filled + '░' * (width - filled)
+    bar = "█" * filled + "░" * (width - filled)
     pct = 100 * current / total
     return f"[{bar}] {pct:.1f}%"
+
 
 def display_dashboard(metrics):
     """Display the training dashboard."""
@@ -104,14 +109,14 @@ def display_dashboard(metrics):
     # Epoch progress
     print(f"📊 EPOCH PROGRESS")
     print(f"   Epoch: {metrics['current_epoch']}/{metrics['total_epochs']}")
-    epoch_bar = create_progress_bar(metrics['current_epoch'], metrics['total_epochs'], 50)
+    epoch_bar = create_progress_bar(metrics["current_epoch"], metrics["total_epochs"], 50)
     print(f"   {epoch_bar}")
     print()
 
     # Step progress (within current epoch)
     print(f"📈 STEP PROGRESS (Epoch {metrics['current_epoch']})")
     print(f"   Step: {metrics['current_step']:,}/{metrics['total_steps']:,}")
-    step_bar = create_progress_bar(metrics['current_step'], metrics['total_steps'], 50)
+    step_bar = create_progress_bar(metrics["current_step"], metrics["total_steps"], 50)
     print(f"   {step_bar}")
     print()
 
@@ -128,7 +133,7 @@ def display_dashboard(metrics):
     # Performance
     print(f"⚡ PERFORMANCE")
     print(f"   Iteration Time:    {metrics['iter_time']:.2f}s/it")
-    steps_per_min = 60 / metrics['iter_time'] if metrics['iter_time'] > 0 else 0
+    steps_per_min = 60 / metrics["iter_time"] if metrics["iter_time"] > 0 else 0
     print(f"   Steps per Minute:  {steps_per_min:.1f}")
     print()
 
@@ -138,9 +143,12 @@ def display_dashboard(metrics):
     print(f"   Remaining (Epoch): {format_time(metrics['remaining'])}")
 
     # Calculate total remaining time
-    steps_remaining_this_epoch = metrics['total_steps'] - metrics['current_step']
-    steps_remaining_total = steps_remaining_this_epoch + (metrics['total_epochs'] - metrics['current_epoch']) * metrics['total_steps']
-    total_remaining_seconds = steps_remaining_total * metrics['iter_time']
+    steps_remaining_this_epoch = metrics["total_steps"] - metrics["current_step"]
+    steps_remaining_total = (
+        steps_remaining_this_epoch
+        + (metrics["total_epochs"] - metrics["current_epoch"]) * metrics["total_steps"]
+    )
+    total_remaining_seconds = steps_remaining_total * metrics["iter_time"]
     total_remaining = str(timedelta(seconds=int(total_remaining_seconds)))
     print(f"   Remaining (Total): {total_remaining}")
 
@@ -152,8 +160,14 @@ def display_dashboard(metrics):
     # Statistics
     print(f"📊 STATISTICS")
     print(f"   Total Data Points: {metrics['total_data_points']:,}")
-    print(f"   Steps Completed:   {metrics['current_step']:,} / {metrics['total_steps'] * metrics['total_epochs']:,} (total)")
-    total_progress = ((metrics['current_epoch'] - 1) * metrics['total_steps'] + metrics['current_step']) / (metrics['total_epochs'] * metrics['total_steps']) * 100
+    print(
+        f"   Steps Completed:   {metrics['current_step']:,} / {metrics['total_steps'] * metrics['total_epochs']:,} (total)"
+    )
+    total_progress = (
+        ((metrics["current_epoch"] - 1) * metrics["total_steps"] + metrics["current_step"])
+        / (metrics["total_epochs"] * metrics["total_steps"])
+        * 100
+    )
     print(f"   Overall Progress:  {total_progress:.2f}%")
     print()
 
@@ -161,6 +175,7 @@ def display_dashboard(metrics):
     print("=" * 80)
     print("Press Ctrl+C to stop monitoring")
     print("=" * 80)
+
 
 def main():
     """Main monitoring loop."""
@@ -196,6 +211,7 @@ def main():
     except KeyboardInterrupt:
         print("\n\nMonitoring stopped.")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

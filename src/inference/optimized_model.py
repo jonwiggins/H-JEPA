@@ -29,7 +29,7 @@ class OptimizedHJEPA(nn.Module):
     Removes training-only components and optimizes for feature extraction.
     """
 
-    def __init__(self, hjepa_model: HJEPA, hierarchy_level: int = 0):
+    def __init__(self, hjepa_model: HJEPA, hierarchy_level: int = 0) -> None:
         """
         Initialize optimized model.
 
@@ -283,7 +283,7 @@ class BatchInference:
         device: str = "cuda",
         batch_size: int = 32,
         hierarchy_level: int = 0,
-    ):
+    ) -> None:
         """
         Initialize batch inference.
 

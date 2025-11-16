@@ -12,12 +12,8 @@ C-JEPA provides:
 
 import torch
 import torch.nn as nn
-from src.losses import (
-    HJEPALoss,
-    NTXentLoss,
-    ContrastiveJEPALoss,
-    create_loss_from_config,
-)
+
+from src.losses import ContrastiveJEPALoss, HJEPALoss, NTXentLoss, create_loss_from_config
 
 
 def example_1_basic_ntxent_loss():
@@ -61,7 +57,7 @@ def example_2_cjepa_basic():
 
     # Create base JEPA loss
     jepa_loss = HJEPALoss(
-        loss_type='smoothl1',
+        loss_type="smoothl1",
         hierarchy_weights=[1.0, 0.5, 0.25],
         num_hierarchies=3,
         normalize_embeddings=True,
@@ -80,13 +76,9 @@ def example_2_cjepa_basic():
 
     # JEPA components (predictions and targets from masked prediction)
     predictions = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)  # 3 hierarchy levels
+        torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)  # 3 hierarchy levels
     ]
-    targets = [
-        torch.randn(batch_size, num_patches, embed_dim)
-        for _ in range(3)
-    ]
+    targets = [torch.randn(batch_size, num_patches, embed_dim) for _ in range(3)]
 
     # Contrastive components (features from two augmented views)
     # Shape: [B, N+1, D] where index 0 is CLS token
@@ -128,16 +120,16 @@ def example_3_cjepa_from_config():
 
     # Method 1: Explicit C-JEPA type
     config1 = {
-        'loss': {
-            'type': 'cjepa',
-            'jepa_loss_type': 'smoothl1',
-            'hierarchy_weights': [1.0, 0.5, 0.25],
-            'contrastive_weight': 0.1,
-            'contrastive_temperature': 0.1,
+        "loss": {
+            "type": "cjepa",
+            "jepa_loss_type": "smoothl1",
+            "hierarchy_weights": [1.0, 0.5, 0.25],
+            "contrastive_weight": 0.1,
+            "contrastive_temperature": 0.1,
         },
-        'model': {
-            'num_hierarchies': 3,
-        }
+        "model": {
+            "num_hierarchies": 3,
+        },
     }
 
     loss_fn1 = create_loss_from_config(config1)
@@ -148,16 +140,16 @@ def example_3_cjepa_from_config():
 
     # Method 2: JEPA with contrastive flag
     config2 = {
-        'loss': {
-            'type': 'hjepa',
-            'use_contrastive': True,
-            'jepa_loss_type': 'smoothl1',
-            'contrastive_weight': 0.1,
-            'contrastive_temperature': 0.1,
+        "loss": {
+            "type": "hjepa",
+            "use_contrastive": True,
+            "jepa_loss_type": "smoothl1",
+            "contrastive_weight": 0.1,
+            "contrastive_temperature": 0.1,
         },
-        'model': {
-            'num_hierarchies': 3,
-        }
+        "model": {
+            "num_hierarchies": 3,
+        },
     }
 
     loss_fn2 = create_loss_from_config(config2)
@@ -175,7 +167,7 @@ def example_4_training_loop_integration():
 
     # Setup C-JEPA loss
     jepa_loss = HJEPALoss(
-        loss_type='smoothl1',
+        loss_type="smoothl1",
         hierarchy_weights=[1.0, 0.5, 0.25],
         num_hierarchies=3,
     )
@@ -207,10 +199,10 @@ def example_4_training_loop_integration():
             context_j = torch.randn(batch_size, 197, 768)
 
             return {
-                'predictions': predictions,
-                'targets': targets,
-                'context_features_i': context_i,
-                'context_features_j': context_j,
+                "predictions": predictions,
+                "targets": targets,
+                "context_features_i": context_i,
+                "context_features_j": context_j,
             }
 
     model = DummyHJEPA()
@@ -228,12 +220,12 @@ def example_4_training_loop_integration():
 
     # Compute C-JEPA loss
     loss_dict = cjepa_loss(
-        predictions=outputs['predictions'],
-        targets=outputs['targets'],
-        context_features_i=outputs['context_features_i'],
-        context_features_j=outputs['context_features_j'],
+        predictions=outputs["predictions"],
+        targets=outputs["targets"],
+        context_features_i=outputs["context_features_i"],
+        context_features_j=outputs["context_features_j"],
     )
-    total_loss = loss_dict['loss']
+    total_loss = loss_dict["loss"]
 
     # Backward pass
     optimizer.zero_grad()
@@ -360,7 +352,7 @@ def example_6_performance_analysis():
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("C-JEPA (Contrastive JEPA) - Usage Examples")
     print("=" * 60 + "\n")

@@ -32,3 +32,18 @@ repos:
       - id: debug-statements
       - id: mixed-line-ending
         args: [--fix=lf]
+
+  # Mypy - Static type checking (run manually with: mypy --config-file=mypy.ini src/)
+  # Disabled in pre-commit due to environment dependency differences
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       args: [--config-file=mypy.ini]
+  #       files: ^src/
+  #       exclude: ^(examples|scripts|tests|test_|monitor_|plot_|run_|verify_)/
+  #       additional_dependencies:
+  #         - numpy
+  #         - torch
+  #         - types-PyYAML
+  #         - types-requests

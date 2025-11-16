@@ -118,4 +118,3 @@ All structure is in place. Next steps:
 7. Implement trainer (src/trainers/trainer.py)
 8. Write unit tests
 9. Train and evaluate!
-

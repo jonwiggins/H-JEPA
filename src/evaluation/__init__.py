@@ -45,18 +45,10 @@ from .feature_quality import (
 )
 
 # k-NN evaluation
-from .knn_eval import (
-    KNNEvaluator,
-    knn_eval,
-    sweep_knn_params,
-)
+from .knn_eval import KNNEvaluator, knn_eval, sweep_knn_params
 
 # Linear probe
-from .linear_probe import (
-    LinearProbe,
-    LinearProbeEvaluator,
-    linear_probe_eval,
-)
+from .linear_probe import LinearProbe, LinearProbeEvaluator, linear_probe_eval
 
 # Transfer learning
 from .transfer import (

@@ -13,9 +13,10 @@ This provides the model with different scales and contexts to learn from,
 improving robustness and scale invariance.
 """
 
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -144,7 +145,7 @@ class MultiCropTransform:
 
         return transforms.Compose(transform_list)
 
-    def __call__(self, image: Union[Image.Image, np.ndarray]) -> List[torch.Tensor]:
+    def __call__(self, image: Union[Image.Image, npt.NDArray[np.uint8]]) -> List[torch.Tensor]:
         """
         Apply multi-crop augmentation to an image.
 
@@ -205,7 +206,7 @@ class MultiCropEvalTransform:
             ]
         )
 
-    def __call__(self, image: Union[Image.Image, np.ndarray]) -> torch.Tensor:
+    def __call__(self, image: Union[Image.Image, npt.NDArray[np.uint8]]) -> torch.Tensor:
         """
         Apply evaluation transform.
 
@@ -215,7 +216,8 @@ class MultiCropEvalTransform:
         Returns:
             Transformed image tensor
         """
-        return self.transform(image)
+        result: torch.Tensor = self.transform(image)
+        return result
 
 
 class AdaptiveMultiCropTransform(MultiCropTransform):
@@ -237,8 +239,8 @@ class AdaptiveMultiCropTransform(MultiCropTransform):
         min_local_crops: int = 2,
         max_local_crops: int = 10,
         warmup_epochs: int = 0,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         # Initialize with minimum local crops
         kwargs["num_local_crops"] = min_local_crops
         super().__init__(**kwargs)
@@ -265,7 +267,7 @@ class AdaptiveMultiCropTransform(MultiCropTransform):
             )
             self.num_local_crops = num_crops
 
-    def __call__(self, image: Union[Image.Image, np.ndarray]) -> List[torch.Tensor]:
+    def __call__(self, image: Union[Image.Image, npt.NDArray[np.uint8]]) -> List[torch.Tensor]:
         """Apply multi-crop with adaptive number of local crops."""
         crops = []
 

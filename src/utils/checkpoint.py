@@ -13,9 +13,10 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import torch
+import torch.nn as nn
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class CheckpointManager:
     def save_checkpoint(
         self,
         epoch: int,
-        model: torch.nn.Module,
+        model: nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: Any,
         scaler: Optional[torch.cuda.amp.GradScaler] = None,
@@ -89,7 +90,10 @@ class CheckpointManager:
             Path to saved checkpoint file
         """
         # Handle DataParallel/DistributedDataParallel
-        model_state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+        if hasattr(model, "module"):
+            model_state = cast(nn.Module, model.module).state_dict()
+        else:
+            model_state = model.state_dict()
 
         # Prepare checkpoint dictionary
         checkpoint = {
@@ -138,7 +142,7 @@ class CheckpointManager:
     def load_checkpoint(
         self,
         checkpoint_path: str,
-        model: torch.nn.Module,
+        model: nn.Module,
         optimizer: Optional[torch.optim.Optimizer] = None,
         scheduler: Optional[Any] = None,
         scaler: Optional[torch.cuda.amp.GradScaler] = None,
@@ -166,7 +170,7 @@ class CheckpointManager:
 
         # Load model state
         if hasattr(model, "module"):
-            model.module.load_state_dict(checkpoint["model_state_dict"])
+            cast(nn.Module, model.module).load_state_dict(checkpoint["model_state_dict"])
         else:
             model.load_state_dict(checkpoint["model_state_dict"])
 
@@ -243,7 +247,7 @@ class CheckpointManager:
         checkpoint_path: str,
         epoch: int,
         metric_value: float,
-    ):
+    ) -> None:
         """
         Update the list of best checkpoints and clean up old ones.
 
@@ -282,7 +286,7 @@ class CheckpointManager:
                 except Exception as e:
                     logger.warning(f"Failed to remove checkpoint {ckpt['path']}: {e}")
 
-    def cleanup_old_checkpoints(self, keep_last_n: int = 5):
+    def cleanup_old_checkpoints(self, keep_last_n: int = 5) -> None:
         """
         Clean up old periodic checkpoints, keeping only the last N.
 
@@ -342,8 +346,8 @@ class CheckpointManager:
 
 
 def save_checkpoint(
-    filepath: str, model: torch.nn.Module, optimizer: torch.optim.Optimizer, epoch: int, **kwargs
-):
+    filepath: str, model: nn.Module, optimizer: torch.optim.Optimizer, epoch: int, **kwargs: Any
+) -> None:
     """
     Simple checkpoint saving utility function.
 
@@ -354,9 +358,12 @@ def save_checkpoint(
         epoch: Current epoch
         **kwargs: Additional state to save
     """
-    model_state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+    if hasattr(model, "module"):
+        model_state = cast(nn.Module, model.module).state_dict()
+    else:
+        model_state = model.state_dict()
 
-    checkpoint = {
+    checkpoint: Dict[str, Any] = {
         "epoch": epoch,
         "model_state_dict": model_state,
         "optimizer_state_dict": optimizer.state_dict(),
@@ -369,7 +376,7 @@ def save_checkpoint(
 
 def load_checkpoint(
     filepath: str,
-    model: torch.nn.Module,
+    model: nn.Module,
     optimizer: Optional[torch.optim.Optimizer] = None,
     device: str = "cuda",
 ) -> Dict[str, Any]:
@@ -385,10 +392,10 @@ def load_checkpoint(
     Returns:
         Checkpoint dictionary with metadata
     """
-    checkpoint = torch.load(filepath, map_location=device)
+    checkpoint: Dict[str, Any] = torch.load(filepath, map_location=device)
 
     if hasattr(model, "module"):
-        model.module.load_state_dict(checkpoint["model_state_dict"])
+        cast(nn.Module, model.module).load_state_dict(checkpoint["model_state_dict"])
     else:
         model.load_state_dict(checkpoint["model_state_dict"])
 

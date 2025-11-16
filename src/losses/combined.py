@@ -26,7 +26,7 @@ References:
 """
 
 from collections import defaultdict
-from typing import Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -95,7 +95,7 @@ class CombinedLoss(nn.Module):
         vicreg_on_targets: bool = False,
         reduction: Literal["mean", "sum", "none"] = "mean",
         eps: float = 1e-8,
-    ):
+    ) -> None:
         super().__init__()
 
         self.num_hierarchies = num_hierarchies
@@ -135,6 +135,7 @@ class CombinedLoss(nn.Module):
             self.vicreg_weights = list(vicreg_weight)
 
         # Register as buffer
+        self._vicreg_weights: torch.Tensor
         self.register_buffer(
             "_vicreg_weights", torch.tensor(self.vicreg_weights, dtype=torch.float32)
         )
@@ -315,9 +316,9 @@ class HierarchicalCombinedLoss(CombinedLoss):
         num_hierarchies: int = 3,
         normalize_embeddings: bool = True,
         vicreg_weight: Union[float, List[float]] = 0.1,
-        vicreg_configs: Optional[List[Dict]] = None,
-        **kwargs,
-    ):
+        vicreg_configs: Optional[List[Dict[str, Any]]] = None,
+        **kwargs: Any,
+    ) -> None:
         # Initialize base class with default VICReg parameters
         super().__init__(
             jepa_loss_type=jepa_loss_type,
@@ -399,7 +400,7 @@ class HierarchicalCombinedLoss(CombinedLoss):
         return loss_dict
 
 
-def create_loss_from_config(config: Dict) -> nn.Module:
+def create_loss_from_config(config: Dict[str, Any]) -> nn.Module:
     """
     Factory function to create loss from configuration dictionary.
 

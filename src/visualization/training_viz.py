@@ -7,10 +7,12 @@ gradient flow, and collapse monitoring.
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+import matplotlib.figure as mfigure
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 
@@ -25,7 +27,7 @@ def plot_training_curves(
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 10),
     smooth_window: int = 10,
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Plot training and validation curves.
 
@@ -97,7 +99,7 @@ def plot_hierarchical_losses(
     hierarchical_losses: Dict[int, List[float]],
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 6),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Plot losses for different hierarchical levels.
 
@@ -146,14 +148,14 @@ def plot_hierarchical_losses(
 
 def visualize_loss_landscape(
     model: nn.Module,
-    dataloader: torch.utils.data.DataLoader,
+    dataloader: "torch.utils.data.DataLoader[Any]",
     criterion: nn.Module,
-    directions: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    directions: Optional[Tuple[List[torch.Tensor], List[torch.Tensor]]] = None,
     steps: int = 20,
     alpha_range: Tuple[float, float] = (-1.0, 1.0),
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 10),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize loss landscape around current parameters.
 
@@ -175,8 +177,8 @@ def visualize_loss_landscape(
 
     # Generate random directions if not provided
     if directions is None:
-        direction1 = []
-        direction2 = []
+        direction1: List[torch.Tensor] = []
+        direction2: List[torch.Tensor] = []
 
         for param in model.parameters():
             if param.requires_grad:
@@ -232,7 +234,7 @@ def visualize_loss_landscape(
 
                     # Generate mask (simplified)
                     B = images.shape[0]
-                    num_patches = model.get_num_patches()
+                    num_patches: int = model.get_num_patches()  # type: ignore[operator]
                     mask_ratio = 0.5
                     num_masked = int(num_patches * mask_ratio)
 
@@ -298,7 +300,7 @@ def visualize_gradient_flow(
     model: nn.Module,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 8),
-) -> plt.Figure:
+) -> Optional[mfigure.Figure]:
     """
     Visualize gradient flow through the network.
 
@@ -391,7 +393,7 @@ def plot_collapse_metrics(
     features: torch.Tensor,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Plot metrics for detecting representational collapse.
 
@@ -403,10 +405,7 @@ def plot_collapse_metrics(
     Returns:
         Matplotlib figure
     """
-    if isinstance(features, torch.Tensor):
-        features_np = features.cpu().numpy()
-    else:
-        features_np = features
+    features_np: npt.NDArray[np.float64] = features.cpu().numpy()
 
     # Normalize features
     features_norm = features_np / (np.linalg.norm(features_np, axis=-1, keepdims=True) + 1e-8)
@@ -500,7 +499,7 @@ def plot_ema_momentum(
     momentum_history: List[float],
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (10, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Plot EMA momentum schedule over training.
 
@@ -548,7 +547,7 @@ def plot_ema_momentum(
     return fig
 
 
-def load_training_logs(log_dir: Union[str, Path]) -> Dict:
+def load_training_logs(log_dir: Union[str, Path]) -> Dict[str, Any]:
     """
     Load training logs from directory.
 

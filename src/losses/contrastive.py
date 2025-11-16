@@ -25,7 +25,7 @@ References:
     - C-JEPA concept from recent self-supervised learning literature
 """
 
-from typing import Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import torch
 import torch.nn as nn
@@ -355,10 +355,12 @@ class ContrastiveJEPALoss(nn.Module):
         jepa_loss = jepa_dict["loss"]
 
         # 2. Compute contrastive loss
-        contrastive_loss = torch.tensor(
-            0.0,
-            device=predictions[0].device if isinstance(predictions, list) else predictions.device,
-        )
+        # Get device from predictions
+        if isinstance(predictions, list):  # type: ignore[unreachable]
+            device = predictions[0].device  # type: ignore[unreachable]
+        else:
+            device = predictions.device
+        contrastive_loss = torch.tensor(0.0, device=device)
         contrastive_dict = {}
 
         # Determine which features to use for contrastive learning
@@ -455,7 +457,9 @@ class ContrastiveJEPALoss(nn.Module):
         )
 
 
-def create_cjepa_loss_from_config(config: Dict, jepa_loss: nn.Module) -> ContrastiveJEPALoss:
+def create_cjepa_loss_from_config(
+    config: Dict[str, Any], jepa_loss: nn.Module
+) -> ContrastiveJEPALoss:
     """
     Create C-JEPA loss from configuration dictionary.
 

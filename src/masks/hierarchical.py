@@ -5,10 +5,11 @@ This module implements hierarchical masking that generates different masks
 for different levels of the hierarchy, enabling multi-scale representation learning.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import torch
 
 
@@ -51,7 +52,7 @@ class HierarchicalMaskGenerator:
 
     def __init__(
         self,
-        input_size: int or Tuple[int, int] = 224,
+        input_size: Union[int, Tuple[int, int]] = 224,
         patch_size: int = 16,
         num_hierarchies: int = 3,
         num_target_masks: int = 4,
@@ -59,7 +60,7 @@ class HierarchicalMaskGenerator:
         base_scale: Tuple[float, float] = (0.05, 0.15),
         aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
-    ):
+    ) -> None:
         # Handle input size
         if isinstance(input_size, int):
             self.input_size = (input_size, input_size)
@@ -82,14 +83,14 @@ class HierarchicalMaskGenerator:
         # Compute scale ranges for each hierarchy level
         self.level_configs = self._compute_level_configs()
 
-    def _compute_level_configs(self) -> List[Dict]:
+    def _compute_level_configs(self) -> List[Dict[str, Union[Tuple[float, float], int]]]:
         """
         Compute masking configurations for each hierarchy level.
 
         Returns:
             List of dicts with 'target_scale' and 'context_scale' for each level.
         """
-        configs = []
+        configs: List[Dict[str, Union[Tuple[float, float], int]]] = []
 
         for level in range(self.num_hierarchies):
             if self.scale_progression == "geometric":
@@ -110,13 +111,12 @@ class HierarchicalMaskGenerator:
             context_min = min(0.95, context_ratio)
             context_max = min(1.0, context_ratio + 0.15)
 
-            configs.append(
-                {
-                    "target_scale": (target_min, target_max),
-                    "context_scale": (context_min, context_max),
-                    "level": level,
-                }
-            )
+            config_dict: Dict[str, Union[Tuple[float, float], int]] = {
+                "target_scale": (target_min, target_max),
+                "context_scale": (context_min, context_max),
+                "level": level,
+            }
+            configs.append(config_dict)
 
         return configs
 
@@ -163,7 +163,7 @@ class HierarchicalMaskGenerator:
 
     def _generate_level_masks(
         self,
-        config: Dict,
+        config: Dict[str, Union[Tuple[float, float], int]],
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate masks for a specific hierarchy level.
@@ -174,9 +174,9 @@ class HierarchicalMaskGenerator:
         Returns:
             Tuple of (context_mask, target_masks) as boolean tensors.
         """
-        target_scale = config["target_scale"]
-        context_scale = config["context_scale"]
-        level = config["level"]
+        target_scale = cast(Tuple[float, float], config["target_scale"])
+        context_scale = cast(Tuple[float, float], config["context_scale"])
+        level = cast(int, config["level"])
 
         # Sample target blocks
         target_blocks = []
@@ -231,7 +231,7 @@ class HierarchicalMaskGenerator:
     def _sample_block(
         self,
         scale_range: Tuple[float, float],
-        occupied: Optional[np.ndarray] = None,
+        occupied: Optional[npt.NDArray[np.bool_]] = None,
         level: int = 0,
     ) -> Tuple[int, int, int, int]:
         """
@@ -309,7 +309,7 @@ class HierarchicalMaskGenerator:
         sample_idx: int = 0,
         figsize: Tuple[int, int] = (15, 5),
         save_path: Optional[str] = None,
-    ) -> plt.Figure:
+    ) -> "plt.Figure":
         """
         Visualize masks across all hierarchy levels.
 
@@ -366,7 +366,7 @@ class HierarchicalMaskGenerator:
         sample_idx: int = 0,
         figsize: Tuple[int, int] = (15, 5),
         save_path: Optional[str] = None,
-    ) -> plt.Figure:
+    ) -> "plt.Figure":
         """
         Visualize all hierarchy levels in a combined view.
 
@@ -452,13 +452,13 @@ class HierarchicalMaskGenerator:
                         overlap = (ctx & tgt).float().sum() / tgt.float().sum()
                         overlaps.append(overlap.item())
 
-            level_stats = {
-                "context_coverage_mean": context_coverage.mean().item(),
-                "context_coverage_std": context_coverage.std().item(),
-                "target_coverage_mean": target_coverage.mean().item(),
-                "target_coverage_std": target_coverage.std().item(),
-                "overlap_mean": np.mean(overlaps) if overlaps else 0.0,
-                "overlap_max": np.max(overlaps) if overlaps else 0.0,
+            level_stats: Dict[str, float] = {
+                "context_coverage_mean": float(context_coverage.mean().item()),
+                "context_coverage_std": float(context_coverage.std().item()),
+                "target_coverage_mean": float(target_coverage.mean().item()),
+                "target_coverage_std": float(target_coverage.std().item()),
+                "overlap_mean": float(np.mean(overlaps)) if overlaps else 0.0,
+                "overlap_max": float(np.max(overlaps)) if overlaps else 0.0,
             }
 
             stats[level_key] = level_stats
@@ -466,7 +466,7 @@ class HierarchicalMaskGenerator:
         return stats
 
 
-def demo():
+def demo() -> None:
     """Demonstration of HierarchicalMaskGenerator."""
     print("Hierarchical Mask Generator Demo")
     print("=" * 50)

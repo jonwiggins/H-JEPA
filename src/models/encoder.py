@@ -6,7 +6,7 @@ Includes support for Rotary Position Embeddings (RoPE) for improved positional e
 """
 
 import math
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple, cast
 
 import timm
 import torch
@@ -189,9 +189,11 @@ class VisionRoPE2D(nn.Module):
             ):
                 freqs_h, freqs_w = self._compute_freqs_dynamic(num_patches_h, num_patches_w)
             else:
-                freqs_h, freqs_w = self.freqs_h, self.freqs_w
+                freqs_h = cast(torch.Tensor, self.freqs_h)
+                freqs_w = cast(torch.Tensor, self.freqs_w)
         else:
-            freqs_h, freqs_w = self.freqs_h, self.freqs_w
+            freqs_h = cast(torch.Tensor, self.freqs_h)
+            freqs_w = cast(torch.Tensor, self.freqs_w)
 
         # Compute rotation components
         cos_h, sin_h = self._compute_rope_rotation(freqs_h)
@@ -231,12 +233,15 @@ class VisionRoPE2D(nn.Module):
             Tuple of (freqs_h, freqs_w) for the new resolution
         """
         half_dim = self.dim // 2
-        freq_bands = torch.arange(0, half_dim, 2, dtype=torch.float32, device=self.freqs_h.device)
+        freqs_h_device = cast(torch.Tensor, self.freqs_h).device
+        freqs_w_device = cast(torch.Tensor, self.freqs_w).device
+
+        freq_bands = torch.arange(0, half_dim, 2, dtype=torch.float32, device=freqs_h_device)
         freq_bands = 1.0 / (self.theta ** (freq_bands / half_dim))
 
         # Create position grids for new resolution
-        y_pos = torch.arange(num_patches_h, dtype=torch.float32, device=self.freqs_h.device)
-        x_pos = torch.arange(num_patches_w, dtype=torch.float32, device=self.freqs_w.device)
+        y_pos = torch.arange(num_patches_h, dtype=torch.float32, device=freqs_h_device)
+        x_pos = torch.arange(num_patches_w, dtype=torch.float32, device=freqs_w_device)
 
         y_grid, x_grid = torch.meshgrid(y_pos, x_pos, indexing="ij")
         y_grid = y_grid.flatten()[:, None]
@@ -277,20 +282,16 @@ class RoPEAttentionWrapper(nn.Module):
         self.rope = rope_module
         self.use_flash = use_flash_attention and FLASH_ATTENTION_AVAILABLE
 
-        # Copy all attributes from original attention
-        for attr in [
-            "num_heads",
-            "head_dim",
-            "scale",
-            "qkv",
-            "q_norm",
-            "k_norm",
-            "attn_drop",
-            "proj",
-            "proj_drop",
-        ]:
-            if hasattr(attn_module, attr):
-                setattr(self, attr, getattr(attn_module, attr))
+        # Copy all attributes from original attention (typed as Any to handle dynamic attributes)
+        self.num_heads: int = getattr(attn_module, "num_heads")
+        self.head_dim: int = getattr(attn_module, "head_dim")
+        self.scale: float = getattr(attn_module, "scale")
+        self.qkv: nn.Module = getattr(attn_module, "qkv")
+        self.q_norm: Optional[nn.Module] = getattr(attn_module, "q_norm", None)
+        self.k_norm: Optional[nn.Module] = getattr(attn_module, "k_norm", None)
+        self.attn_drop: nn.Module = getattr(attn_module, "attn_drop")
+        self.proj: nn.Module = getattr(attn_module, "proj")
+        self.proj_drop: nn.Module = getattr(attn_module, "proj_drop")
 
     def forward(self, x: torch.Tensor, attn_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
@@ -310,9 +311,9 @@ class RoPEAttentionWrapper(nn.Module):
         q, k, v = qkv.unbind(0)  # Each is [batch, num_heads, seq_len, head_dim]
 
         # Apply Q and K normalization if present (used in some ViT variants)
-        if hasattr(self, "q_norm") and self.q_norm is not None:
+        if self.q_norm is not None:
             q = self.q_norm(q)
-        if hasattr(self, "k_norm") and self.k_norm is not None:
+        if self.k_norm is not None:
             k = self.k_norm(k)
 
         # Calculate grid dimensions (excluding CLS token)
@@ -340,11 +341,12 @@ class RoPEAttentionWrapper(nn.Module):
         if self.use_flash:
             # Use PyTorch's Flash Attention implementation
             # scaled_dot_product_attention automatically selects the best backend
+            dropout_p = float(getattr(self.attn_drop, "p", 0.0)) if self.training else 0.0
             x = F.scaled_dot_product_attention(
                 q,
                 k,
                 v,
-                dropout_p=self.attn_drop.p if self.training else 0.0,
+                dropout_p=dropout_p,
                 scale=self.scale,
             )
             x = x.transpose(1, 2).reshape(B, N, C)
@@ -403,7 +405,7 @@ class ContextEncoder(nn.Module):
         super().__init__()
 
         # Create Vision Transformer using timm
-        self.vit = timm.create_model(
+        self.vit: Any = timm.create_model(
             encoder_type,
             pretrained=pretrained,
             img_size=img_size,
@@ -411,12 +413,12 @@ class ContextEncoder(nn.Module):
         )
 
         # Get model properties
-        self.embed_dim = self.vit.embed_dim
-        self.num_patches = self.vit.patch_embed.num_patches
-        self.patch_size = self.vit.patch_embed.patch_size[0]
+        self.embed_dim: int = self.vit.embed_dim  # type: ignore[assignment]
+        self.num_patches: int = self.vit.patch_embed.num_patches  # type: ignore[assignment, union-attr]
+        self.patch_size: int = self.vit.patch_embed.patch_size[0]  # type: ignore[assignment, index, union-attr]
 
         # Calculate grid size
-        self.grid_size = int(math.sqrt(self.num_patches))
+        self.grid_size: int = int(math.sqrt(self.num_patches))
 
         # Remove classification head (we don't need it for JEPA)
         if hasattr(self.vit, "head"):
@@ -432,7 +434,7 @@ class ContextEncoder(nn.Module):
         self.use_rope = use_rope
         if use_rope:
             # Get head dimension from first attention block
-            num_heads = self.vit.blocks[0].attn.num_heads
+            num_heads: int = self.vit.blocks[0].attn.num_heads  # type: ignore[index, union-attr]
             head_dim = self.embed_dim // num_heads
 
             # Create RoPE module
@@ -444,7 +446,7 @@ class ContextEncoder(nn.Module):
             )
 
             # Wrap all attention layers with RoPE
-            for block in self.vit.blocks:
+            for block in self.vit.blocks:  # type: ignore[union-attr]
                 block.attn = RoPEAttentionWrapper(
                     block.attn, self.rope, use_flash_attention=use_flash_attention
                 )
@@ -561,7 +563,7 @@ class TargetEncoder(nn.Module):
         super().__init__()
 
         # Create Vision Transformer using timm
-        self.vit = timm.create_model(
+        self.vit: Any = timm.create_model(
             encoder_type,
             pretrained=pretrained,
             img_size=img_size,
@@ -569,12 +571,12 @@ class TargetEncoder(nn.Module):
         )
 
         # Get model properties
-        self.embed_dim = self.vit.embed_dim
-        self.num_patches = self.vit.patch_embed.num_patches
-        self.patch_size = self.vit.patch_embed.patch_size[0]
+        self.embed_dim: int = self.vit.embed_dim  # type: ignore[assignment]
+        self.num_patches: int = self.vit.patch_embed.num_patches  # type: ignore[assignment, union-attr]
+        self.patch_size: int = self.vit.patch_embed.patch_size[0]  # type: ignore[assignment, index, union-attr]
 
         # Calculate grid size
-        self.grid_size = int(math.sqrt(self.num_patches))
+        self.grid_size: int = int(math.sqrt(self.num_patches))
 
         # Remove classification head
         if hasattr(self.vit, "head"):
@@ -592,7 +594,7 @@ class TargetEncoder(nn.Module):
         self.use_rope = use_rope
         if use_rope:
             # Get head dimension from first attention block
-            num_heads = self.vit.blocks[0].attn.num_heads
+            num_heads: int = self.vit.blocks[0].attn.num_heads  # type: ignore[index, union-attr]
             head_dim = self.embed_dim // num_heads
 
             # Create RoPE module
@@ -604,7 +606,7 @@ class TargetEncoder(nn.Module):
             )
 
             # Wrap all attention layers with RoPE
-            for block in self.vit.blocks:
+            for block in self.vit.blocks:  # type: ignore[union-attr]
                 block.attn = RoPEAttentionWrapper(
                     block.attn, self.rope, use_flash_attention=use_flash_attention
                 )
@@ -673,7 +675,7 @@ class TargetEncoder(nn.Module):
         return momentum
 
     @torch.no_grad()
-    def copy_from_context_encoder(self, context_encoder: ContextEncoder):
+    def copy_from_context_encoder(self, context_encoder: ContextEncoder) -> None:
         """
         Initialize target encoder with context encoder weights.
 

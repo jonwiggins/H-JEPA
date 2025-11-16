@@ -9,6 +9,7 @@ This script tests:
 """
 
 import torch
+
 from src.models.hjepa import create_hjepa
 
 
@@ -18,31 +19,31 @@ def test_fpn_creation():
 
     # Test with 'add' fusion
     model_add = create_hjepa(
-        encoder_type='vit_small_patch16_224',
+        encoder_type="vit_small_patch16_224",
         img_size=224,
         embed_dim=384,
         num_hierarchies=3,
         use_fpn=True,
         fpn_feature_dim=256,
-        fpn_fusion_method='add',
+        fpn_fusion_method="add",
     )
     print(f"  Created model with 'add' fusion: {type(model_add).__name__}")
 
     # Test with 'concat' fusion
     model_concat = create_hjepa(
-        encoder_type='vit_small_patch16_224',
+        encoder_type="vit_small_patch16_224",
         img_size=224,
         embed_dim=384,
         num_hierarchies=3,
         use_fpn=True,
         fpn_feature_dim=256,
-        fpn_fusion_method='concat',
+        fpn_fusion_method="concat",
     )
     print(f"  Created model with 'concat' fusion: {type(model_concat).__name__}")
 
     # Test without FPN for comparison
     model_no_fpn = create_hjepa(
-        encoder_type='vit_small_patch16_224',
+        encoder_type="vit_small_patch16_224",
         img_size=224,
         embed_dim=384,
         num_hierarchies=3,
@@ -54,7 +55,7 @@ def test_fpn_creation():
     return model_add, model_concat, model_no_fpn
 
 
-def test_fpn_forward_pass(model, fusion_method='add'):
+def test_fpn_forward_pass(model, fusion_method="add"):
     """Test forward pass through FPN model."""
     print(f"Testing forward pass with '{fusion_method}' fusion...")
 
@@ -74,8 +75,8 @@ def test_fpn_forward_pass(model, fusion_method='add'):
         outputs = model(images, mask, return_all_levels=True)
 
     # Check outputs
-    predictions = outputs['predictions']
-    targets = outputs['targets']
+    predictions = outputs["predictions"]
+    targets = outputs["targets"]
 
     print(f"  Number of hierarchy levels: {len(predictions)}")
     for i, (pred, target) in enumerate(zip(predictions, targets)):
@@ -85,7 +86,7 @@ def test_fpn_forward_pass(model, fusion_method='add'):
     return outputs
 
 
-def test_fpn_feature_extraction(model, fusion_method='add'):
+def test_fpn_feature_extraction(model, fusion_method="add"):
     """Test feature extraction at different hierarchy levels."""
     print(f"Testing feature extraction with '{fusion_method}' fusion...")
 
@@ -106,20 +107,35 @@ def compare_parameter_counts():
     print("Comparing parameter counts...")
 
     configs = [
-        {'use_fpn': False, 'fpn_fusion_method': 'add', 'name': 'No FPN'},
-        {'use_fpn': True, 'fpn_feature_dim': 256, 'fpn_fusion_method': 'add', 'name': 'FPN (add, dim=256)'},
-        {'use_fpn': True, 'fpn_feature_dim': None, 'fpn_fusion_method': 'add', 'name': 'FPN (add, dim=embed)'},
-        {'use_fpn': True, 'fpn_feature_dim': 256, 'fpn_fusion_method': 'concat', 'name': 'FPN (concat, dim=256)'},
+        {"use_fpn": False, "fpn_fusion_method": "add", "name": "No FPN"},
+        {
+            "use_fpn": True,
+            "fpn_feature_dim": 256,
+            "fpn_fusion_method": "add",
+            "name": "FPN (add, dim=256)",
+        },
+        {
+            "use_fpn": True,
+            "fpn_feature_dim": None,
+            "fpn_fusion_method": "add",
+            "name": "FPN (add, dim=embed)",
+        },
+        {
+            "use_fpn": True,
+            "fpn_feature_dim": 256,
+            "fpn_fusion_method": "concat",
+            "name": "FPN (concat, dim=256)",
+        },
     ]
 
     for config in configs:
-        name = config.pop('name')
+        name = config.pop("name")
         model = create_hjepa(
-            encoder_type='vit_small_patch16_224',
+            encoder_type="vit_small_patch16_224",
             img_size=224,
             embed_dim=384,
             num_hierarchies=3,
-            **config
+            **config,
         )
 
         total_params = sum(p.numel() for p in model.parameters())
@@ -143,17 +159,17 @@ def main():
     model_add, model_concat, model_no_fpn = test_fpn_creation()
 
     # Test 2: Forward pass with 'add' fusion
-    test_fpn_forward_pass(model_add, fusion_method='add')
+    test_fpn_forward_pass(model_add, fusion_method="add")
 
     # Test 3: Forward pass with 'concat' fusion
-    test_fpn_forward_pass(model_concat, fusion_method='concat')
+    test_fpn_forward_pass(model_concat, fusion_method="concat")
 
     # Test 4: Forward pass without FPN
-    test_fpn_forward_pass(model_no_fpn, fusion_method='none')
+    test_fpn_forward_pass(model_no_fpn, fusion_method="none")
 
     # Test 5: Feature extraction with FPN
-    test_fpn_feature_extraction(model_add, fusion_method='add')
-    test_fpn_feature_extraction(model_concat, fusion_method='concat')
+    test_fpn_feature_extraction(model_add, fusion_method="add")
+    test_fpn_feature_extraction(model_concat, fusion_method="concat")
 
     # Test 6: Parameter count comparison
     compare_parameter_counts()
@@ -163,5 +179,5 @@ def main():
     print("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

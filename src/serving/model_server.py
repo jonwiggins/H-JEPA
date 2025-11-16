@@ -13,12 +13,12 @@ import io
 import logging
 import os
 import time
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from PIL import Image
 from prometheus_client import Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
@@ -92,7 +92,7 @@ class ModelServer:
         model_path: Optional[str] = None,
         device: Optional[str] = None,
         img_size: int = 224,
-    ):
+    ) -> None:
         """
         Initialize model server.
 
@@ -183,7 +183,7 @@ class ModelServer:
         self,
         image: torch.Tensor,
         hierarchy_level: int = 0,
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, float]:
         """
         Extract features from image.
 
@@ -219,7 +219,7 @@ class ModelServer:
         self,
         images: torch.Tensor,
         hierarchy_level: int = 0,
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, float]:
         """
         Extract features from batch of images.
 
@@ -274,7 +274,7 @@ def get_model_server() -> ModelServer:
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Initialize model server on startup."""
     logger.info("Starting H-JEPA Model Server...")
 
@@ -288,7 +288,7 @@ async def startup_event():
 
 
 @app.get("/", response_model=Dict[str, str])
-async def root():
+async def root() -> Dict[str, str]:
     """Root endpoint."""
     return {
         "message": "H-JEPA Model Server",
@@ -298,7 +298,7 @@ async def root():
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check() -> HealthResponse:
     """Health check endpoint."""
     start_time = time.time()
 
@@ -328,7 +328,7 @@ async def extract_features(
     file: UploadFile = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
     return_numpy: bool = Query(default=True),
-):
+) -> FeatureResponse:
     """
     Extract features from a single image.
 
@@ -382,7 +382,7 @@ async def extract_features_batch(
     files: List[UploadFile] = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
     return_numpy: bool = Query(default=True),
-):
+) -> BatchFeatureResponse:
     """
     Extract features from a batch of images.
 
@@ -440,13 +440,13 @@ async def extract_features_batch(
 
 
 @app.get("/metrics")
-async def metrics():
+async def metrics() -> Response:
     """Prometheus metrics endpoint."""
-    return generate_latest()
+    return Response(content=generate_latest(), media_type="text/plain")
 
 
 @app.get("/info")
-async def model_info():
+async def model_info() -> Dict[str, Any]:
     """Get model information."""
     try:
         server = get_model_server()

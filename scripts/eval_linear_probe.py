@@ -8,19 +8,20 @@ the pretrained encoder and training a linear classifier on top.
 This is the gold standard for evaluating self-supervised learning models.
 """
 
+import argparse
+import json
+from pathlib import Path
+from typing import Dict, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
-from pathlib import Path
-import argparse
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-import json
-from typing import Dict, Tuple
 
-from src.models.hjepa import create_hjepa
 from src.data.datasets import get_dataset
+from src.models.hjepa import create_hjepa
 
 
 class LinearClassifier(nn.Module):
@@ -39,18 +40,18 @@ def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple[nn.Modul
     print(f"Loading checkpoint: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
-    config = checkpoint.get('config', {})
-    model_state = checkpoint.get('model_state_dict', checkpoint.get('target_encoder', {}))
+    config = checkpoint.get("config", {})
+    model_state = checkpoint.get("model_state_dict", checkpoint.get("target_encoder", {}))
 
     # Create full H-JEPA model
     model = create_hjepa(
-        encoder_type=config.get('model', {}).get('encoder_type', 'vit_base_patch16_224'),
-        img_size=config.get('data', {}).get('image_size', 224),
-        num_hierarchies=config.get('model', {}).get('num_hierarchies', 3),
-        predictor_depth=config.get('model', {}).get('predictor', {}).get('depth', 6),
-        predictor_heads=config.get('model', {}).get('predictor', {}).get('num_heads', 6),
-        use_rope=config.get('model', {}).get('use_rope', True),
-        use_flash_attention=config.get('model', {}).get('use_flash_attention', True),
+        encoder_type=config.get("model", {}).get("encoder_type", "vit_base_patch16_224"),
+        img_size=config.get("data", {}).get("image_size", 224),
+        num_hierarchies=config.get("model", {}).get("num_hierarchies", 3),
+        predictor_depth=config.get("model", {}).get("predictor", {}).get("depth", 6),
+        predictor_heads=config.get("model", {}).get("predictor", {}).get("num_heads", 6),
+        use_rope=config.get("model", {}).get("use_rope", True),
+        use_flash_attention=config.get("model", {}).get("use_flash_attention", True),
     )
 
     # Load weights
@@ -71,10 +72,7 @@ def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple[nn.Modul
 
 
 def extract_features(
-    encoder: nn.Module,
-    dataloader: DataLoader,
-    device: str,
-    hierarchy_level: int = -1
+    encoder: nn.Module, dataloader: DataLoader, device: str, hierarchy_level: int = -1
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Extract features from the encoder"""
     all_features = []
@@ -135,7 +133,7 @@ def train_linear_classifier(
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     best_acc = 0.0
-    results = {'train_acc': [], 'val_acc': [], 'train_loss': [], 'val_loss': []}
+    results = {"train_acc": [], "val_acc": [], "train_loss": [], "val_loss": []}
 
     print(f"\nTraining linear classifier...")
     print(f"  Input dim: {input_dim}")
@@ -193,21 +191,23 @@ def train_linear_classifier(
             best_acc = val_acc
 
         # Store results
-        results['train_acc'].append(train_acc)
-        results['val_acc'].append(val_acc)
-        results['train_loss'].append(train_loss)
-        results['val_loss'].append(val_loss)
+        results["train_acc"].append(train_acc)
+        results["val_acc"].append(val_acc)
+        results["train_loss"].append(train_loss)
+        results["val_loss"].append(val_loss)
 
         # Print progress
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"Epoch [{epoch+1}/{epochs}] "
-                  f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% | "
-                  f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%")
+            print(
+                f"Epoch [{epoch+1}/{epochs}] "
+                f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% | "
+                f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}%"
+            )
 
         scheduler.step()
 
-    results['best_val_acc'] = best_acc
-    results['final_val_acc'] = val_acc
+    results["best_val_acc"] = best_acc
+    results["final_val_acc"] = val_acc
 
     print(f"\n✓ Training complete!")
     print(f"  Best validation accuracy: {best_acc:.2f}%")
@@ -218,15 +218,25 @@ def train_linear_classifier(
 
 def main():
     parser = argparse.ArgumentParser(description="Linear probing evaluation for H-JEPA")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to pretrained checkpoint")
-    parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "cifar100", "stl10"])
+    parser.add_argument(
+        "--checkpoint", type=str, required=True, help="Path to pretrained checkpoint"
+    )
+    parser.add_argument(
+        "--dataset", type=str, default="cifar10", choices=["cifar10", "cifar100", "stl10"]
+    )
     parser.add_argument("--data-path", type=str, default="./data", help="Path to dataset")
     parser.add_argument("--device", type=str, default="mps", choices=["mps", "cuda", "cpu"])
-    parser.add_argument("--hierarchy-level", type=int, default=-1, help="Which hierarchy to use (-1 = highest)")
-    parser.add_argument("--epochs", type=int, default=100, help="Training epochs for linear classifier")
+    parser.add_argument(
+        "--hierarchy-level", type=int, default=-1, help="Which hierarchy to use (-1 = highest)"
+    )
+    parser.add_argument(
+        "--epochs", type=int, default=100, help="Training epochs for linear classifier"
+    )
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--batch-size", type=int, default=256, help="Batch size")
-    parser.add_argument("--output-dir", type=str, default="results/linear_probe", help="Output directory")
+    parser.add_argument(
+        "--output-dir", type=str, default="results/linear_probe", help="Output directory"
+    )
 
     args = parser.parse_args()
 
@@ -253,11 +263,13 @@ def main():
     print(f"\nLoading {args.dataset} dataset...")
 
     # Standard normalization for evaluation
-    transform = transforms.Compose([
-        transforms.Resize(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.Resize(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     train_dataset = get_dataset(args.dataset, root=args.data_path, train=True, transform=transform)
     val_dataset = get_dataset(args.dataset, root=args.data_path, train=False, transform=transform)
@@ -266,21 +278,30 @@ def main():
     print(f"✓ Val samples: {len(val_dataset)}")
 
     # Create dataloaders for feature extraction
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    train_loader = DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4
+    )
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
     # Extract features
-    train_features, train_labels = extract_features(encoder, train_loader, args.device, args.hierarchy_level)
-    val_features, val_labels = extract_features(encoder, val_loader, args.device, args.hierarchy_level)
+    train_features, train_labels = extract_features(
+        encoder, train_loader, args.device, args.hierarchy_level
+    )
+    val_features, val_labels = extract_features(
+        encoder, val_loader, args.device, args.hierarchy_level
+    )
 
     # Train linear classifier
     results = train_linear_classifier(
-        train_features, train_labels,
-        val_features, val_labels,
-        num_classes, args.device,
+        train_features,
+        train_labels,
+        val_features,
+        val_labels,
+        num_classes,
+        args.device,
         epochs=args.epochs,
         lr=args.lr,
-        batch_size=args.batch_size
+        batch_size=args.batch_size,
     )
 
     # Save results
@@ -288,17 +309,17 @@ def main():
     results_file = output_dir / f"{checkpoint_name}_{args.dataset}_results.json"
 
     results_summary = {
-        'checkpoint': str(args.checkpoint),
-        'dataset': args.dataset,
-        'hierarchy_level': args.hierarchy_level,
-        'feature_dim': train_features.shape[1],
-        'num_classes': num_classes,
-        'best_val_acc': results['best_val_acc'],
-        'final_val_acc': results['final_val_acc'],
-        'config': config,
+        "checkpoint": str(args.checkpoint),
+        "dataset": args.dataset,
+        "hierarchy_level": args.hierarchy_level,
+        "feature_dim": train_features.shape[1],
+        "num_classes": num_classes,
+        "best_val_acc": results["best_val_acc"],
+        "final_val_acc": results["final_val_acc"],
+        "config": config,
     }
 
-    with open(results_file, 'w') as f:
+    with open(results_file, "w") as f:
         json.dump(results_summary, f, indent=2)
 
     print(f"\n✓ Results saved to {results_file}")

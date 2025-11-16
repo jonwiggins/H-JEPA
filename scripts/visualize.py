@@ -36,35 +36,35 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import torch
-import yaml
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
+import torch
 import torchvision.transforms as transforms
+import yaml
+from PIL import Image
 
 from src.models.hjepa import create_hjepa_from_config
 from src.visualization import (
-    visualize_attention_maps,
-    visualize_multihead_attention,
-    visualize_attention_rollout,
-    visualize_hierarchical_attention,
-    visualize_masking_strategy,
-    visualize_masked_image,
-    visualize_multi_block_masking,
     compare_masking_strategies,
-    plot_masking_statistics,
-    visualize_predictions,
-    visualize_hierarchical_predictions,
-    visualize_feature_space,
-    visualize_nearest_neighbors,
-    visualize_embedding_distribution,
-    plot_training_curves,
-    plot_hierarchical_losses,
-    visualize_gradient_flow,
+    load_training_logs,
     plot_collapse_metrics,
     plot_ema_momentum,
-    load_training_logs,
+    plot_hierarchical_losses,
+    plot_masking_statistics,
+    plot_training_curves,
+    visualize_attention_maps,
+    visualize_attention_rollout,
+    visualize_embedding_distribution,
+    visualize_feature_space,
+    visualize_gradient_flow,
+    visualize_hierarchical_attention,
+    visualize_hierarchical_predictions,
+    visualize_masked_image,
+    visualize_masking_strategy,
+    visualize_multi_block_masking,
+    visualize_multihead_attention,
+    visualize_nearest_neighbors,
+    visualize_predictions,
 )
 
 
@@ -73,33 +73,49 @@ def parse_args():
 
     # Model and data
     parser.add_argument("--checkpoint", type=str, help="Path to model checkpoint")
-    parser.add_argument("--config", type=str, default="configs/default.yaml", help="Path to config file")
+    parser.add_argument(
+        "--config", type=str, default="configs/default.yaml", help="Path to config file"
+    )
     parser.add_argument("--image", type=str, help="Path to input image")
 
     # Visualization options
     parser.add_argument("--visualize-all", action="store_true", help="Generate all visualizations")
     parser.add_argument("--visualize-masks", action="store_true", help="Visualize masking strategy")
-    parser.add_argument("--visualize-predictions", action="store_true", help="Visualize predictions")
-    parser.add_argument("--visualize-attention", action="store_true", help="Visualize attention maps")
+    parser.add_argument(
+        "--visualize-predictions", action="store_true", help="Visualize predictions"
+    )
+    parser.add_argument(
+        "--visualize-attention", action="store_true", help="Visualize attention maps"
+    )
     parser.add_argument("--visualize-training", action="store_true", help="Visualize training logs")
     parser.add_argument("--visualize-features", action="store_true", help="Visualize feature space")
 
     # Additional options
-    parser.add_argument("--output-dir", type=str, default="results/visualizations",
-                       help="Directory to save visualizations")
-    parser.add_argument("--num-samples", type=int, default=6,
-                       help="Number of samples for batch visualizations")
-    parser.add_argument("--log-dir", type=str, default="results/logs",
-                       help="Directory containing training logs")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu",
-                       help="Device to use")
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="results/visualizations",
+        help="Directory to save visualizations",
+    )
+    parser.add_argument(
+        "--num-samples", type=int, default=6, help="Number of samples for batch visualizations"
+    )
+    parser.add_argument(
+        "--log-dir", type=str, default="results/logs", help="Directory containing training logs"
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda" if torch.cuda.is_available() else "cpu",
+        help="Device to use",
+    )
 
     return parser.parse_args()
 
 
 def load_config(config_path):
     """Load configuration from YAML file."""
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     return config
 
@@ -115,8 +131,8 @@ def load_model(checkpoint_path, config, device):
     # Load checkpoint
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
-    if 'model_state_dict' in checkpoint:
-        model.load_state_dict(checkpoint['model_state_dict'])
+    if "model_state_dict" in checkpoint:
+        model.load_state_dict(checkpoint["model_state_dict"])
     else:
         model.load_state_dict(checkpoint)
 
@@ -129,15 +145,17 @@ def load_model(checkpoint_path, config, device):
 def load_image(image_path, img_size=224):
     """Load and preprocess image."""
     # Load image
-    image_pil = Image.open(image_path).convert('RGB')
+    image_pil = Image.open(image_path).convert("RGB")
     original_image = np.array(image_pil)
 
     # Transform for model
-    transform = transforms.Compose([
-        transforms.Resize((img_size, img_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.Resize((img_size, img_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     image_tensor = transform(image_pil).unsqueeze(0)  # [1, C, H, W]
 
@@ -158,9 +176,9 @@ def generate_random_mask(num_patches, mask_ratio=0.5):
 
 def visualize_all_attention(model, image, original_image, output_dir, device):
     """Generate all attention visualizations."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Generating Attention Visualizations")
-    print("="*80)
+    print("=" * 80)
 
     image = image.to(device)
 
@@ -176,24 +194,27 @@ def visualize_all_attention(model, image, original_image, output_dir, device):
     # 1. Multi-head attention for last layer
     print("Visualizing multi-head attention...")
     fig = visualize_multihead_attention(
-        model, image, layer_idx=-1,
-        save_path=os.path.join(output_dir, "attention_multihead.png")
+        model, image, layer_idx=-1, save_path=os.path.join(output_dir, "attention_multihead.png")
     )
     plt.close(fig)
 
     # 2. Attention rollout
     print("Visualizing attention rollout...")
     fig = visualize_attention_rollout(
-        model, image, original_image=original_image,
-        save_path=os.path.join(output_dir, "attention_rollout.png")
+        model,
+        image,
+        original_image=original_image,
+        save_path=os.path.join(output_dir, "attention_rollout.png"),
     )
     plt.close(fig)
 
     # 3. Hierarchical attention
     print("Visualizing hierarchical attention...")
     fig = visualize_hierarchical_attention(
-        model, image, original_image=original_image,
-        save_path=os.path.join(output_dir, "attention_hierarchical.png")
+        model,
+        image,
+        original_image=original_image,
+        save_path=os.path.join(output_dir, "attention_hierarchical.png"),
     )
     plt.close(fig)
 
@@ -202,22 +223,21 @@ def visualize_all_attention(model, image, original_image, output_dir, device):
 
 def visualize_all_masking(output_dir, num_samples=6):
     """Generate all masking visualizations."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Generating Masking Visualizations")
-    print("="*80)
+    print("=" * 80)
 
     # 1. Multi-block masking examples
     print("Generating multi-block masking examples...")
     fig = visualize_multi_block_masking(
-        num_samples=num_samples,
-        save_path=os.path.join(output_dir, "masking_multi_block.png")
+        num_samples=num_samples, save_path=os.path.join(output_dir, "masking_multi_block.png")
     )
     plt.close(fig)
 
     # 2. Generate masks for comparison
     print("Comparing masking strategies...")
     grid_size = 14
-    num_patches = grid_size ** 2
+    num_patches = grid_size**2
 
     masks = []
     labels = []
@@ -226,7 +246,7 @@ def visualize_all_masking(output_dir, num_samples=6):
     for ratio in [0.3, 0.5, 0.7]:
         mask = generate_random_mask(num_patches, mask_ratio=ratio)
         masks.append(mask[0])
-        labels.append(f'Random {ratio:.0%}')
+        labels.append(f"Random {ratio:.0%}")
 
     # Block masking (simple blocks)
     for num_blocks in [2, 4, 6]:
@@ -243,11 +263,10 @@ def visualize_all_masking(output_dir, num_samples=6):
                                 idx = (start_i + ii) * grid_size + (start_j + jj)
                                 mask[idx] = 1
         masks.append(mask)
-        labels.append(f'{num_blocks}x{num_blocks} Blocks')
+        labels.append(f"{num_blocks}x{num_blocks} Blocks")
 
     fig = compare_masking_strategies(
-        masks, labels,
-        save_path=os.path.join(output_dir, "masking_comparison.png")
+        masks, labels, save_path=os.path.join(output_dir, "masking_comparison.png")
     )
     plt.close(fig)
 
@@ -255,8 +274,7 @@ def visualize_all_masking(output_dir, num_samples=6):
     print("Generating masking statistics...")
     many_masks = [generate_random_mask(num_patches, mask_ratio=0.5)[0] for _ in range(100)]
     fig = plot_masking_statistics(
-        many_masks,
-        save_path=os.path.join(output_dir, "masking_statistics.png")
+        many_masks, save_path=os.path.join(output_dir, "masking_statistics.png")
     )
     plt.close(fig)
 
@@ -265,9 +283,9 @@ def visualize_all_masking(output_dir, num_samples=6):
 
 def visualize_all_predictions(model, image, original_image, output_dir, device):
     """Generate all prediction visualizations."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Generating Prediction Visualizations")
-    print("="*80)
+    print("=" * 80)
 
     image = image.to(device)
     num_patches = model.get_num_patches()
@@ -278,16 +296,18 @@ def visualize_all_predictions(model, image, original_image, output_dir, device):
     # 1. Basic predictions
     print("Visualizing predictions...")
     fig = visualize_predictions(
-        model, image, mask, original_image=original_image,
-        save_path=os.path.join(output_dir, "predictions_basic.png")
+        model,
+        image,
+        mask,
+        original_image=original_image,
+        save_path=os.path.join(output_dir, "predictions_basic.png"),
     )
     plt.close(fig)
 
     # 2. Hierarchical predictions
     print("Visualizing hierarchical predictions...")
     fig = visualize_hierarchical_predictions(
-        model, image, mask,
-        save_path=os.path.join(output_dir, "predictions_hierarchical.png")
+        model, image, mask, save_path=os.path.join(output_dir, "predictions_hierarchical.png")
     )
     plt.close(fig)
 
@@ -298,16 +318,14 @@ def visualize_all_predictions(model, image, original_image, output_dir, device):
         features_flat = features.view(-1, features.shape[-1])
 
     fig = visualize_feature_space(
-        features_flat, method='tsne',
-        save_path=os.path.join(output_dir, "feature_space_tsne.png")
+        features_flat, method="tsne", save_path=os.path.join(output_dir, "feature_space_tsne.png")
     )
     plt.close(fig)
 
     # 4. Embedding distribution
     print("Visualizing embedding distribution...")
     fig = visualize_embedding_distribution(
-        features_flat,
-        save_path=os.path.join(output_dir, "embedding_distribution.png")
+        features_flat, save_path=os.path.join(output_dir, "embedding_distribution.png")
     )
     plt.close(fig)
 
@@ -316,9 +334,9 @@ def visualize_all_predictions(model, image, original_image, output_dir, device):
 
 def visualize_all_training(log_dir, output_dir):
     """Generate all training visualizations."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Generating Training Visualizations")
-    print("="*80)
+    print("=" * 80)
 
     # Load training logs
     print(f"Loading training logs from {log_dir}...")
@@ -329,20 +347,18 @@ def visualize_all_training(log_dir, output_dir):
         return
 
     # 1. Training curves
-    if any('loss' in k.lower() for k in metrics.keys()):
+    if any("loss" in k.lower() for k in metrics.keys()):
         print("Plotting training curves...")
         fig = plot_training_curves(
-            metrics,
-            save_path=os.path.join(output_dir, "training_curves.png")
+            metrics, save_path=os.path.join(output_dir, "training_curves.png")
         )
         plt.close(fig)
 
     # 2. EMA momentum schedule (if available)
-    if 'ema_momentum' in metrics:
+    if "ema_momentum" in metrics:
         print("Plotting EMA momentum schedule...")
         fig = plot_ema_momentum(
-            metrics['ema_momentum'],
-            save_path=os.path.join(output_dir, "ema_momentum.png")
+            metrics["ema_momentum"], save_path=os.path.join(output_dir, "ema_momentum.png")
         )
         plt.close(fig)
 
@@ -400,7 +416,7 @@ def main():
             return
 
         try:
-            img_size = config.get('data', {}).get('image_size', 224)
+            img_size = config.get("data", {}).get("image_size", 224)
             image, original_image = load_image(args.image, img_size=img_size)
             print(f"Loaded image from {args.image}")
         except Exception as e:
@@ -414,9 +430,9 @@ def main():
     if visualize_predictions and model is not None and image is not None:
         visualize_all_predictions(model, image, original_image, args.output_dir, args.device)
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Visualization Complete!")
-    print("="*80)
+    print("=" * 80)
     print(f"\nAll visualizations saved to: {args.output_dir}")
     print("\nGenerated files:")
     for file in sorted(Path(args.output_dir).glob("*.png")):

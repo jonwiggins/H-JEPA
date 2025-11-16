@@ -9,7 +9,7 @@ Unlike traditional contrastive learning, JEPA does not require heavy augmentatio
 import os
 import warnings
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import torch
@@ -85,8 +85,8 @@ class JEPATransform:
 
         self.transform = transforms.Compose(transform_list)
 
-    def __call__(self, img):
-        return self.transform(img)
+    def __call__(self, img: Union[Image.Image, torch.Tensor]) -> torch.Tensor:
+        return cast(torch.Tensor, self.transform(img))
 
 
 class JEPAEvalTransform:
@@ -119,11 +119,11 @@ class JEPAEvalTransform:
             ]
         )
 
-    def __call__(self, img):
-        return self.transform(img)
+    def __call__(self, img: Union[Image.Image, torch.Tensor]) -> torch.Tensor:
+        return cast(torch.Tensor, self.transform(img))
 
 
-class ImageNetDataset(Dataset):
+class ImageNetDataset(Dataset[Tuple[torch.Tensor, int]]):
     """
     ImageNet dataset with JEPA transforms.
 
@@ -149,8 +149,8 @@ class ImageNetDataset(Dataset):
         split: str = "train",
         image_size: int = 224,
         color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable] = None,
-    ):
+        transform: Optional[Callable[[Any], Any]] = None,
+    ) -> None:
         """
         Args:
             data_path: Path to ImageNet directory
@@ -192,19 +192,19 @@ class ImageNetDataset(Dataset):
             f"{len(self.dataset.classes)} classes"
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self):
-        return self.dataset.classes
+    def classes(self) -> List[str]:
+        return cast(List[str], self.dataset.classes)
 
     @property
-    def class_to_idx(self):
-        return self.dataset.class_to_idx
+    def class_to_idx(self) -> dict[str, int]:
+        return cast(dict[str, int], self.dataset.class_to_idx)
 
 
 class ImageNet100Dataset(ImageNetDataset):
@@ -327,8 +327,8 @@ class ImageNet100Dataset(ImageNetDataset):
         split: str = "train",
         image_size: int = 224,
         color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable] = None,
-    ):
+        transform: Optional[Callable[[Any], Any]] = None,
+    ) -> None:
         """
         Args:
             data_path: Path to ImageNet directory
@@ -354,10 +354,10 @@ class ImageNet100Dataset(ImageNetDataset):
             f"{len(self.IMAGENET100_CLASSES)} classes"
         )
 
-    def _filter_classes(self):
+    def _filter_classes(self) -> None:
         """Filter dataset to only include ImageNet-100 classes."""
         # Get indices of samples that belong to ImageNet-100 classes
-        valid_indices = []
+        valid_indices: List[int] = []
         for idx in range(len(self.dataset)):
             path, _ = self.dataset.samples[idx]
             class_name = Path(path).parent.name
@@ -368,15 +368,15 @@ class ImageNet100Dataset(ImageNetDataset):
         self._valid_indices = valid_indices
         self._original_dataset = self.dataset
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._valid_indices)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
         original_idx = self._valid_indices[idx]
-        return self._original_dataset[original_idx]
+        return cast(Tuple[torch.Tensor, int], self._original_dataset[original_idx])
 
 
-class CIFAR10Dataset(Dataset):
+class CIFAR10Dataset(Dataset[Tuple[torch.Tensor, int]]):
     """
     CIFAR-10 dataset with JEPA transforms.
 
@@ -390,9 +390,9 @@ class CIFAR10Dataset(Dataset):
         split: str = "train",
         image_size: int = 224,
         color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable] = None,
+        transform: Optional[Callable[[Any], Any]] = None,
         download: bool = True,
-    ):
+    ) -> None:
         """
         Args:
             data_path: Path to data directory
@@ -429,18 +429,18 @@ class CIFAR10Dataset(Dataset):
 
         print(f"Loaded CIFAR-10 {split} split: {len(self.dataset)} images")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self):
-        return self.dataset.classes
+    def classes(self) -> List[str]:
+        return cast(List[str], self.dataset.classes)
 
 
-class CIFAR100Dataset(Dataset):
+class CIFAR100Dataset(Dataset[Tuple[torch.Tensor, int]]):
     """
     CIFAR-100 dataset with JEPA transforms.
 
@@ -454,9 +454,9 @@ class CIFAR100Dataset(Dataset):
         split: str = "train",
         image_size: int = 224,
         color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable] = None,
+        transform: Optional[Callable[[Any], Any]] = None,
         download: bool = True,
-    ):
+    ) -> None:
         """
         Args:
             data_path: Path to data directory
@@ -493,18 +493,18 @@ class CIFAR100Dataset(Dataset):
 
         print(f"Loaded CIFAR-100 {split} split: {len(self.dataset)} images")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self):
-        return self.dataset.classes
+    def classes(self) -> List[str]:
+        return cast(List[str], self.dataset.classes)
 
 
-class STL10Dataset(Dataset):
+class STL10Dataset(Dataset[Tuple[torch.Tensor, int]]):
     """
     STL-10 dataset with JEPA transforms.
 
@@ -518,10 +518,10 @@ class STL10Dataset(Dataset):
         split: str = "train",
         image_size: int = 224,
         color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable] = None,
+        transform: Optional[Callable[[Any], Any]] = None,
         download: bool = True,
         use_unlabeled: bool = True,
-    ):
+    ) -> None:
         """
         Args:
             data_path: Path to data directory
@@ -567,15 +567,15 @@ class STL10Dataset(Dataset):
 
         print(f"Loaded STL-10 {split} split: {len(self.dataset)} images")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self):
-        return self.dataset.classes if hasattr(self.dataset, "classes") else None
+    def classes(self) -> Optional[List[str]]:
+        return cast(List[str], self.dataset.classes) if hasattr(self.dataset, "classes") else None
 
 
 def build_dataset(
@@ -585,8 +585,8 @@ def build_dataset(
     image_size: int = 224,
     color_jitter: Optional[float] = 0.4,
     download: bool = True,
-    **kwargs,
-) -> Dataset:
+    **kwargs: Any,
+) -> Dataset[Tuple[torch.Tensor, int]]:
     """
     Factory function to build datasets.
 
@@ -659,14 +659,14 @@ def build_dataset(
 
 
 def build_dataloader(
-    dataset: Dataset,
+    dataset: Dataset[Tuple[torch.Tensor, int]],
     batch_size: int,
     num_workers: int = 4,
     pin_memory: bool = True,
     shuffle: bool = True,
     drop_last: bool = True,
-    **kwargs,
-) -> DataLoader:
+    **kwargs: Any,
+) -> DataLoader[Tuple[torch.Tensor, int]]:
     """
     Build a DataLoader from a dataset.
 
@@ -696,13 +696,13 @@ def build_dataloader(
 if __name__ == "__main__":
     # Quick test of datasets
     print("Testing CIFAR-10...")
-    dataset = build_dataset("cifar10", "/tmp/data", split="train", download=True)
-    print(f"Dataset size: {len(dataset)}")
-    img, label = dataset[0]
+    cifar10_dataset = build_dataset("cifar10", "/tmp/data", split="train", download=True)
+    print(f"Dataset size: {len(cifar10_dataset)}")  # type: ignore[arg-type]
+    img, label = cifar10_dataset[0]
     print(f"Image shape: {img.shape}, Label: {label}")
 
     print("\nTesting CIFAR-100...")
-    dataset = build_dataset("cifar100", "/tmp/data", split="train", download=True)
-    print(f"Dataset size: {len(dataset)}")
+    cifar100_dataset = build_dataset("cifar100", "/tmp/data", split="train", download=True)
+    print(f"Dataset size: {len(cifar100_dataset)}")  # type: ignore[arg-type]
 
     print("\nDataset tests completed!")

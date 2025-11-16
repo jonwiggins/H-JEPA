@@ -5,10 +5,12 @@ Provides functions to visualize predictions vs ground truth,
 feature space embeddings, nearest neighbors, and reconstruction quality.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+import matplotlib.figure as mfigure
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -34,10 +36,10 @@ def visualize_predictions(
     model: nn.Module,
     image: torch.Tensor,
     mask: torch.Tensor,
-    original_image: Optional[np.ndarray] = None,
+    original_image: Optional[npt.NDArray[np.float64]] = None,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize model predictions for masked regions.
 
@@ -154,7 +156,7 @@ def visualize_hierarchical_predictions(
     mask: torch.Tensor,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (16, 10),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize predictions at different hierarchical levels.
 
@@ -231,12 +233,12 @@ def visualize_hierarchical_predictions(
 
 def visualize_feature_space(
     features: torch.Tensor,
-    labels: Optional[np.ndarray] = None,
+    labels: Optional[npt.NDArray[np.int64]] = None,
     method: str = "tsne",
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (12, 10),
-    **kwargs,
-) -> plt.Figure:
+    **kwargs: Any,
+) -> mfigure.Figure:
     """
     Visualize high-dimensional features using dimensionality reduction.
 
@@ -258,10 +260,7 @@ def visualize_feature_space(
         )
 
     # Convert to numpy
-    if isinstance(features, torch.Tensor):
-        features_np = features.cpu().numpy()
-    else:
-        features_np = features
+    features_np: npt.NDArray[np.float64] = features.cpu().numpy()
 
     # Apply dimensionality reduction
     if method.lower() == "tsne":
@@ -337,7 +336,7 @@ def visualize_nearest_neighbors(
     level: int = 0,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 4),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize nearest neighbors in embedding space.
 
@@ -358,8 +357,8 @@ def visualize_nearest_neighbors(
 
     with torch.no_grad():
         # Extract features
-        query_features = model.extract_features(query_image, level=level)
-        database_features = model.extract_features(database_images, level=level)
+        query_features: torch.Tensor = model.extract_features(query_image, level=level)  # type: ignore[operator]
+        database_features: torch.Tensor = model.extract_features(database_images, level=level)  # type: ignore[operator]
 
         # Pool features (mean pooling)
         query_feat = query_features.mean(dim=1)  # [1, embed_dim]
@@ -395,10 +394,10 @@ def visualize_nearest_neighbors(
 
     # Plot nearest neighbors
     for i in range(k):
-        idx = top_k_indices[i].item()
+        idx_val: int = int(top_k_indices[i].item())
         sim = top_k_values[i].item()
 
-        img = database_images[idx].cpu().permute(1, 2, 0).numpy()
+        img = database_images[idx_val].cpu().permute(1, 2, 0).numpy()
         if img.max() > 1.0:
             img = img / 255.0
 
@@ -406,7 +405,7 @@ def visualize_nearest_neighbors(
 
         title = f"#{i + 1}: sim={sim:.3f}"
         if database_labels is not None:
-            title += f"\n{database_labels[idx]}"
+            title += f"\n{database_labels[idx_val]}"
 
         axes[i + 1].set_title(title, fontsize=9)
         axes[i + 1].axis("off")
@@ -424,10 +423,10 @@ def visualize_reconstruction(
     predictions: torch.Tensor,
     targets: torch.Tensor,
     mask: torch.Tensor,
-    original_image: Optional[np.ndarray] = None,
+    original_image: Optional[npt.NDArray[np.float64]] = None,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 4),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize reconstruction quality (if using a decoder).
 
@@ -443,20 +442,9 @@ def visualize_reconstruction(
         Matplotlib figure
     """
     # Convert to numpy
-    if isinstance(predictions, torch.Tensor):
-        pred_np = predictions[0].cpu().numpy()
-    else:
-        pred_np = predictions[0]
-
-    if isinstance(targets, torch.Tensor):
-        target_np = targets[0].cpu().numpy()
-    else:
-        target_np = targets[0]
-
-    if isinstance(mask, torch.Tensor):
-        mask_np = mask[0].cpu().numpy()
-    else:
-        mask_np = mask[0]
+    pred_np: npt.NDArray[np.float64] = predictions[0].cpu().numpy()
+    target_np: npt.NDArray[np.float64] = targets[0].cpu().numpy()
+    mask_np: npt.NDArray[np.float64] = mask[0].cpu().numpy()
 
     # Compute reconstruction error
     if len(pred_np.shape) == 2:  # Feature space [N, D]
@@ -520,7 +508,7 @@ def visualize_embedding_distribution(
     features: torch.Tensor,
     save_path: Optional[str] = None,
     figsize: Tuple[int, int] = (14, 5),
-) -> plt.Figure:
+) -> mfigure.Figure:
     """
     Visualize the distribution of embedding features.
 
@@ -532,10 +520,7 @@ def visualize_embedding_distribution(
     Returns:
         Matplotlib figure
     """
-    if isinstance(features, torch.Tensor):
-        features_np = features.cpu().numpy()
-    else:
-        features_np = features
+    features_np: npt.NDArray[np.float64] = features.cpu().numpy()
 
     fig, axes = plt.subplots(1, 3, figsize=figsize)
 

@@ -4,6 +4,7 @@ Quick test script to verify H-JEPA model implementation.
 
 import torch
 import yaml
+
 from src.models import HJEPA, create_hjepa, create_hjepa_from_config
 
 
@@ -50,7 +51,7 @@ def test_basic_model():
     print(f"\n✓ Forward pass successful")
     print(f"  - Num hierarchy levels: {len(outputs['predictions'])}")
 
-    for i, (pred, target) in enumerate(zip(outputs['predictions'], outputs['targets'])):
+    for i, (pred, target) in enumerate(zip(outputs["predictions"], outputs["targets"])):
         print(f"  - Level {i}: pred shape {pred.shape}, target shape {target.shape}")
 
     # Test feature extraction
@@ -73,12 +74,12 @@ def test_config_loading():
     print("\n\nTesting config-based model creation...")
 
     # Load config
-    with open('configs/default.yaml', 'r') as f:
+    with open("configs/default.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     # Modify for testing (use smaller model)
-    config['model']['encoder_type'] = 'vit_small_patch16_224'
-    config['model']['embed_dim'] = 384
+    config["model"]["encoder_type"] = "vit_small_patch16_224"
+    config["model"]["embed_dim"] = 384
 
     # Create model from config
     model = create_hjepa_from_config(config)
@@ -139,4 +140,5 @@ if __name__ == "__main__":
         print(f"\n\n✗ Test failed with error:")
         print(f"  {str(e)}")
         import traceback
+
         traceback.print_exc()

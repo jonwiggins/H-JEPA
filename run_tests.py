@@ -40,7 +40,7 @@ def run_test_class(test_class, verbose=True):
         return 0, 1
 
     # Find all test methods
-    test_methods = [m for m in dir(instance) if m.startswith('test_')]
+    test_methods = [m for m in dir(instance) if m.startswith("test_")]
 
     passed = 0
     failed = 0
@@ -50,39 +50,43 @@ def run_test_class(test_class, verbose=True):
 
         # Get method parameters
         import inspect
+
         sig = inspect.signature(method)
         params = sig.parameters
 
         # Prepare kwargs
         kwargs = {}
-        if 'device' in params:
+        if "device" in params:
             import torch
+
             if torch.cuda.is_available():
-                kwargs['device'] = torch.device('cuda')
-            elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-                kwargs['device'] = torch.device('mps')
+                kwargs["device"] = torch.device("cuda")
+            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                kwargs["device"] = torch.device("mps")
             else:
-                kwargs['device'] = torch.device('cpu')
+                kwargs["device"] = torch.device("cpu")
 
-        if 'sample_image' in params:
+        if "sample_image" in params:
             from PIL import Image
-            kwargs['sample_image'] = Image.new('RGB', (224, 224), color=(128, 128, 128))
 
-        if 'sample_batch' in params:
+            kwargs["sample_image"] = Image.new("RGB", (224, 224), color=(128, 128, 128))
+
+        if "sample_batch" in params:
             import torch
-            device = kwargs.get('device', torch.device('cpu'))
+
+            device = kwargs.get("device", torch.device("cpu"))
             images = torch.randn(4, 3, 224, 224, device=device)
             targets = torch.randint(0, 1000, (4,), device=device)
-            kwargs['sample_batch'] = (images, targets)
+            kwargs["sample_batch"] = (images, targets)
 
-        if 'small_hjepa_config' in params:
-            kwargs['small_hjepa_config'] = {
-                'encoder_type': 'vit_tiny_patch16_224',
-                'img_size': 224,
-                'embed_dim': 192,
-                'predictor_depth': 2,
-                'predictor_num_heads': 3,
-                'num_hierarchies': 2,
+        if "small_hjepa_config" in params:
+            kwargs["small_hjepa_config"] = {
+                "encoder_type": "vit_tiny_patch16_224",
+                "img_size": 224,
+                "embed_dim": 192,
+                "predictor_depth": 2,
+                "predictor_num_heads": 3,
+                "num_hierarchies": 2,
             }
 
         # Run test
@@ -109,9 +113,9 @@ def main():
     """Main test runner."""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Run H-JEPA optimization tests')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--test', '-t', type=str, help='Run specific test class')
+    parser = argparse.ArgumentParser(description="Run H-JEPA optimization tests")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--test", "-t", type=str, help="Run specific test class")
     args = parser.parse_args()
 
     # Get all test classes
@@ -141,7 +145,7 @@ def main():
     total_failed = 0
 
     print("H-JEPA Phase 1-3 Optimization Tests")
-    print("="*70)
+    print("=" * 70)
 
     for test_class in test_classes:
         try:
@@ -155,9 +159,9 @@ def main():
             total_failed += 1
 
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("FINAL RESULTS")
-    print("="*70)
+    print("=" * 70)
     print(f"Total Passed: {total_passed}")
     print(f"Total Failed: {total_failed}")
 
@@ -169,5 +173,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
