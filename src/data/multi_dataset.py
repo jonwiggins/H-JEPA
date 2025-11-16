@@ -91,7 +91,9 @@ class WeightedMultiDataset(Dataset):
         self.effective_size = self._compute_effective_size()
 
         print(f"Created WeightedMultiDataset:")
-        for i, (name, size, weight) in enumerate(zip(self.dataset_names, self.dataset_sizes, self.weights)):
+        for i, (name, size, weight) in enumerate(
+            zip(self.dataset_names, self.dataset_sizes, self.weights)
+        ):
             print(f"  {name}: {size:,} images ({weight*100:.1f}% sampling probability)")
         print(f"Total images: {self.total_size:,}")
         print(f"Effective size (one epoch): {self.effective_size:,}")
@@ -138,9 +140,9 @@ class WeightedMultiDataset(Dataset):
         stats = {}
         for i, name in enumerate(self.dataset_names):
             stats[name] = {
-                'size': self.dataset_sizes[i],
-                'weight': self.weights[i],
-                'expected_samples_per_epoch': int(self.effective_size * self.weights[i]),
+                "size": self.dataset_sizes[i],
+                "weight": self.weights[i],
+                "expected_samples_per_epoch": int(self.effective_size * self.weights[i]),
             }
         return stats
 
@@ -264,14 +266,14 @@ def build_multi_dataset(
 
     for config in dataset_configs:
         # Get dataset name
-        name = config['name']
+        name = config["name"]
         names.append(name)
 
         # Get dataset-specific path if provided
-        dataset_path = config.get('path', data_path)
+        dataset_path = config.get("path", data_path)
 
         # Get weight
-        weight = config.get('weight', 1.0)
+        weight = config.get("weight", 1.0)
         weights.append(weight)
 
         # Build dataset
@@ -328,15 +330,15 @@ def create_foundation_model_dataset(
     if scale == "mini":
         # Good for M1 Max: ~250K images, ~18 hours training
         configs = [
-            {'name': 'imagenet100', 'weight': 0.6},  # 126K images
-            {'name': 'stl10', 'weight': 0.3},        # 100K images
-            {'name': 'cifar100', 'weight': 0.1},     # 50K images (for diversity)
+            {"name": "imagenet100", "weight": 0.6},  # 126K images
+            {"name": "stl10", "weight": 0.3},  # 100K images
+            {"name": "cifar100", "weight": 0.1},  # 50K images (for diversity)
         ]
     elif scale == "medium":
         # Serious foundation model: ~1.4M images
         configs = [
-            {'name': 'imagenet', 'weight': 0.9},     # 1.28M images
-            {'name': 'stl10', 'weight': 0.1},        # 100K images
+            {"name": "imagenet", "weight": 0.9},  # 1.28M images
+            {"name": "stl10", "weight": 0.1},  # 100K images
         ]
     elif scale == "large":
         raise NotImplementedError(

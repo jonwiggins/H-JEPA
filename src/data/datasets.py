@@ -110,12 +110,14 @@ class JEPAEvalTransform:
             mean: Normalization mean
             std: Normalization std
         """
-        self.transform = transforms.Compose([
-            transforms.Resize(int(image_size * 1.14), interpolation=interpolation),
-            transforms.CenterCrop(image_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize(int(image_size * 1.14), interpolation=interpolation),
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
 
     def __call__(self, img):
         return self.transform(img)
@@ -185,8 +187,10 @@ class ImageNetDataset(Dataset):
         # Use torchvision's ImageFolder
         self.dataset = datasets.ImageFolder(split_dir, transform=self.transform)
 
-        print(f"Loaded ImageNet {split} split: {len(self.dataset)} images, "
-              f"{len(self.dataset.classes)} classes")
+        print(
+            f"Loaded ImageNet {split} split: {len(self.dataset)} images, "
+            f"{len(self.dataset.classes)} classes"
+        )
 
     def __len__(self):
         return len(self.dataset)
@@ -215,26 +219,106 @@ class ImageNet100Dataset(ImageNetDataset):
 
     # Standard ImageNet-100 classes (from iNaturalist benchmark)
     IMAGENET100_CLASSES = [
-        'n01498041', 'n01537544', 'n01580077', 'n01592084', 'n01632777',
-        'n01644373', 'n01665541', 'n01675722', 'n01688243', 'n01729977',
-        'n01775062', 'n01818515', 'n01843383', 'n01883070', 'n01950731',
-        'n02002724', 'n02013706', 'n02092339', 'n02093754', 'n02096585',
-        'n02097298', 'n02098413', 'n02099712', 'n02106662', 'n02110063',
-        'n02110341', 'n02111129', 'n02114548', 'n02116738', 'n02120079',
-        'n02123045', 'n02124075', 'n02125311', 'n02129165', 'n02132136',
-        'n02165456', 'n02190166', 'n02206856', 'n02279972', 'n02317335',
-        'n02326432', 'n02342885', 'n02363005', 'n02391049', 'n02395406',
-        'n02398521', 'n02410509', 'n02415577', 'n02423022', 'n02437616',
-        'n02445715', 'n02454379', 'n02483708', 'n02486410', 'n02504458',
-        'n02509815', 'n02666196', 'n02669723', 'n02699494', 'n02769748',
-        'n02788148', 'n02791270', 'n02793495', 'n02795169', 'n02802426',
-        'n02808440', 'n02814533', 'n02814860', 'n02815834', 'n02823428',
-        'n02837789', 'n02841315', 'n02843684', 'n02883205', 'n02906734',
-        'n02909870', 'n02917067', 'n02927161', 'n02948072', 'n02950826',
-        'n02963159', 'n02977058', 'n02988304', 'n02999410', 'n03014705',
-        'n03026506', 'n03042490', 'n03085013', 'n03089624', 'n03100240',
-        'n03126707', 'n03160309', 'n03179701', 'n03220513', 'n03347037',
-        'n03388549', 'n03476684', 'n03535780', 'n03584254', 'n03627232',
+        "n01498041",
+        "n01537544",
+        "n01580077",
+        "n01592084",
+        "n01632777",
+        "n01644373",
+        "n01665541",
+        "n01675722",
+        "n01688243",
+        "n01729977",
+        "n01775062",
+        "n01818515",
+        "n01843383",
+        "n01883070",
+        "n01950731",
+        "n02002724",
+        "n02013706",
+        "n02092339",
+        "n02093754",
+        "n02096585",
+        "n02097298",
+        "n02098413",
+        "n02099712",
+        "n02106662",
+        "n02110063",
+        "n02110341",
+        "n02111129",
+        "n02114548",
+        "n02116738",
+        "n02120079",
+        "n02123045",
+        "n02124075",
+        "n02125311",
+        "n02129165",
+        "n02132136",
+        "n02165456",
+        "n02190166",
+        "n02206856",
+        "n02279972",
+        "n02317335",
+        "n02326432",
+        "n02342885",
+        "n02363005",
+        "n02391049",
+        "n02395406",
+        "n02398521",
+        "n02410509",
+        "n02415577",
+        "n02423022",
+        "n02437616",
+        "n02445715",
+        "n02454379",
+        "n02483708",
+        "n02486410",
+        "n02504458",
+        "n02509815",
+        "n02666196",
+        "n02669723",
+        "n02699494",
+        "n02769748",
+        "n02788148",
+        "n02791270",
+        "n02793495",
+        "n02795169",
+        "n02802426",
+        "n02808440",
+        "n02814533",
+        "n02814860",
+        "n02815834",
+        "n02823428",
+        "n02837789",
+        "n02841315",
+        "n02843684",
+        "n02883205",
+        "n02906734",
+        "n02909870",
+        "n02917067",
+        "n02927161",
+        "n02948072",
+        "n02950826",
+        "n02963159",
+        "n02977058",
+        "n02988304",
+        "n02999410",
+        "n03014705",
+        "n03026506",
+        "n03042490",
+        "n03085013",
+        "n03089624",
+        "n03100240",
+        "n03126707",
+        "n03160309",
+        "n03179701",
+        "n03220513",
+        "n03347037",
+        "n03388549",
+        "n03476684",
+        "n03535780",
+        "n03584254",
+        "n03627232",
     ]
 
     def __init__(
@@ -265,8 +349,10 @@ class ImageNet100Dataset(ImageNetDataset):
         # Filter to only include ImageNet-100 classes
         self._filter_classes()
 
-        print(f"Filtered to ImageNet-100: {len(self)} images, "
-              f"{len(self.IMAGENET100_CLASSES)} classes")
+        print(
+            f"Filtered to ImageNet-100: {len(self)} images, "
+            f"{len(self.IMAGENET100_CLASSES)} classes"
+        )
 
     def _filter_classes(self):
         """Filter dataset to only include ImageNet-100 classes."""
@@ -333,7 +419,7 @@ class CIFAR10Dataset(Dataset):
             self.transform = JEPAEvalTransform(image_size=image_size)
 
         # Load CIFAR-10
-        train = (split == "train")
+        train = split == "train"
         self.dataset = datasets.CIFAR10(
             root=self.data_path,
             train=train,
@@ -397,7 +483,7 @@ class CIFAR100Dataset(Dataset):
             self.transform = JEPAEvalTransform(image_size=image_size)
 
         # Load CIFAR-100
-        train = (split == "train")
+        train = split == "train"
         self.dataset = datasets.CIFAR100(
             root=self.data_path,
             train=train,
@@ -489,7 +575,7 @@ class STL10Dataset(Dataset):
 
     @property
     def classes(self):
-        return self.dataset.classes if hasattr(self.dataset, 'classes') else None
+        return self.dataset.classes if hasattr(self.dataset, "classes") else None
 
 
 def build_dataset(

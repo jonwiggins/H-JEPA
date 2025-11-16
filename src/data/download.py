@@ -156,11 +156,13 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
 
         elif dataset_name == "stl10":
             # Try loading STL-10
-            train_data = datasets.STL10(root=data_path, split='train', download=False)
-            test_data = datasets.STL10(root=data_path, split='test', download=False)
-            unlabeled_data = datasets.STL10(root=data_path, split='unlabeled', download=False)
-            print(f"✓ STL-10 verified: {len(train_data)} train + {len(test_data)} test + "
-                  f"{len(unlabeled_data)} unlabeled images")
+            train_data = datasets.STL10(root=data_path, split="train", download=False)
+            test_data = datasets.STL10(root=data_path, split="test", download=False)
+            unlabeled_data = datasets.STL10(root=data_path, split="unlabeled", download=False)
+            print(
+                f"✓ STL-10 verified: {len(train_data)} train + {len(test_data)} test + "
+                f"{len(unlabeled_data)} unlabeled images"
+            )
             return True
 
         elif dataset_name in ["imagenet", "imagenet100"]:
@@ -181,12 +183,16 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
                 print(f"✗ ImageNet directories exist but appear empty")
                 return False
 
-            print(f"✓ ImageNet found: {len(train_classes)} train classes, "
-                  f"{len(val_classes)} val classes")
+            print(
+                f"✓ ImageNet found: {len(train_classes)} train classes, "
+                f"{len(val_classes)} val classes"
+            )
 
             if dataset_name == "imagenet100":
                 if len(train_classes) < 100:
-                    print(f"  Note: Found {len(train_classes)} classes, expected >= 100 for ImageNet-100")
+                    print(
+                        f"  Note: Found {len(train_classes)} classes, expected >= 100 for ImageNet-100"
+                    )
                     print(f"  Will filter to 100 classes at runtime")
 
             return True
@@ -241,9 +247,9 @@ def download_dataset(
         return False
 
     # Check disk space
-    if not check_disk_space(data_path, info['size_gb']):
+    if not check_disk_space(data_path, info["size_gb"]):
         response = input("\nContinue anyway? (y/n): ")
-        if response.lower() != 'y':
+        if response.lower() != "y":
             print("Download cancelled")
             return False
 
@@ -270,11 +276,11 @@ def download_dataset(
         elif dataset_name == "stl10":
             # Download STL-10
             print("Downloading training set...")
-            datasets.STL10(root=data_path, split='train', download=True)
+            datasets.STL10(root=data_path, split="train", download=True)
             print("Downloading test set...")
-            datasets.STL10(root=data_path, split='test', download=True)
+            datasets.STL10(root=data_path, split="test", download=True)
             print("Downloading unlabeled set...")
-            datasets.STL10(root=data_path, split='unlabeled', download=True)
+            datasets.STL10(root=data_path, split="unlabeled", download=True)
 
         print(f"\n✓ {info['name']} downloaded successfully!")
 
@@ -307,12 +313,13 @@ def print_manual_download_instructions(dataset_name: str):
     """
     dataset_name = dataset_name.lower()
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(f"MANUAL DOWNLOAD INSTRUCTIONS: {DATASET_INFO[dataset_name]['name']}")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     if dataset_name == "imagenet":
-        print("""
+        print(
+            """
 1. Register and Download:
    - Go to: https://image-net.org/download.php
    - Register for an account (required for download)
@@ -357,10 +364,12 @@ def print_manual_download_instructions(dataset_name: str):
 
 Note: ImageNet is ~144GB for training + ~6.3GB for validation.
 Make sure you have sufficient disk space!
-        """)
+        """
+        )
 
     elif dataset_name == "imagenet100":
-        print("""
+        print(
+            """
 ImageNet-100 is a 100-class subset of ImageNet.
 
 Option 1: Download full ImageNet first
@@ -374,28 +383,31 @@ Option 2: Download ImageNet-100 directly (if available)
 
 The 100 classes are a standard subset used in self-supervised learning research.
 They will be automatically selected from the full ImageNet if you download it.
-        """)
+        """
+        )
 
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
 
 def print_dataset_summary():
     """Print a summary of all supported datasets."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("SUPPORTED DATASETS FOR H-JEPA")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     total_size = 0.0
 
     for name, info in DATASET_INFO.items():
         auto = "✓ Auto" if info["auto_download"] else "✗ Manual"
-        print(f"{info['name']:25} {auto:12} {info['size_gb']:6.1f} GB  "
-              f"{info['num_images']:>9,} images  {info['num_classes']:>4} classes")
-        total_size += info['size_gb']
+        print(
+            f"{info['name']:25} {auto:12} {info['size_gb']:6.1f} GB  "
+            f"{info['num_images']:>9,} images  {info['num_classes']:>4} classes"
+        )
+        total_size += info["size_gb"]
 
-    print("\n" + "-"*70)
+    print("\n" + "-" * 70)
     print(f"{'Total (all datasets)':25} {total_size:19.1f} GB")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     print("Recommended for quick start: CIFAR-10 or CIFAR-100 (auto-download)")
     print("Recommended for research: ImageNet or ImageNet-100 (manual download)")
@@ -406,36 +418,23 @@ def main():
     """Main function for command-line usage."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Download and verify datasets for H-JEPA training"
-    )
+    parser = argparse.ArgumentParser(description="Download and verify datasets for H-JEPA training")
     parser.add_argument(
         "datasets",
         nargs="*",
         help="Dataset(s) to download (cifar10, cifar100, stl10, imagenet, imagenet100). "
-             "Leave empty to show summary."
+        "Leave empty to show summary.",
     )
     parser.add_argument(
-        "--data-path",
-        type=str,
-        default="./data",
-        help="Path to store datasets (default: ./data)"
+        "--data-path", type=str, default="./data", help="Path to store datasets (default: ./data)"
     )
     parser.add_argument(
-        "--verify-only",
-        action="store_true",
-        help="Only verify datasets, don't download"
+        "--verify-only", action="store_true", help="Only verify datasets, don't download"
     )
     parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force re-download even if dataset exists"
+        "--force", action="store_true", help="Force re-download even if dataset exists"
     )
-    parser.add_argument(
-        "--no-verify",
-        action="store_true",
-        help="Skip verification after download"
-    )
+    parser.add_argument("--no-verify", action="store_true", help="Skip verification after download")
 
     args = parser.parse_args()
 

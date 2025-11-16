@@ -196,12 +196,14 @@ class MultiCropEvalTransform:
         mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
         std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
     ):
-        self.transform = transforms.Compose([
-            transforms.Resize(int(crop_size * 1.14), interpolation=interpolation),
-            transforms.CenterCrop(crop_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize(int(crop_size * 1.14), interpolation=interpolation),
+                transforms.CenterCrop(crop_size),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
 
     def __call__(self, image: Union[Image.Image, np.ndarray]) -> torch.Tensor:
         """
@@ -238,7 +240,7 @@ class AdaptiveMultiCropTransform(MultiCropTransform):
         **kwargs,
     ):
         # Initialize with minimum local crops
-        kwargs['num_local_crops'] = min_local_crops
+        kwargs["num_local_crops"] = min_local_crops
         super().__init__(**kwargs)
 
         self.min_local_crops = min_local_crops
@@ -259,8 +261,7 @@ class AdaptiveMultiCropTransform(MultiCropTransform):
             # Linear warmup
             progress = min(1.0, epoch / self.warmup_epochs)
             num_crops = int(
-                self.min_local_crops +
-                (self.max_local_crops - self.min_local_crops) * progress
+                self.min_local_crops + (self.max_local_crops - self.min_local_crops) * progress
             )
             self.num_local_crops = num_crops
 
@@ -354,7 +355,8 @@ if __name__ == "__main__":
 
     # Create a dummy image
     from PIL import Image
-    dummy_image = Image.new('RGB', (256, 256), color='red')
+
+    dummy_image = Image.new("RGB", (256, 256), color="red")
 
     # Create multi-crop transform
     transform = MultiCropTransform(
@@ -391,8 +393,10 @@ if __name__ == "__main__":
     for epoch in [0, 5, 10, 15]:
         adaptive_transform.set_epoch(epoch)
         crops = adaptive_transform(dummy_image)
-        print(f"  Epoch {epoch:2d}: {len(crops)} total crops "
-              f"({adaptive_transform.num_global_crops} global + "
-              f"{adaptive_transform.num_local_crops} local)")
+        print(
+            f"  Epoch {epoch:2d}: {len(crops)} total crops "
+            f"({adaptive_transform.num_global_crops} global + "
+            f"{adaptive_transform.num_local_crops} local)"
+        )
 
     print("\nDemo complete!")

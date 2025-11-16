@@ -11,13 +11,7 @@ from typing import Callable, List, Optional, Tuple, Union
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from .datasets import (
-    CIFAR10Dataset,
-    CIFAR100Dataset,
-    ImageNetDataset,
-    STL10Dataset,
-    build_dataset,
-)
+from .datasets import CIFAR10Dataset, CIFAR100Dataset, ImageNetDataset, STL10Dataset, build_dataset
 from .multicrop_transforms import (
     MultiCropEvalTransform,
     MultiCropTransform,
@@ -96,13 +90,13 @@ class MultiCropDataset(Dataset):
         Args:
             epoch: Current epoch
         """
-        if hasattr(self.multicrop_transform, 'set_epoch'):
+        if hasattr(self.multicrop_transform, "set_epoch"):
             self.multicrop_transform.set_epoch(epoch)
 
     @property
     def classes(self):
         """Get classes from base dataset."""
-        if hasattr(self.base_dataset, 'classes'):
+        if hasattr(self.base_dataset, "classes"):
             return self.base_dataset.classes
         return None
 
@@ -155,7 +149,7 @@ class MultiCropDatasetRaw(Dataset):
         self,
         dataset_name: str,
         data_path: Union[str, Path],
-        split: str = 'train',
+        split: str = "train",
         multicrop_config: Optional[dict] = None,
         download: bool = True,
     ):
@@ -166,21 +160,21 @@ class MultiCropDatasetRaw(Dataset):
         # Default multi-crop config
         if multicrop_config is None:
             multicrop_config = {
-                'num_global_crops': 2,
-                'num_local_crops': 6,
-                'global_crop_size': 224,
-                'local_crop_size': 96,
-                'global_crop_scale': (0.4, 1.0),
-                'local_crop_scale': (0.05, 0.4),
+                "num_global_crops": 2,
+                "num_local_crops": 6,
+                "global_crop_size": 224,
+                "local_crop_size": 96,
+                "global_crop_scale": (0.4, 1.0),
+                "local_crop_scale": (0.05, 0.4),
             }
 
         # Build multi-crop transform
-        if split == 'train':
+        if split == "train":
             self.transform = build_multicrop_transform(**multicrop_config)
         else:
             # For validation, use single-crop evaluation transform
             self.transform = MultiCropEvalTransform(
-                crop_size=multicrop_config.get('global_crop_size', 224)
+                crop_size=multicrop_config.get("global_crop_size", 224)
             )
 
         # Build base dataset WITHOUT transforms (we'll apply our own)
@@ -188,7 +182,7 @@ class MultiCropDatasetRaw(Dataset):
             dataset_name=dataset_name,
             data_path=data_path,
             split=split,
-            image_size=multicrop_config.get('global_crop_size', 224),
+            image_size=multicrop_config.get("global_crop_size", 224),
             color_jitter=None,  # Handled by multicrop transform
             transform=None,  # No transform - we apply it ourselves
             download=download,
@@ -223,7 +217,7 @@ class MultiCropDatasetRaw(Dataset):
 
     def set_epoch(self, epoch: int) -> None:
         """Set epoch for adaptive transforms."""
-        if hasattr(self.transform, 'set_epoch'):
+        if hasattr(self.transform, "set_epoch"):
             self.transform.set_epoch(epoch)
 
     @property
@@ -234,14 +228,14 @@ class MultiCropDatasetRaw(Dataset):
     @property
     def num_global_crops(self) -> int:
         """Number of global crops."""
-        if self.split == 'train':
+        if self.split == "train":
             return self.transform.num_global_crops
         return 1
 
     @property
     def num_local_crops(self) -> int:
         """Number of local crops."""
-        if self.split == 'train':
+        if self.split == "train":
             return self.transform.num_local_crops
         return 0
 
@@ -291,7 +285,7 @@ def multicrop_collate_fn(batch: List[Tuple]) -> Tuple[List[torch.Tensor], torch.
 def build_multicrop_dataset(
     dataset_name: str,
     data_path: Union[str, Path],
-    split: str = 'train',
+    split: str = "train",
     num_global_crops: int = 2,
     num_local_crops: int = 6,
     global_crop_size: int = 224,
@@ -336,15 +330,15 @@ def build_multicrop_dataset(
         ... )
     """
     multicrop_config = {
-        'num_global_crops': num_global_crops,
-        'num_local_crops': num_local_crops,
-        'global_crop_size': global_crop_size,
-        'local_crop_size': local_crop_size,
-        'global_crop_scale': global_crop_scale,
-        'local_crop_scale': local_crop_scale,
-        'global_color_jitter': global_color_jitter,
-        'local_color_jitter': local_color_jitter,
-        'adaptive': adaptive,
+        "num_global_crops": num_global_crops,
+        "num_local_crops": num_local_crops,
+        "global_crop_size": global_crop_size,
+        "local_crop_size": local_crop_size,
+        "global_crop_scale": global_crop_scale,
+        "local_crop_scale": local_crop_scale,
+        "global_color_jitter": global_color_jitter,
+        "local_color_jitter": local_color_jitter,
+        "adaptive": adaptive,
         **kwargs,
     }
 
@@ -409,9 +403,9 @@ if __name__ == "__main__":
     # Build dataset
     print("\nBuilding CIFAR-10 multi-crop dataset...")
     dataset = build_multicrop_dataset(
-        dataset_name='cifar10',
-        data_path='/tmp/data',
-        split='train',
+        dataset_name="cifar10",
+        data_path="/tmp/data",
+        split="train",
         num_global_crops=2,
         num_local_crops=6,
         global_crop_size=224,

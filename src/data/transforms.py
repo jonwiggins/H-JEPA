@@ -29,6 +29,7 @@ from torchvision.transforms import functional as F
 # RandAugment Implementation
 # =============================================================================
 
+
 class RandAugment:
     """
     RandAugment: Practical automated data augmentation.
@@ -138,7 +139,7 @@ class RandAugment:
             Image.AFFINE,
             (1, magnitude, 0, 0, 1, 0),
             resample=self.interpolation,
-            fillcolor=tuple(self.fill)
+            fillcolor=tuple(self.fill),
         )
 
     def _shear_y(self, img: Image.Image, magnitude: float) -> Image.Image:
@@ -148,7 +149,7 @@ class RandAugment:
             Image.AFFINE,
             (1, 0, 0, magnitude, 1, 0),
             resample=self.interpolation,
-            fillcolor=tuple(self.fill)
+            fillcolor=tuple(self.fill),
         )
 
     def _translate_x(self, img: Image.Image, magnitude: float) -> Image.Image:
@@ -159,7 +160,7 @@ class RandAugment:
             Image.AFFINE,
             (1, 0, pixels, 0, 1, 0),
             resample=self.interpolation,
-            fillcolor=tuple(self.fill)
+            fillcolor=tuple(self.fill),
         )
 
     def _translate_y(self, img: Image.Image, magnitude: float) -> Image.Image:
@@ -170,7 +171,7 @@ class RandAugment:
             Image.AFFINE,
             (1, 0, 0, 0, 1, pixels),
             resample=self.interpolation,
-            fillcolor=tuple(self.fill)
+            fillcolor=tuple(self.fill),
         )
 
     def __call__(self, img: Image.Image) -> Image.Image:
@@ -188,6 +189,7 @@ class RandAugment:
 # =============================================================================
 # Mixup and CutMix
 # =============================================================================
+
 
 class Mixup:
     """
@@ -218,11 +220,7 @@ class Mixup:
         self.num_classes = num_classes
         self.prob = prob
 
-    def __call__(
-        self,
-        images: Tensor,
-        targets: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+    def __call__(self, images: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Apply mixup to a batch of images and targets.
 
@@ -307,11 +305,7 @@ class CutMix:
 
         return x1, y1, x2, y2
 
-    def __call__(
-        self,
-        images: Tensor,
-        targets: Tensor
-    ) -> Tuple[Tensor, Tensor]:
+    def __call__(self, images: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Apply CutMix to a batch of images and targets.
 
@@ -390,9 +384,7 @@ class MixupCutmix:
         """Apply either Mixup or CutMix randomly."""
         if random.random() > self.prob:
             # Convert to one-hot but don't mix
-            targets_onehot = torch.nn.functional.one_hot(
-                targets, self.mixup.num_classes
-            ).float()
+            targets_onehot = torch.nn.functional.one_hot(targets, self.mixup.num_classes).float()
             return images, targets_onehot
 
         if random.random() < self.switch_prob:
@@ -404,6 +396,7 @@ class MixupCutmix:
 # =============================================================================
 # Random Erasing
 # =============================================================================
+
 
 class RandomErasing:
     """
@@ -474,14 +467,12 @@ class RandomErasing:
                 y = random.randint(0, height - h)
 
                 # Erase region
-                if self.value == 'random':
-                    img[:, y:y+h, x:x+w] = torch.rand(
-                        img[:, y:y+h, x:x+w].shape,
-                        dtype=img.dtype,
-                        device=img.device
+                if self.value == "random":
+                    img[:, y : y + h, x : x + w] = torch.rand(
+                        img[:, y : y + h, x : x + w].shape, dtype=img.dtype, device=img.device
                     )
                 else:
-                    img[:, y:y+h, x:x+w] = self.value
+                    img[:, y : y + h, x : x + w] = self.value
 
                 return img
 
@@ -491,6 +482,7 @@ class RandomErasing:
 # =============================================================================
 # DeiT III Augmentation Pipeline
 # =============================================================================
+
 
 class DeiTIIIAugmentation:
     """
@@ -574,11 +566,13 @@ class DeiTIIIAugmentation:
         transform_list = []
 
         # 1. Resize and random crop
-        transform_list.extend([
-            transforms.Resize(int(image_size * 1.14), interpolation=interpolation),
-            transforms.RandomCrop(image_size, padding=4),
-            transforms.RandomHorizontalFlip(p=0.5),
-        ])
+        transform_list.extend(
+            [
+                transforms.Resize(int(image_size * 1.14), interpolation=interpolation),
+                transforms.RandomCrop(image_size, padding=4),
+                transforms.RandomHorizontalFlip(p=0.5),
+            ]
+        )
 
         # 2. RandAugment (strong augmentation)
         if auto_augment:
@@ -614,7 +608,7 @@ class DeiTIIIAugmentation:
                     prob=random_erasing_prob,
                     scale=random_erasing_scale,
                     ratio=random_erasing_ratio,
-                    value='random',
+                    value="random",
                 )
             )
 
@@ -682,12 +676,14 @@ class DeiTIIIEvalTransform:
         mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
         std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
     ):
-        self.transform = transforms.Compose([
-            transforms.Resize(int(image_size * 1.14), interpolation=interpolation),
-            transforms.CenterCrop(image_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize(int(image_size * 1.14), interpolation=interpolation),
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
+            ]
+        )
 
     def __call__(self, img: Image.Image) -> Tensor:
         """Apply evaluation transform."""
@@ -697,6 +693,7 @@ class DeiTIIIEvalTransform:
 # =============================================================================
 # Configuration Helper
 # =============================================================================
+
 
 def build_deit3_transform(
     is_training: bool = True,
@@ -730,16 +727,16 @@ def build_deit3_transform(
     """
     # Default DeiT III configuration
     default_config = {
-        'image_size': 224,
-        'color_jitter': 0.4,
-        'auto_augment': True,
-        'rand_aug_num_ops': 2,
-        'rand_aug_magnitude': 9,
-        'random_erasing_prob': 0.25,
-        'mixup_alpha': 0.8,
-        'cutmix_alpha': 1.0,
-        'mixup_cutmix_prob': 1.0,
-        'num_classes': 1000,
+        "image_size": 224,
+        "color_jitter": 0.4,
+        "auto_augment": True,
+        "rand_aug_num_ops": 2,
+        "rand_aug_magnitude": 9,
+        "random_erasing_prob": 0.25,
+        "mixup_alpha": 0.8,
+        "cutmix_alpha": 1.0,
+        "mixup_cutmix_prob": 1.0,
+        "num_classes": 1000,
     }
 
     # Merge with provided config
@@ -750,7 +747,7 @@ def build_deit3_transform(
         return DeiTIIIAugmentation(**default_config)
     else:
         return DeiTIIIEvalTransform(
-            image_size=default_config['image_size'],
+            image_size=default_config["image_size"],
         )
 
 
@@ -759,12 +756,12 @@ def build_deit3_transform(
 # =============================================================================
 
 __all__ = [
-    'RandAugment',
-    'Mixup',
-    'CutMix',
-    'MixupCutmix',
-    'RandomErasing',
-    'DeiTIIIAugmentation',
-    'DeiTIIIEvalTransform',
-    'build_deit3_transform',
+    "RandAugment",
+    "Mixup",
+    "CutMix",
+    "MixupCutmix",
+    "RandomErasing",
+    "DeiTIIIAugmentation",
+    "DeiTIIIEvalTransform",
+    "build_deit3_transform",
 ]
