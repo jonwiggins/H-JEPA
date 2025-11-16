@@ -1,0 +1,195 @@
+# SIGReg (Sign-based Regularization) Configuration Example
+#
+# This configuration demonstrates how to use SIGReg loss instead of VICReg
+# for improved training stability in H-JEPA models.
+#
+# SIGReg provides:
+# - Better training stability (from LeJEPA paper)
+# - O(K) complexity vs O(K²) for VICReg covariance
+# - Single hyperparameter (num_slices) vs 3 weights
+# - Theoretically grounded in optimal Gaussian distribution
+#
+# References:
+# - LeJEPA: https://arxiv.org/abs/2511.08544
+# - VICReg: https://arxiv.org/abs/2105.04906
+
+model:
+  encoder_type: "vit_small_patch16_224"
+  embed_dim: 384
+  depth: 12
+  num_heads: 6
+  num_hierarchies: 3
+
+  predictor:
+    depth: 6
+    num_heads: 6
+    mlp_ratio: 4.0
+
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 30
+
+# SIGReg Loss Configuration
+loss:
+  type: 'sigreg'  # Use SIGReg instead of VICReg or combined
+
+  # SIGReg-specific parameters
+  sigreg_num_slices: 1024           # Number of random 1D projections
+                                     # Higher = more thorough but slower
+                                     # Recommended: 512-2048
+                                     # Default: 1024
+
+  sigreg_num_test_points: 17        # Reference Gaussian points for EP test
+                                     # Recommended: 17 (from LeJEPA paper)
+
+  sigreg_invariance_weight: 25.0    # Weight for invariance (MSE) term
+                                     # Encourages consistency between views
+                                     # Default: 25.0
+
+  sigreg_weight: 25.0               # Weight for SIGReg regularization
+                                     # Prevents representation collapse
+                                     # Default: 25.0
+
+  sigreg_fixed_slices: false        # Whether to use fixed random slices
+                                     # true = reproducible, less variance
+                                     # false = random each iteration
+                                     # Default: false
+
+  # General parameters
+  flatten_patches: true              # Flatten [B,N,D] to [B*N,D]
+  eps: 1.0e-6                        # Numerical stability constant
+
+data:
+  dataset: "imagenet100"
+  data_path: "./data/imagenet100"
+  image_size: 224
+  batch_size: 64
+  num_workers: 8
+  pin_memory: true
+
+  augmentation:
+    # Standard augmentations for self-supervised learning
+    color_jitter: 0.4
+    random_gray_scale: 0.2
+    gaussian_blur: 0.5
+    solarization: 0.0
+    horizontal_flip: 0.5
+
+masking:
+  # H-JEPA masking strategy
+  min_keep: 10                       # Minimum patches to keep as context
+  max_keep: 100                      # Maximum patches to keep
+  scale_range: [0.15, 0.2]          # Scale of target regions
+  aspect_ratio_range: [0.75, 1.5]   # Aspect ratio of targets
+  num_targets: 4                     # Number of target regions to predict
+
+training:
+  epochs: 300
+  warmup_epochs: 40
+
+  optimizer:
+    type: "adamw"
+    lr: 1.5e-4                       # Base learning rate
+    weight_decay: 0.05
+    betas: [0.9, 0.95]
+
+  scheduler:
+    type: "cosine"
+    min_lr: 1.0e-6
+    warmup_type: "linear"
+
+  mixed_precision: true              # Enable AMP for faster training
+  gradient_clip: 1.0                 # Gradient clipping for stability
+
+  # Checkpointing
+  checkpoint_freq: 10                # Save every N epochs
+  keep_last_n: 3                     # Keep last N checkpoints
+
+# Logging and evaluation
+logging:
+  wandb: false
+  log_freq: 100                      # Log every N iterations
+  eval_freq: 1                       # Evaluate every N epochs
+
+  # Metrics to track
+  metrics:
+    - "sigreg_loss"                  # Total SIGReg loss
+    - "invariance_loss"              # MSE between views
+    - "sigreg_regularization"        # SIGReg regularization term
+    - "learning_rate"
+    - "ema_momentum"
+
+---
+# Alternative: Hybrid VICReg + SIGReg Configuration
+#
+# For ablation studies or gradual transition from VICReg to SIGReg
+
+# loss:
+#   type: 'hybrid_vicreg_sigreg'
+#
+#   # Hybrid weights (adjust during training)
+#   vicreg_weight: 1.0              # Start with VICReg
+#   sigreg_weight: 0.0              # Gradually increase SIGReg
+#
+#   # VICReg parameters
+#   invariance_weight: 25.0
+#   variance_weight: 25.0
+#   covariance_weight: 1.0
+#   variance_threshold: 1.0
+#
+#   # SIGReg parameters
+#   num_slices: 1024
+#   num_test_points: 17
+#
+#   # General parameters
+#   flatten_patches: true
+#   eps: 1.0e-6
+
+---
+# Small Model Configuration (for limited resources)
+
+# model:
+#   encoder_type: "vit_tiny_patch16_224"
+#   embed_dim: 192
+#   depth: 12
+#   num_heads: 3
+#   num_hierarchies: 2
+#
+# loss:
+#   type: 'sigreg'
+#   sigreg_num_slices: 512           # Fewer slices for faster training
+#   sigreg_weight: 25.0
+#   sigreg_invariance_weight: 25.0
+#
+# data:
+#   batch_size: 128
+#
+# training:
+#   epochs: 100
+
+---
+# Large Model Configuration (for production training)
+
+# model:
+#   encoder_type: "vit_large_patch16_224"
+#   embed_dim: 1024
+#   depth: 24
+#   num_heads: 16
+#   num_hierarchies: 3
+#
+# loss:
+#   type: 'sigreg'
+#   sigreg_num_slices: 2048          # More slices for large models
+#   sigreg_weight: 30.0              # Slightly higher regularization
+#   sigreg_invariance_weight: 25.0
+#   sigreg_fixed_slices: true        # Save memory for large models
+#
+# data:
+#   dataset: "imagenet1k"
+#   batch_size: 256
+#
+# training:
+#   epochs: 400
+#   mixed_precision: true
+#   gradient_checkpointing: true     # Enable for memory efficiency

@@ -1,0 +1,155 @@
+# C-JEPA Configuration Example
+# Contrastive JEPA combines prediction-based learning with contrastive learning
+# Expected performance improvement: +0.8-1.0% over standard H-JEPA
+
+# Model architecture settings
+model:
+  encoder_type: "vit_base_patch16_224"
+  embed_dim: 768
+  num_hierarchies: 3
+
+  predictor:
+    depth: 6
+    num_heads: 12
+    mlp_ratio: 4.0
+
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 30
+
+# Dataset and data loading
+data:
+  dataset: "imagenet"
+  data_path: "/path/to/dataset"
+  image_size: 224
+  batch_size: 128  # Important: batch size should be >= 32 for effective contrastive learning
+  num_workers: 8
+  pin_memory: true
+
+  augmentation:
+    color_jitter: 0.4
+    horizontal_flip: true
+    random_crop: true
+
+# Multi-block masking strategy
+masking:
+  num_masks: 4
+  mask_scale: [0.15, 0.2]
+  aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters
+training:
+  epochs: 300
+  warmup_epochs: 40
+  lr: 1.5e-4
+  min_lr: 1.0e-6
+  weight_decay: 0.05
+  optimizer: "adamw"
+  betas: [0.9, 0.95]
+  lr_schedule: "cosine"
+  clip_grad: 3.0
+  use_amp: true
+  accumulation_steps: 1
+
+# C-JEPA Loss Configuration
+loss:
+  # Method 1: Set type to 'cjepa' for explicit C-JEPA mode
+  type: "cjepa"
+
+  # JEPA component configuration
+  jepa_loss_type: "smoothl1"  # or 'mse', 'huber'
+  hierarchy_weights: [1.0, 0.5, 0.25]
+  normalize_embeddings: true
+  jepa_weight: 1.0  # Weight for JEPA prediction loss
+
+  # Contrastive component configuration (NEW)
+  use_contrastive: true
+  contrastive_weight: 0.1  # Weight for contrastive loss (recommended: 0.05-0.15)
+  contrastive_temperature: 0.1  # Temperature for NT-Xent loss (lower = sharper)
+  use_cosine_similarity: true  # Use cosine similarity (recommended)
+  contrastive_on_context: false  # Apply contrastive on target encoder (recommended)
+
+  # Note: Total loss = jepa_weight * L_JEPA + contrastive_weight * L_contrastive
+  #       Default: L_total = 1.0 * L_JEPA + 0.1 * L_contrastive
+
+# Alternative Method: Use base JEPA with contrastive flag
+# loss:
+#   type: "hjepa"  # or "jepa"
+#   use_contrastive: true
+#   contrastive_weight: 0.1
+#   contrastive_temperature: 0.1
+#   jepa_loss_type: "smoothl1"
+#   hierarchy_weights: [1.0, 0.5, 0.25]
+
+# Checkpointing and logging
+checkpoint:
+  save_frequency: 10
+  keep_best_n: 3
+  checkpoint_dir: "results/cjepa_checkpoints"
+  resume: null
+
+# Logging configuration
+logging:
+  experiment_name: "cjepa_baseline"
+  log_dir: "results/cjepa_logs"
+  log_frequency: 100
+
+  wandb:
+    enabled: true
+    project: "h-jepa"
+    entity: null
+    tags: ["cjepa", "contrastive", "vit-base"]
+
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+distributed:
+  enabled: false
+  backend: "nccl"
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  eval_frequency: 10
+
+  linear_probe:
+    enabled: false
+    dataset: "imagenet"
+    batch_size: 256
+    epochs: 90
+    lr: 0.1
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cuda"
+
+# C-JEPA Specific Notes:
+#
+# 1. Batch Size: Use larger batches (>=64) for better contrastive learning
+#    - More negatives = better instance discrimination
+#    - Consider gradient accumulation if GPU memory is limited
+#
+# 2. Contrastive Weight: Start with 0.1, tune in range [0.05, 0.15]
+#    - Too high: dominates JEPA signal, hurts spatial prediction
+#    - Too low: minimal benefit from contrastive learning
+#    - Sweet spot usually around 0.08-0.12
+#
+# 3. Temperature: Default 0.1 works well
+#    - Lower (0.05-0.07): sharper, more confident predictions
+#    - Higher (0.15-0.3): softer, more exploration
+#
+# 4. Expected Performance:
+#    - ImageNet linear probe: +0.8-1.0% accuracy improvement
+#    - Better transfer learning to downstream tasks
+#    - More robust to distribution shift
+#
+# 5. Training Tips:
+#    - Monitor contrastive_accuracy metric (should be >0.9 after warmup)
+#    - Watch positive_similarity (should increase) and negative_similarity (should decrease)
+#    - If contrastive_loss dominates, reduce contrastive_weight

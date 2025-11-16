@@ -1,0 +1,195 @@
+# DeiT III Augmentation Configuration for H-JEPA
+#
+# This configuration demonstrates how to use DeiT III augmentation strategies
+# for improved training performance with Vision Transformers.
+#
+# DeiT III augmentations include:
+# - RandAugment: Strong automated data augmentation
+# - Mixup: Linear interpolation between images and labels
+# - CutMix: Cutting and pasting image patches
+# - RandomErasing: Random occlusion for robustness
+# - Color jittering: Color-based augmentations
+
+# Model architecture settings
+model:
+  encoder_type: "vit_base_patch16_224"
+  embed_dim: 768
+  num_hierarchies: 3
+  predictor:
+    depth: 6
+    num_heads: 12
+    mlp_ratio: 4.0
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 30
+
+# Dataset and data loading with DeiT III augmentation
+data:
+  dataset: "imagenet"
+  data_path: "/path/to/dataset"
+  image_size: 224
+  batch_size: 128
+  num_workers: 8
+  pin_memory: true
+
+  # DeiT III Augmentation Configuration
+  augmentation:
+    # Augmentation strategy: 'jepa' (minimal) or 'deit3' (strong)
+    strategy: "deit3"
+
+    # Basic augmentations (used in both strategies)
+    color_jitter: 0.4
+    horizontal_flip: true
+    random_crop: true
+
+    # DeiT III specific augmentations
+    deit3:
+      # RandAugment settings
+      # RandAugment applies N random operations with magnitude M
+      auto_augment: true
+      rand_aug_num_ops: 2        # Number of augmentation operations (N)
+      rand_aug_magnitude: 9       # Magnitude of augmentations (M), range [0-31]
+
+      # Random Erasing settings
+      # Randomly erases rectangular regions to improve occlusion robustness
+      random_erasing_prob: 0.25   # Probability of applying random erasing
+      random_erasing_scale: [0.02, 0.33]  # Range of erased area proportion
+      random_erasing_ratio: [0.3, 3.3]    # Range of aspect ratios
+
+      # Mixup settings
+      # Linearly interpolates between images and labels
+      mixup_alpha: 0.8            # Beta distribution parameter for Mixup
+                                  # Higher values = more uniform mixing
+                                  # DeiT III uses 0.8
+
+      # CutMix settings
+      # Cuts and pastes patches between images
+      cutmix_alpha: 1.0           # Beta distribution parameter for CutMix
+                                  # DeiT III uses 1.0
+
+      # Combined Mixup/CutMix settings
+      mixup_cutmix_prob: 1.0      # Probability of applying mixup or cutmix
+      mixup_switch_prob: 0.5      # Probability of choosing mixup vs cutmix
+
+# Multi-block masking strategy (for H-JEPA)
+masking:
+  num_masks: 4
+  mask_scale: [0.15, 0.2]
+  aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters
+training:
+  epochs: 300
+  warmup_epochs: 40
+  lr: 1.5e-4
+  min_lr: 1.0e-6
+  weight_decay: 0.05
+  optimizer: "adamw"
+  betas: [0.9, 0.95]
+  lr_schedule: "cosine"
+  clip_grad: 3.0
+  use_amp: true
+  accumulation_steps: 1
+
+# Loss function settings
+loss:
+  type: "mse"
+  hierarchy_weights: [1.0, 0.5, 0.25]
+  normalize_embeddings: false
+
+# Checkpointing and logging
+checkpoint:
+  save_frequency: 10
+  keep_best_n: 3
+  checkpoint_dir: "results/checkpoints/deit3_aug"
+  resume: null
+
+# Logging configuration
+logging:
+  experiment_name: "hjepa_deit3_augmentation"
+  log_dir: "results/logs/deit3_aug"
+  log_frequency: 100
+  wandb:
+    enabled: true
+    project: "h-jepa"
+    entity: null
+    tags: ["deit3-augmentation", "vit-base", "strong-aug"]
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+distributed:
+  enabled: false
+  backend: "nccl"
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  eval_frequency: 10
+  linear_probe:
+    enabled: false
+    dataset: "imagenet"
+    batch_size: 256
+    epochs: 90
+    lr: 0.1
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cuda"
+
+# =============================================================================
+# Configuration Notes
+# =============================================================================
+#
+# 1. RandAugment Parameters:
+#    - num_ops: Number of augmentation operations to apply sequentially
+#      * Typical values: 1-3
+#      * DeiT III uses 2
+#    - magnitude: Strength of augmentations (0-31 scale)
+#      * Typical values: 5-15
+#      * DeiT III uses 9
+#      * Higher values = stronger augmentations
+#
+# 2. Mixup/CutMix Parameters:
+#    - mixup_alpha: Controls mixing strength
+#      * 0.0 = no mixing (one-hot labels)
+#      * 0.8 = moderate mixing (DeiT III default)
+#      * Higher values = more uniform mixing
+#    - cutmix_alpha: Similar to mixup_alpha but for spatial mixing
+#      * 1.0 = moderate mixing (DeiT III default)
+#    - mixup_switch_prob: Probability of Mixup vs CutMix
+#      * 0.5 = equal probability (DeiT III default)
+#      * Closer to 0 = prefer CutMix
+#      * Closer to 1 = prefer Mixup
+#
+# 3. Random Erasing Parameters:
+#    - random_erasing_prob: Probability of erasing
+#      * 0.25 = erase 25% of images (DeiT III default)
+#    - random_erasing_scale: Proportion of image to erase
+#      * [0.02, 0.33] = erase 2-33% of image area
+#    - random_erasing_ratio: Aspect ratio of erased region
+#      * [0.3, 3.3] = wide range of rectangular shapes
+#
+# 4. When to use DeiT III augmentation:
+#    - ✓ Supervised training with limited data
+#    - ✓ Fine-tuning pretrained models
+#    - ✓ Training from scratch with Vision Transformers
+#    - ✗ Self-supervised pretraining (use minimal augmentation instead)
+#    - ✗ Very large datasets where overfitting is not a concern
+#
+# 5. Adjusting for your dataset:
+#    - Smaller datasets: Increase augmentation strength
+#      * Higher rand_aug_magnitude (10-15)
+#      * Higher mixup/cutmix alpha
+#      * Higher random_erasing_prob (0.5)
+#    - Larger datasets: Decrease augmentation strength
+#      * Lower rand_aug_magnitude (5-7)
+#      * Lower mixup/cutmix alpha
+#      * Lower random_erasing_prob (0.1)
+#
+# =============================================================================

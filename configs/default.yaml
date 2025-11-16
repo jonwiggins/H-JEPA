@@ -23,6 +23,34 @@ model:
     momentum_end: 1.0
     momentum_warmup_epochs: 30
 
+  # Rotary Position Embeddings (RoPE) settings
+  # RoPE provides better position encoding than absolute embeddings
+  # Used in V-JEPA 2 and modern ViTs for improved resolution generalization
+  rope:
+    # Enable RoPE (default: false for backward compatibility)
+    use_rope: false
+
+    # Base frequency for rotation (default: 10000.0 as in original RoPE paper)
+    # Higher values = slower decay of position information
+    # Lower values = faster decay, better for shorter sequences
+    theta: 10000.0
+
+  # Performance optimizations
+  use_flash_attention: true  # Enable Flash Attention for 2-5x speedup (requires PyTorch 2.0+)
+
+  # Feature Pyramid Network (FPN) settings
+  fpn:
+    # Enable FPN for multi-scale feature learning
+    use_fpn: false
+
+    # Feature dimension for FPN (null means use embed_dim)
+    feature_dim: null
+
+    # Feature fusion method ('add' or 'concat')
+    # 'add': element-wise addition of lateral and top-down features
+    # 'concat': concatenation followed by 1x1 conv
+    fusion_method: "add"
+
 # Dataset and data loading
 data:
   # Dataset name (imagenet, cifar10, custom)
@@ -100,6 +128,13 @@ training:
 
   # Gradient accumulation steps
   accumulation_steps: 1
+
+  # Gradient checkpointing for memory-efficient training
+  # Trades computation for memory by recomputing activations during backward pass
+  # Recommended for large models or when training with limited GPU memory
+  # Memory savings: ~30-50% depending on model depth
+  # Performance impact: ~20-30% slower training due to recomputation
+  use_gradient_checkpointing: false
 
 # Loss function settings
 loss:

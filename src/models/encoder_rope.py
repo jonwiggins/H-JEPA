@@ -651,9 +651,6 @@ def create_encoder(
     drop_path_rate: float = 0.0,
     use_rope: bool = False,
     rope_theta: float = 10000.0,
-    use_flash_attention: bool = False,
-    use_layerscale: bool = False,
-    layerscale_init: float = 1e-5,
 ) -> Tuple[ContextEncoder, TargetEncoder]:
     """
     Factory function to create context and target encoders.
@@ -665,28 +662,10 @@ def create_encoder(
         drop_path_rate: Stochastic depth rate
         use_rope: Whether to use Rotary Position Embeddings
         rope_theta: Base frequency for RoPE rotation
-        use_flash_attention: Whether to use Flash Attention (TODO: not implemented yet)
-        use_layerscale: Whether to use LayerScale (TODO: not implemented yet)
-        layerscale_init: Initial value for LayerScale (TODO: not implemented yet)
 
     Returns:
         Tuple of (context_encoder, target_encoder)
     """
-    # TODO: Flash Attention integration
-    # Flash Attention can provide 2-5x speedup for attention computation
-    # Currently this parameter is accepted but not used
-    # Implementation would require:
-    # 1. Install flash-attn package
-    # 2. Replace standard attention with FlashAttention in transformer blocks
-    # 3. Handle compatibility with RoPE and other features
-
-    # TODO: LayerScale integration
-    # LayerScale provides training stability for deep networks
-    # Currently these parameters are accepted but not used
-    # Implementation would require:
-    # 1. Add LayerScale layers after attention and MLP in each block
-    # 2. Initialize with small values (layerscale_init)
-
     context_encoder = ContextEncoder(
         encoder_type=encoder_type,
         img_size=img_size,

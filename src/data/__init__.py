@@ -29,10 +29,50 @@ from .multi_dataset import (
     create_foundation_model_dataset,
 )
 
+from .transforms import (
+    RandAugment,
+    Mixup,
+    CutMix,
+    MixupCutmix,
+    RandomErasing,
+    DeiTIIIAugmentation,
+    DeiTIIIEvalTransform,
+    build_deit3_transform,
+)
+
+from .multicrop_transforms import (
+    MultiCropTransform,
+    MultiCropEvalTransform,
+    AdaptiveMultiCropTransform,
+    build_multicrop_transform,
+)
+
+from .multicrop_dataset import (
+    MultiCropDataset,
+    MultiCropDatasetRaw,
+    multicrop_collate_fn,
+    build_multicrop_dataset,
+    build_multicrop_dataloader,
+)
+
 __all__ = [
-    # Transforms
+    # Basic Transforms
     "JEPATransform",
     "JEPAEvalTransform",
+    # DeiT III Transforms
+    "RandAugment",
+    "Mixup",
+    "CutMix",
+    "MixupCutmix",
+    "RandomErasing",
+    "DeiTIIIAugmentation",
+    "DeiTIIIEvalTransform",
+    "build_deit3_transform",
+    # Multi-crop Transforms
+    "MultiCropTransform",
+    "MultiCropEvalTransform",
+    "AdaptiveMultiCropTransform",
+    "build_multicrop_transform",
     # Datasets
     "ImageNetDataset",
     "ImageNet100Dataset",
@@ -44,6 +84,12 @@ __all__ = [
     "BalancedMultiDataset",
     "build_multi_dataset",
     "create_foundation_model_dataset",
+    # Multi-crop datasets
+    "MultiCropDataset",
+    "MultiCropDatasetRaw",
+    "multicrop_collate_fn",
+    "build_multicrop_dataset",
+    "build_multicrop_dataloader",
     # Builders
     "build_dataset",
     "build_dataloader",

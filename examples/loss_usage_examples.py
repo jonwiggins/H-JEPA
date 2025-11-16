@@ -10,6 +10,8 @@ import torch.nn as nn
 from src.losses import (
     HJEPALoss,
     VICRegLoss,
+    SIGRegLoss,
+    HybridVICRegSIGRegLoss,
     CombinedLoss,
     HierarchicalCombinedLoss,
     create_loss_from_config,
@@ -256,31 +258,146 @@ def example_6_from_config():
     print()
 
 
-def example_7_training_loop():
-    """Example 7: Integration in Training Loop"""
+def example_7_sigreg_loss():
+    """Example 7: SIGReg Loss (Improved Stability)"""
     print("=" * 60)
-    print("Example 7: Training Loop Integration")
+    print("Example 7: SIGReg Loss - Improved Training Stability")
     print("=" * 60)
 
-    # Setup
-    loss_fn = CombinedLoss(
-        jepa_loss_type='smoothl1',
-        jepa_hierarchy_weights=[1.0, 0.5, 0.25],
-        num_hierarchies=3,
-        vicreg_weight=0.1,
+    # Create SIGReg loss
+    loss_fn = SIGRegLoss(
+        num_slices=1024,              # Number of random projections
+        num_test_points=17,            # Reference Gaussian points
+        invariance_weight=25.0,        # MSE weight
+        sigreg_weight=25.0,            # SIGReg regularization weight
+        flatten_patches=True,
+        fixed_slices=False,
+    )
+
+    # Two views of the same data
+    batch_size, num_patches, embed_dim = 32, 196, 768
+
+    view_a = torch.randn(batch_size, num_patches, embed_dim)
+    view_b = torch.randn(batch_size, num_patches, embed_dim)
+
+    # Compute loss
+    loss_dict = loss_fn(view_a, view_b)
+
+    # Print results
+    print(f"Total Loss: {loss_dict['loss'].item():.6f}")
+    print(f"Invariance Loss: {loss_dict['invariance_loss'].item():.6f}")
+    print(f"SIGReg Loss: {loss_dict['sigreg_loss'].item():.6f}")
+    print(f"  SIGReg A: {loss_dict['sigreg_loss_a'].item():.6f}")
+    print(f"  SIGReg B: {loss_dict['sigreg_loss_b'].item():.6f}")
+    print()
+    print("SIGReg Benefits:")
+    print("  - O(K) complexity vs O(K²) for VICReg covariance")
+    print("  - Single hyperparameter (num_slices)")
+    print("  - Better training stability (from LeJEPA paper)")
+    print("  - Theoretically grounded in optimal Gaussian distribution")
+    print()
+
+
+def example_8_hybrid_vicreg_sigreg():
+    """Example 8: Hybrid VICReg + SIGReg Loss"""
+    print("=" * 60)
+    print("Example 8: Hybrid VICReg + SIGReg Loss")
+    print("=" * 60)
+
+    # Create hybrid loss for gradual transition or ablation studies
+    loss_fn = HybridVICRegSIGRegLoss(
+        vicreg_weight=1.0,      # Start with VICReg
+        sigreg_weight=0.0,      # Gradually increase SIGReg
+        invariance_weight=25.0,
+        variance_weight=25.0,
+        covariance_weight=1.0,
+        num_slices=1024,
+        num_test_points=17,
+    )
+
+    # Two views
+    batch_size, num_patches, embed_dim = 32, 196, 768
+    view_a = torch.randn(batch_size, num_patches, embed_dim)
+    view_b = torch.randn(batch_size, num_patches, embed_dim)
+
+    # Compute loss
+    loss_dict = loss_fn(view_a, view_b)
+
+    # Print results
+    print(f"Total Loss: {loss_dict['loss'].item():.6f}")
+    print(f"VICReg Component: {loss_dict['vicreg_loss'].item():.6f}")
+    print(f"SIGReg Component: {loss_dict['sigreg_loss'].item():.6f}")
+    print()
+    print("Hybrid Loss Use Cases:")
+    print("  - Gradual transition from VICReg to SIGReg during training")
+    print("  - Ablation studies comparing VICReg vs SIGReg")
+    print("  - Combining strengths of both approaches")
+    print()
+    print("Adjust weights during training:")
+    print("  loss_fn.vicreg_weight = 0.5  # Decrease VICReg")
+    print("  loss_fn.sigreg_weight = 0.5  # Increase SIGReg")
+    print()
+
+
+def example_9_sigreg_from_config():
+    """Example 9: SIGReg from Configuration"""
+    print("=" * 60)
+    print("Example 9: Creating SIGReg from Config")
+    print("=" * 60)
+
+    # Configuration dictionary for SIGReg
+    config = {
+        'type': 'sigreg',
+        'sigreg_num_slices': 1024,
+        'sigreg_num_test_points': 17,
+        'sigreg_invariance_weight': 25.0,
+        'sigreg_weight': 25.0,
+        'sigreg_fixed_slices': False,
+        'flatten_patches': True,
+        'eps': 1e-6,
+    }
+
+    # Create loss from config
+    loss_fn = create_loss_from_config(config)
+
+    print(f"Created loss: {loss_fn.__class__.__name__}")
+    print(f"Configuration: {loss_fn}")
+    print()
+
+    # Simulate usage
+    batch_size, num_patches, embed_dim = 16, 196, 768
+    view_a = torch.randn(batch_size, num_patches, embed_dim)
+    view_b = torch.randn(batch_size, num_patches, embed_dim)
+
+    loss_dict = loss_fn(view_a, view_b)
+    print(f"Total Loss: {loss_dict['loss'].item():.6f}")
+    print()
+
+
+def example_10_training_loop():
+    """Example 10: Integration in Training Loop"""
+    print("=" * 60)
+    print("Example 10: Training Loop Integration with SIGReg")
+    print("=" * 60)
+
+    # Setup with SIGReg for better stability
+    loss_fn = SIGRegLoss(
+        num_slices=1024,
+        invariance_weight=25.0,
+        sigreg_weight=25.0,
     )
 
     # Dummy model (in practice, this would be your H-JEPA model)
     class DummyModel(nn.Module):
         def forward(self, x):
-            # Returns predictions and targets for 3 levels
+            # Returns two views of representations
             batch_size = x.shape[0]
-            predictions = [torch.randn(batch_size, 196, 768) for _ in range(3)]
-            targets = [torch.randn(batch_size, 196, 768) for _ in range(3)]
-            return predictions, targets
+            view_a = torch.randn(batch_size, 196, 768)
+            view_b = torch.randn(batch_size, 196, 768)
+            return view_a, view_b
 
     model = DummyModel()
-    optimizer = torch.optim.AdamW(loss_fn.parameters(), lr=1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 
     # Simulate training step
     print("Simulating training step...")
@@ -288,10 +405,10 @@ def example_7_training_loop():
     batch = torch.randn(32, 3, 224, 224)  # Dummy batch
 
     # Forward pass
-    predictions, targets = model(batch)
+    view_a, view_b = model(batch)
 
     # Compute loss
-    loss_dict = loss_fn(predictions, targets)
+    loss_dict = loss_fn(view_a, view_b)
     total_loss = loss_dict['loss']
 
     # Backward pass
@@ -300,8 +417,68 @@ def example_7_training_loop():
     optimizer.step()
 
     print(f"Step completed. Loss: {total_loss.item():.6f}")
-    print(f"  JEPA component: {loss_dict['jepa_loss'].item():.6f}")
-    print(f"  VICReg component: {loss_dict['vicreg_loss'].item():.6f}")
+    print(f"  Invariance component: {loss_dict['invariance_loss'].item():.6f}")
+    print(f"  SIGReg component: {loss_dict['sigreg_loss'].item():.6f}")
+    print()
+
+
+def example_11_comparison():
+    """Example 11: VICReg vs SIGReg Comparison"""
+    print("=" * 60)
+    print("Example 11: VICReg vs SIGReg Comparison")
+    print("=" * 60)
+
+    # Same input for both losses
+    batch_size, num_patches, embed_dim = 32, 196, 768
+    view_a = torch.randn(batch_size, num_patches, embed_dim)
+    view_b = torch.randn(batch_size, num_patches, embed_dim)
+
+    # VICReg Loss
+    vicreg_loss_fn = VICRegLoss(
+        invariance_weight=25.0,
+        variance_weight=25.0,
+        covariance_weight=1.0,
+    )
+
+    # SIGReg Loss
+    sigreg_loss_fn = SIGRegLoss(
+        num_slices=1024,
+        invariance_weight=25.0,
+        sigreg_weight=25.0,
+    )
+
+    # Compute both losses
+    import time
+
+    start = time.time()
+    vicreg_dict = vicreg_loss_fn(view_a, view_b)
+    vicreg_time = time.time() - start
+
+    start = time.time()
+    sigreg_dict = sigreg_loss_fn(view_a, view_b)
+    sigreg_time = time.time() - start
+
+    # Print comparison
+    print("VICReg Results:")
+    print(f"  Total Loss: {vicreg_dict['loss'].item():.6f}")
+    print(f"  Invariance: {vicreg_dict['invariance_loss'].item():.6f}")
+    print(f"  Variance: {vicreg_dict['variance_loss'].item():.6f}")
+    print(f"  Covariance: {vicreg_dict['covariance_loss'].item():.6f}")
+    print(f"  Time: {vicreg_time*1000:.2f}ms")
+    print()
+
+    print("SIGReg Results:")
+    print(f"  Total Loss: {sigreg_dict['loss'].item():.6f}")
+    print(f"  Invariance: {sigreg_dict['invariance_loss'].item():.6f}")
+    print(f"  SIGReg Reg: {sigreg_dict['sigreg_loss'].item():.6f}")
+    print(f"  Time: {sigreg_time*1000:.2f}ms")
+    print()
+
+    print("Comparison Summary:")
+    print(f"  Complexity: VICReg O(K²) vs SIGReg O(K)")
+    print(f"  Hyperparameters: VICReg 3 weights vs SIGReg 1 weight")
+    print(f"  Stability: SIGReg superior (from LeJEPA paper)")
+    print(f"  Time Ratio: {sigreg_time/vicreg_time:.2f}x")
     print()
 
 
@@ -317,7 +494,11 @@ if __name__ == '__main__':
     example_4_hierarchical_combined()
     example_5_with_masking()
     example_6_from_config()
-    example_7_training_loop()
+    example_7_sigreg_loss()
+    example_8_hybrid_vicreg_sigreg()
+    example_9_sigreg_from_config()
+    example_10_training_loop()
+    example_11_comparison()
 
     print("=" * 60)
     print("All examples completed successfully!")

@@ -1,0 +1,206 @@
+Feature Pyramid Network (FPN) Architecture in H-JEPA
+====================================================
+
+TRADITIONAL H-JEPA (Simple Pooling):
+------------------------------------
+
+Input Features [B, N, D]
+    |
+    |-----> Level 0 (Finest) ----> [B, N, D]
+    |
+    |-----> Pool (2x) -> Level 1 -> [B, N/2, D]
+    |
+    +-----> Pool (4x) -> Level 2 -> [B, N/4, D]
+
+
+FPN-ENHANCED H-JEPA:
+-------------------
+
+                    BOTTOM-UP PATHWAY (Pooling)
+                    ===========================
+                              |
+Input Features [B, N, D] ----+
+                              |
+                Level 0 (Finest)
+                [B, N, D]
+                    |
+                    | Pool (2x)
+                    v
+                Level 1 (Medium)
+                [B, N/2, D]
+                    |
+                    | Pool (4x)
+                    v
+                Level 2 (Coarse)
+                [B, N/4, D]
+
+
+                    LATERAL CONNECTIONS (1x1 Conv)
+                    ===============================
+
+    Level 0 -----> [Linear + LayerNorm] -----> [B, N, D_fpn]
+                                                    |
+    Level 1 -----> [Linear + LayerNorm] -----> [B, N/2, D_fpn]
+                                                    |
+    Level 2 -----> [Linear + LayerNorm] -----> [B, N/4, D_fpn]
+
+
+                    TOP-DOWN PATHWAY (Upsampling + Fusion)
+                    =======================================
+
+    Coarsest Level (Level 2)
+    [B, N/4, D_fpn]
+         |
+         | Upsample (2x) + TopDown Conv
+         v
+    [B, N/2, D_fpn] -----> FUSE <----- Lateral Level 1
+         |                   |
+         |                   | (Add or Concat)
+         |                   v
+         |              [B, N/2, D_fpn]
+         |
+         | Upsample (2x) + TopDown Conv
+         v
+    [B, N, D_fpn] -------> FUSE <----- Lateral Level 0
+                            |
+                            | (Add or Concat)
+                            v
+                       [B, N, D_fpn]
+
+
+COMPLETE FPN FLOW:
+==================
+
+                            Input Features
+                                  |
+                    +-------------+-------------+
+                    |             |             |
+                Level 0       Level 1       Level 2
+              (Pool 1x)     (Pool 2x)     (Pool 4x)
+                    |             |             |
+                    v             v             v
+              Lateral 0     Lateral 1     Lateral 2
+                    |             |             |
+                    v             v             v
+               [N, D_fpn]   [N/2, D_fpn]  [N/4, D_fpn]
+                    ^             ^             |
+                    |             |             | Start Top-Down
+                    |             |             v
+                    |             |      [N/4, D_fpn] (Coarsest)
+                    |             |             |
+                    |             |             | Upsample + Conv
+                    |             |             v
+                    |             +<---- FUSE [N/2, D_fpn]
+                    |                     |
+                    |                     | Upsample + Conv
+                    |                     v
+                    +<------------- FUSE [N, D_fpn]
+                    |
+                    v
+            Final FPN Features
+        [Level 0, Level 1, Level 2]
+
+
+FUSION METHODS:
+===============
+
+1. ADDITION FUSION (fusion_method='add'):
+
+    Lateral Features [B, N, D_fpn]
+            +
+    Top-Down Features [B, N, D_fpn]
+            =
+    Fused Features [B, N, D_fpn]
+
+
+2. CONCATENATION FUSION (fusion_method='concat'):
+
+    Lateral Features [B, N, D_fpn]
+            ||  (concatenate along feature dim)
+    Top-Down Features [B, N, D_fpn]
+            ||
+            v
+    Concatenated [B, N, 2*D_fpn]
+            |
+            | 1x1 Conv + LayerNorm + ReLU
+            v
+    Fused Features [B, N, D_fpn]
+
+
+INTEGRATION WITH H-JEPA:
+========================
+
+Predictor Output [B, M, D]
+    |
+    v
+FPN Processing:
+    |
+    +---> Level 0: [B, M, D_fpn] ---> Projection ---> [B, M, D] ---> Loss (weight=1.0)
+    |
+    +---> Level 1: [B, M/2, D_fpn] -> Projection ---> [B, M/2, D] -> Loss (weight=0.7)
+    |
+    +---> Level 2: [B, M/4, D_fpn] -> Projection ---> [B, M/4, D] -> Loss (weight=0.5)
+
+
+PARAMETER FLOW:
+===============
+
+Model Parameters:
+- fpn_lateral_convs[0..N-1]: N lateral 1x1 convolutions
+- fpn_top_down_convs[0..N-2]: N-1 top-down convolutions
+- fpn_fusion_convs[0..N-2]: N-1 fusion convs (only if concat method)
+- hierarchy_projections[0..N-1]: N final projections
+
+Where N = num_hierarchies (default: 3)
+
+
+FEATURE DIMENSIONS:
+===================
+
+Configuration: embed_dim=768, fpn_feature_dim=512, num_hierarchies=3
+
+Input Features:                    [B, 196, 768]  (14x14 patches)
+
+After Bottom-Up:
+  Level 0:                        [B, 196, 768]
+  Level 1 (pool 2x):              [B, 98, 768]
+  Level 2 (pool 4x):              [B, 49, 768]
+
+After Lateral Connections:
+  Level 0:                        [B, 196, 512]
+  Level 1:                        [B, 98, 512]
+  Level 2:                        [B, 49, 512]
+
+After Top-Down + Fusion:
+  Level 2 (coarsest, no top-down): [B, 49, 512]
+  Level 1 (upsample + fuse):       [B, 98, 512]
+  Level 0 (upsample + fuse):       [B, 196, 512]
+
+After Final Projection:
+  Level 0:                        [B, 196, 768]
+  Level 1:                        [B, 98, 768]
+  Level 2:                        [B, 49, 768]
+
+
+KEY INSIGHTS:
+=============
+
+1. Information Flow:
+   - Bottom-Up: Spatial reduction, semantic enrichment
+   - Top-Down: Semantic propagation, spatial refinement
+   - Lateral: Feature alignment across scales
+
+2. Multi-Scale Benefits:
+   - Fine levels get semantic context from coarse levels
+   - Coarse levels maintain spatial precision via lateral connections
+   - All levels benefit from bidirectional information flow
+
+3. Computational Trade-offs:
+   - Addition fusion: Faster, fewer parameters
+   - Concatenation fusion: More expressive, more parameters
+   - Reduced fpn_feature_dim: Lower compute, similar performance
+
+4. Training Considerations:
+   - FPN improves features at all scales
+   - May need to adjust hierarchy loss weights
+   - Slightly slower training but better representations

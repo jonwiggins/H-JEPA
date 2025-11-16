@@ -1,0 +1,215 @@
+# Multi-Crop Training Configuration for H-JEPA
+#
+# This configuration enables multi-crop training strategy inspired by DINOv2.
+# Multi-crop uses multiple views at different scales to improve representation learning.
+#
+# Usage:
+#   python scripts/train.py --config configs/multicrop_training.yaml
+
+# Model architecture settings
+model:
+  # Vision Transformer backbone
+  encoder_type: "vit_base_patch16_224"
+
+  # Embedding dimension
+  embed_dim: 768
+
+  # Number of hierarchical levels
+  num_hierarchies: 3
+
+  # Predictor configuration
+  predictor:
+    depth: 6
+    num_heads: 12
+    mlp_ratio: 4.0
+
+  # EMA settings for target encoder
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 30
+
+# Dataset and data loading
+data:
+  # Dataset name (imagenet, cifar10, cifar100, etc.)
+  dataset: "cifar10"
+
+  # Data directory
+  data_path: "/tmp/data"
+
+  # Image size (global crops)
+  image_size: 224
+
+  # Batch size per GPU
+  batch_size: 64
+
+  # Number of data loading workers
+  num_workers: 4
+
+  # Pin memory for faster data transfer
+  pin_memory: true
+
+  # Enable multi-crop training
+  use_multicrop: true
+
+  # Multi-crop configuration
+  multicrop:
+    # Number of global crops (full resolution)
+    num_global_crops: 2
+
+    # Number of local crops (lower resolution)
+    num_local_crops: 6
+
+    # Global crop size (default: 224x224)
+    global_crop_size: 224
+
+    # Local crop size (default: 96x96)
+    local_crop_size: 96
+
+    # Global crop scale range (fraction of original image)
+    global_crop_scale: [0.4, 1.0]
+
+    # Local crop scale range (fraction of original image)
+    local_crop_scale: [0.05, 0.4]
+
+    # Color jitter strength for global crops
+    global_color_jitter: 0.4
+
+    # Color jitter strength for local crops
+    local_color_jitter: 0.4
+
+    # Enable adaptive multi-crop (gradually increase local crops)
+    adaptive: false
+
+    # Adaptive settings (only used if adaptive=true)
+    adaptive_config:
+      min_local_crops: 2
+      max_local_crops: 10
+      warmup_epochs: 30
+
+# Multi-crop masking strategy
+masking:
+  # Masking strategy for multi-crop
+  # Options: 'global_only', 'global_with_local_context', 'cross_crop_prediction'
+  strategy: "global_only"
+
+  # Number of target blocks to predict (per hierarchy level)
+  num_masks: 4
+
+  # Mask scale range for finest level (as fraction of image)
+  mask_scale: [0.05, 0.15]
+
+  # Aspect ratio range for masks
+  aspect_ratio: [0.75, 1.5]
+
+# Training hyperparameters
+training:
+  # Total number of epochs
+  epochs: 100
+
+  # Warmup epochs
+  warmup_epochs: 10
+
+  # Base learning rate
+  lr: 1.0e-4
+
+  # Minimum learning rate
+  min_lr: 1.0e-6
+
+  # Weight decay
+  weight_decay: 0.05
+
+  # Optimizer (adamw, sgd)
+  optimizer: "adamw"
+
+  # Betas for AdamW
+  betas: [0.9, 0.95]
+
+  # Learning rate schedule (cosine, linear)
+  lr_schedule: "cosine"
+
+  # Gradient clipping
+  clip_grad: 3.0
+
+  # Mixed precision training
+  use_amp: true
+
+  # Gradient accumulation steps
+  accumulation_steps: 1
+
+# Loss function settings
+loss:
+  # Loss type (mse, smoothl1, huber)
+  type: "mse"
+
+  # Hierarchical loss weights (one per hierarchy level)
+  hierarchy_weights: [1.0, 0.5, 0.25]
+
+  # Whether to normalize embeddings before loss computation
+  normalize_embeddings: false
+
+# Checkpointing and logging
+checkpoint:
+  # Save checkpoint every N epochs
+  save_frequency: 10
+
+  # Keep only the best N checkpoints
+  keep_best_n: 3
+
+  # Checkpoint directory
+  checkpoint_dir: "results/multicrop/checkpoints"
+
+  # Resume from checkpoint
+  resume: null
+
+# Logging configuration
+logging:
+  # Experiment name
+  experiment_name: "hjepa_multicrop_cifar10"
+
+  # Logging directory
+  log_dir: "results/multicrop/logs"
+
+  # Log every N steps
+  log_frequency: 50
+
+  # Weights & Biases settings
+  wandb:
+    enabled: false
+    project: "h-jepa-multicrop"
+    entity: null
+    tags: ["multicrop", "vit-base", "cifar10"]
+
+  # TensorBoard settings
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+distributed:
+  # Enable distributed training
+  enabled: false
+
+  # Backend (nccl, gloo)
+  backend: "nccl"
+
+  # World size (number of GPUs)
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  # Evaluate every N epochs
+  eval_frequency: 10
+
+  # Linear probing settings
+  linear_probe:
+    enabled: false
+    dataset: "cifar10"
+    batch_size: 256
+    epochs: 90
+    lr: 0.1
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cuda"

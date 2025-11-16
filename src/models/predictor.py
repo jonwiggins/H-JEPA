@@ -9,6 +9,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint
 from einops import rearrange, repeat
 
 
@@ -113,12 +114,14 @@ class Predictor(nn.Module):
         mlp_ratio: Ratio of MLP hidden dimension to embedding dimension
         dropout: Dropout probability
         drop_path_rate: Maximum stochastic depth rate
+        use_gradient_checkpointing: Whether to use gradient checkpointing for memory efficiency
 
     Attributes:
         mask_token: Learnable token for masked positions
         blocks: Transformer blocks
         norm: Final layer normalization
         head: Prediction head
+        use_gradient_checkpointing: Flag for gradient checkpointing
     """
 
     def __init__(
@@ -129,11 +132,13 @@ class Predictor(nn.Module):
         mlp_ratio: float = 4.0,
         dropout: float = 0.0,
         drop_path_rate: float = 0.0,
+        use_gradient_checkpointing: bool = False,
     ):
         super().__init__()
 
         self.embed_dim = embed_dim
         self.depth = depth
+        self.use_gradient_checkpointing = use_gradient_checkpointing
 
         # Learnable mask token
         self.mask_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
@@ -214,9 +219,19 @@ class Predictor(nn.Module):
         # [B, N_context + N_mask, D]
         x = torch.cat([context_features, mask_tokens], dim=1)
 
-        # Pass through transformer blocks
-        for block in self.blocks:
-            x = block(x)
+        # Pass through transformer blocks with optional gradient checkpointing
+        # Gradient checkpointing saves memory by recomputing activations during
+        # the backward pass instead of storing them during the forward pass
+        if self.use_gradient_checkpointing and self.training:
+            for block in self.blocks:
+                # Use non-reentrant checkpointing for better compatibility with
+                # distributed training and edge cases
+                x = torch.utils.checkpoint.checkpoint(
+                    block, x, use_reentrant=False
+                )
+        else:
+            for block in self.blocks:
+                x = block(x)
 
         # Extract only the predicted mask tokens
         x = x[:, N_context:, :]
@@ -266,6 +281,7 @@ def create_predictor(
     mlp_ratio: float = 4.0,
     dropout: float = 0.0,
     drop_path_rate: float = 0.0,
+    use_gradient_checkpointing: bool = False,
 ) -> Predictor:
     """
     Factory function to create a predictor.
@@ -277,6 +293,7 @@ def create_predictor(
         mlp_ratio: Ratio of MLP hidden dimension to embedding dimension
         dropout: Dropout probability
         drop_path_rate: Maximum stochastic depth rate
+        use_gradient_checkpointing: Whether to use gradient checkpointing for memory efficiency
 
     Returns:
         Predictor model
@@ -288,4 +305,5 @@ def create_predictor(
         mlp_ratio=mlp_ratio,
         dropout=dropout,
         drop_path_rate=drop_path_rate,
+        use_gradient_checkpointing=use_gradient_checkpointing,
     )
