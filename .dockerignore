@@ -35,7 +35,9 @@ checkpoints/
 
 # Documentation
 docs/_build/
+docs/*.md
 *.md
+!README.md
 
 # Git
 .git/
