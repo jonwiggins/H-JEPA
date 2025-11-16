@@ -33,6 +33,17 @@ repos:
       - id: mixed-line-ending
         args: [--fix=lf]
 
+  # Pytest - run tests before commit
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: pytest
+        args: [tests/test_phase123_optimizations.py, -v, --tb=short, -x]
+        language: system
+        pass_filenames: false
+        always_run: true
+
   # Mypy - Static type checking (run manually with: mypy --config-file=mypy.ini src/)
   # Disabled in pre-commit due to environment dependency differences
   # - repo: https://github.com/pre-commit/mirrors-mypy

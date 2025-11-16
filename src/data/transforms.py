@@ -61,7 +61,17 @@ class RandAugment:
         self.num_ops = num_ops
         self.magnitude = magnitude
         self.num_magnitude_bins = num_magnitude_bins
-        self.interpolation = interpolation
+
+        # Convert torchvision InterpolationMode to PIL Resampling for compatibility
+        if interpolation == transforms.InterpolationMode.NEAREST:
+            self.interpolation = Image.Resampling.NEAREST
+        elif interpolation == transforms.InterpolationMode.BILINEAR:
+            self.interpolation = Image.Resampling.BILINEAR
+        elif interpolation == transforms.InterpolationMode.BICUBIC:
+            self.interpolation = Image.Resampling.BICUBIC
+        else:
+            self.interpolation = Image.Resampling.BILINEAR  # Default fallback
+
         self.fill = fill if fill is not None else [128, 128, 128]
 
         # Define augmentation operations
