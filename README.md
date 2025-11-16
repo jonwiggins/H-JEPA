@@ -1072,7 +1072,6 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ### Community
 - **Discord**: Join our community server (coming soon)
-- **Twitter**: Follow [@hjepa_ml](https://twitter.com/hjepa_ml) for updates
 
 ### Maintainers
 - H-JEPA Team - [GitHub Profile](https://github.com/yourusername)
@@ -1144,6 +1143,5 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 Made with :heart: by the H-JEPA Team
 
 [![Star on GitHub](https://img.shields.io/github/stars/yourusername/H-JEPA?style=social)](https://github.com/yourusername/H-JEPA)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/hjepa_ml?style=social)](https://twitter.com/hjepa_ml)
 
 </div>
