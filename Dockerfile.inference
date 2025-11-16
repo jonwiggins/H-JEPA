@@ -21,22 +21,22 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
-RUN python3.11 -m pip install --upgrade pip setuptools wheel
+RUN python3.11 -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install PyTorch (CPU or CUDA runtime)
 ARG TORCH_DEVICE=cpu
 RUN if [ "$TORCH_DEVICE" = "cuda" ]; then \
-    pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118; \
+    pip install --no-cache-dir torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118; \
     else \
-    pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cpu; \
+    pip install --no-cache-dir torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
 # Copy requirements and install minimal dependencies for inference
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install serving dependencies
-RUN pip install \
+RUN pip install --no-cache-dir \
     fastapi==0.104.1 \
     uvicorn[standard]==0.24.0 \
     pydantic==2.5.0 \
@@ -50,7 +50,7 @@ COPY pyproject.toml .
 COPY README.md .
 
 # Install h-jepa package
-RUN pip install -e .
+RUN pip install --no-cache-dir -e .
 
 # Create model directory
 RUN mkdir -p /app/models

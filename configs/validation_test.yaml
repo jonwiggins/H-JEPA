@@ -3,88 +3,96 @@
 # Duration: ~1-2 hours on M1 Max
 # Dataset: CIFAR-10 (quick to download and train)
 
-# Experiment metadata
-experiment_name: "validation_test_flash_attention"
-project_name: "h-jepa-validation"
-description: "Quick validation of Flash Attention and TensorBoard enhancements"
+experiment:
+  name: validation_test_flash_attention
+  seed: 42
+  output_dir: results/validation_test
+  save_frequency: 5
+  eval_frequency: 5
 
-# Encoder configuration
-encoder:
-  encoder_type: "vit_base_patch16_224"
-  img_size: 224
-  pretrained: false
-  drop_path_rate: 0.0
+model:
+  encoder_type: vit_base_patch16_224
+  embed_dim: 768
+  num_hierarchies: 3
   use_rope: true              # ✓ Enable RoPE
   rope_theta: 10000.0
   use_flash_attention: true   # ✓ Enable Flash Attention (NEW!)
   use_gradient_checkpointing: false
+  ema:
+    momentum: 0.996
+    momentum_end: 1.0
+    momentum_warmup_epochs: 2
+  predictor:
+    depth: 6
+    num_heads: 6
+    mlp_ratio: 4.0
+    qkv_bias: true
+    dropout: 0.0
 
-# Predictor configuration
-predictor:
-  num_layers: 6
-  embed_dim: 384
-  num_heads: 6
-  mlp_ratio: 4.0
-
-# Dataset configuration
 data:
-  dataset: "cifar10"          # Small, fast dataset
-  data_dir: "./data"
-  train_batch_size: 32        # Small batch for M1 Max
-  val_batch_size: 32
+  use_multi_dataset: false
+  dataset: cifar10
+  data_path: ./data
+  image_size: 224
+  batch_size: 32              # Small batch for M1 Max
   num_workers: 4
-  pin_memory: true
-  persistent_workers: true
+  transforms:
+    crop_scale:
+      - 0.8
+      - 1.0
+    horizontal_flip: true
+    color_jitter: 0.1
 
-# Multi-block masking configuration
-masking:
-  num_target_blocks: 4
-  target_aspect_ratio: [0.75, 1.5]
-  target_scale: [0.15, 0.2]
-  context_aspect_ratio: [1.0, 1.0]
-  context_scale: [0.85, 1.0]
-  max_keep_target: 1.0
-  min_keep_target: 0.15
-
-# Training configuration
 training:
   epochs: 15                  # Short run for validation
   warmup_epochs: 2
-  base_lr: 0.001
+  optimizer: adamw
+  lr: 0.001
+  min_lr: 1.0e-6
   weight_decay: 0.04
-  optimizer: "adamw"
+  betas:
+    - 0.9
+    - 0.95
+  lr_schedule: cosine
+  min_lr_ratio: 0.01
+  warmup_lr_ratio: 0.001
   use_amp: true               # Mixed precision
-  grad_clip_norm: 1.0
-  
-  # EMA configuration
-  ema_momentum: 0.996
-  ema_momentum_end: 1.0
-  ema_warmup_steps: 500
 
-# Loss configuration  
+masking:
+  num_target_masks: 4
+  mask_scale:
+    - 0.15
+    - 0.2
+  aspect_ratio:
+    - 0.75
+    - 1.5
+  num_context_masks: 1
+
 loss:
-  loss_type: "smooth_l1"
-  use_running_loss: true
+  type: smoothl1
+  hierarchy_weights:
+    - 1.0
+    - 0.7
+    - 0.5
+  use_vicreg: false
 
-# Logging configuration
 logging:
-  log_frequency: 10            # Log every 10 batches
+  experiment_name: validation_test_flash_attention
+  log_dir: results/validation_test/logs
   use_wandb: false             # Disable W&B for quick test
   use_tensorboard: true        # ✓ Enable TensorBoard (with enhancements!)
-  
-  # TensorBoard-specific settings
-  tensorboard:
-    log_dir: "results/tensorboard/validation_test"
-    log_images_frequency: 100  # Log visualizations every 100 batches
-    log_embeddings_frequency: 500  # Log embeddings every 500 batches
-    max_images_to_log: 4
+  log_frequency: 10            # Log every 10 batches
+  log_images: true
+  log_attention: true
+  log_gradients: true
+  log_dataset_distribution: false
 
-# Checkpoint configuration
-checkpointing:
-  save_frequency: 5            # Save every 5 epochs
-  checkpoint_dir: "results/checkpoints/validation_test"
-  keep_last_k: 2
+checkpoint:
+  checkpoint_dir: results/validation_test/checkpoints
+  save_frequency: 1            # Save every epoch for exploration!
+  save_best: true
+  metric: val_loss
+  mode: min
+  keep_last_k: 15              # Keep all epochs for this validation run
 
-# Device configuration
-device: "mps"                  # Apple Silicon
-seed: 42
+device: mps                    # Apple Silicon
