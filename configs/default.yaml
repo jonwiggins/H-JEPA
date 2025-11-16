@@ -72,8 +72,11 @@ data:
   pin_memory: true
 
   # Data augmentation settings
+  # CRITICAL: I-JEPA uses minimal augmentation (Section 4.1)
+  # The model learns invariances through PREDICTION, not augmentation
+  # Only random crop and horizontal flip should be used (no color jitter)
   augmentation:
-    color_jitter: 0.4
+    color_jitter: 0.0  # CHANGED from 0.4 - I-JEPA uses minimal augmentation
     horizontal_flip: true
     random_crop: true
 
@@ -145,7 +148,9 @@ loss:
   hierarchy_weights: [1.0, 0.5, 0.25]
 
   # Whether to normalize embeddings before loss computation
-  normalize_embeddings: false
+  # CRITICAL: I-JEPA paper (Section 3.2) explicitly requires normalization
+  # "We normalize the representations before computing the loss"
+  normalize_embeddings: true
 
 # Checkpointing and logging
 checkpoint:

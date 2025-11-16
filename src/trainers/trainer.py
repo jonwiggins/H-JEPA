@@ -363,12 +363,16 @@ class HJEPATrainer:
             device=self.device,
         )
 
-        # Use level 0 masks (finest level)
+        # IMPORTANT: H-JEPA hierarchy is created via POOLING, not different spatial masks
+        # The masking function generates multi-level masks but we only use level_0
+        # because the model applies pooling to create multi-scale representations
+        # from the SAME spatial regions (not different regions per level)
+        #
         # The masking function returns:
-        # - 'context': [B, N] - regions to keep visible
+        # - 'context': [B, N] - regions to keep visible (currently unused)
         # - 'targets': [B, num_target_masks, N] - multiple target regions to predict
         #
-        # For H-JEPA, we need to combine all target masks into a single mask of patches to predict
+        # We combine all target masks into a single mask of patches to predict
         # targets shape: [B, num_target_masks, N]
         target_masks = masks_dict["level_0"]["targets"]
 
