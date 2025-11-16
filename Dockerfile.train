@@ -13,8 +13,8 @@ WORKDIR /workspace/h-jepa
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3.10-dev \
+    python3.11 \
+    python3.11-dev \
     python3-pip \
     git \
     wget \
@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
-RUN python3.10 -m pip install --upgrade pip setuptools wheel
+RUN python3.11 -m pip install --upgrade pip setuptools wheel
 
 # Install PyTorch with CUDA support
 RUN pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118
@@ -63,4 +63,4 @@ ENV MKL_NUM_THREADS=1
 EXPOSE 6006
 
 # Default command: run training
-CMD ["python3.10", "scripts/train.py"]
+CMD ["python3.11", "scripts/train.py"]
