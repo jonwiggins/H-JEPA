@@ -17,6 +17,7 @@ from typing import Dict, Any, Optional, List, Union
 from collections import defaultdict
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 
 # Optional imports
@@ -315,6 +316,143 @@ class MetricsLogger:
                 param.data,
                 step=step,
             )
+
+    def log_hierarchical_losses(
+        self,
+        loss_dict: Dict[str, float],
+        step: Optional[int] = None,
+        prefix: str = "train/hierarchy/",
+    ):
+        """
+        Log hierarchical losses per level with percentages.
+
+        Args:
+            loss_dict: Dictionary with keys like 'loss_level_0', 'loss_level_1', etc.
+            step: Global step number
+            prefix: Prefix for metric names
+        """
+        if step is None:
+            step = self.step
+
+        # Extract level losses
+        level_losses = {}
+        total_loss = 0
+        for key, value in loss_dict.items():
+            if key.startswith('loss_level_'):
+                level = key.split('_')[-1]
+                level_losses[level] = value
+                total_loss += value
+
+        # Log individual level losses and percentages
+        for level, loss_value in level_losses.items():
+            self.log_metrics(
+                {
+                    f"{prefix}level_{level}_loss": loss_value,
+                    f"{prefix}level_{level}_percentage": (loss_value / total_loss * 100) if total_loss > 0 else 0,
+                },
+                step=step,
+                commit=False,
+            )
+
+    def log_prediction_comparison(
+        self,
+        images: torch.Tensor,
+        predictions: List[torch.Tensor],
+        targets: List[torch.Tensor],
+        masks: torch.Tensor,
+        step: Optional[int] = None,
+        max_images: int = 4,
+    ):
+        """
+        Log side-by-side comparison of predictions vs targets.
+
+        Args:
+            images: Original images [B, C, H, W]
+            predictions: List of predictions per hierarchy level
+            targets: List of targets per hierarchy level
+            masks: Prediction mask [B, N]
+            step: Global step number
+            max_images: Maximum number of images to log
+        """
+        if step is None:
+            step = self.step
+
+        batch_size = min(images.size(0), max_images)
+
+        # Log original images
+        self.log_images(
+            "predictions/original_images",
+            [images[i] for i in range(batch_size)],
+            step=step,
+        )
+
+        # Log masked images (visualization of what's masked)
+        try:
+            # This is a placeholder - actual mask visualization would need patch info
+            # For now, just log that masks are being used
+            mask_ratio = masks.float().mean().item()
+            self.log_metrics(
+                {"predictions/mask_ratio": mask_ratio},
+                step=step,
+                commit=False,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log mask visualization: {e}")
+
+        # Log predictions vs targets for each hierarchy level
+        for level_idx, (preds, targs) in enumerate(zip(predictions, targets)):
+            # Compute similarity
+            similarity = F.cosine_similarity(
+                preds.flatten(1),
+                targs.flatten(1),
+                dim=1
+            ).mean().item()
+
+            self.log_metrics(
+                {f"predictions/level_{level_idx}_similarity": similarity},
+                step=step,
+                commit=False,
+            )
+
+    def log_embeddings(
+        self,
+        embeddings: torch.Tensor,
+        labels: Optional[torch.Tensor] = None,
+        tag: str = "embeddings",
+        step: Optional[int] = None,
+    ):
+        """
+        Log embeddings for t-SNE/UMAP visualization in TensorBoard.
+
+        Args:
+            embeddings: Embedding vectors [N, D]
+            labels: Optional labels for each embedding [N]
+            tag: Tag for the embedding visualization
+            step: Global step number
+        """
+        if step is None:
+            step = self.step
+
+        # TensorBoard embedding visualization
+        if self.use_tensorboard:
+            try:
+                # Convert to numpy
+                emb_np = embeddings.detach().cpu()
+
+                # Prepare metadata (labels)
+                metadata = None
+                if labels is not None:
+                    metadata = labels.detach().cpu().numpy().tolist()
+
+                self.tb_writer.add_embedding(
+                    emb_np,
+                    metadata=metadata,
+                    tag=tag,
+                    global_step=step,
+                )
+                logger.info(f"Logged embeddings: {tag} at step {step}")
+            except Exception as e:
+                logger.warning(f"Failed to log embeddings: {e}")
 
     def accumulate_metrics(
         self,

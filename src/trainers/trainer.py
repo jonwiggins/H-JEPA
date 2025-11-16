@@ -205,6 +205,10 @@ class HJEPATrainer:
             if epoch % 10 == 0:
                 self.metrics_logger.log_system_metrics(step=self.global_step)
 
+            # Log prediction visualizations and embeddings periodically
+            if epoch % 5 == 0:
+                self._log_epoch_visualizations(epoch)
+
             # Print epoch summary
             val_metrics_to_print = (
                 val_metrics if self.val_loader else None
@@ -303,6 +307,19 @@ class HJEPATrainer:
                         log_dict,
                         step=self.global_step,
                         prefix="train/",
+                    )
+
+                    # Log hierarchical losses if available
+                    self.metrics_logger.log_hierarchical_losses(
+                        loss_dict,
+                        step=self.global_step,
+                    )
+
+                # Log gradient histograms periodically
+                if batch_idx % (self.log_frequency * 20) == 0:
+                    self.metrics_logger.log_model_gradients(
+                        self.model,
+                        step=self.global_step,
                     )
 
         # Compute epoch averages
@@ -540,6 +557,82 @@ class HJEPATrainer:
             pass
 
         return metrics
+
+    @torch.no_grad()
+    def _log_epoch_visualizations(self, epoch: int):
+        """
+        Log prediction visualizations and embeddings at epoch milestones.
+
+        Args:
+            epoch: Current epoch number
+        """
+        try:
+            # Get a batch for visualization
+            self.model.eval()
+            batch = next(iter(self.train_loader))
+            if isinstance(batch, (tuple, list)):
+                images = batch[0]
+            else:
+                images = batch
+
+            images = images[:4].to(self.device)  # Only use first 4 images
+
+            # Generate masks
+            masks_dict = self.masking_fn(
+                batch_size=images.size(0),
+                device=self.device,
+            )
+            target_masks = masks_dict['level_0']['targets']
+            prediction_mask = target_masks.any(dim=1)
+
+            # Forward pass
+            outputs = self.model(images, prediction_mask)
+
+            # Log prediction comparison
+            self.metrics_logger.log_prediction_comparison(
+                images=images,
+                predictions=outputs['predictions'],
+                targets=outputs['targets'],
+                masks=prediction_mask,
+                step=self.global_step,
+                max_images=4,
+            )
+
+            # Log embeddings (context and target features)
+            context_features = outputs['context_features']
+            target_features = outputs['target_features']
+
+            # Flatten and subsample if needed
+            if context_features.dim() > 2:
+                context_flat = context_features.reshape(context_features.size(0), -1)
+            else:
+                context_flat = context_features
+
+            if target_features.dim() > 2:
+                target_flat = target_features.reshape(target_features.size(0), -1)
+            else:
+                target_flat = target_features
+
+            # Log context embeddings
+            self.metrics_logger.log_embeddings(
+                embeddings=context_flat,
+                tag="embeddings/context",
+                step=self.global_step,
+            )
+
+            # Log target embeddings
+            self.metrics_logger.log_embeddings(
+                embeddings=target_flat,
+                tag="embeddings/target",
+                step=self.global_step,
+            )
+
+            logger.info(f"Logged visualizations for epoch {epoch}")
+            self.model.train()
+
+        except Exception as e:
+            logger.warning(f"Failed to log epoch visualizations: {e}")
+            self.model.train()
 
     def _save_checkpoint(
         self,
