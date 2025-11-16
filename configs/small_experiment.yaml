@@ -54,9 +54,9 @@ training:
 
 # Loss function settings
 loss:
-  type: "smoothl1"
+  type: "mse"
   hierarchy_weights: [1.0, 0.5]  # Only 2 levels
-  normalize_embeddings: true
+  normalize_embeddings: false
 
 # Checkpointing and logging
 checkpoint:

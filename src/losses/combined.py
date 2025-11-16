@@ -432,6 +432,18 @@ def create_loss_from_config(config: Dict) -> nn.Module:
     loss_type = loss_config.get('type', 'combined').lower()
     num_hierarchies = model_config.get('num_hierarchies', loss_config.get('num_hierarchies', 3))
 
+    # Validate VICReg configuration - warn if VICReg fields are specified but won't be used
+    if loss_type in ['hjepa', 'jepa', 'smoothl1', 'mse']:
+        # Check for unused VICReg fields
+        if 'vicreg_weight' in loss_config or 'use_vicreg' in loss_config or 'vicreg' in loss_config:
+            import warnings
+            warnings.warn(
+                f"VICReg fields found in config but loss type is '{loss_type}'. "
+                f"VICReg regularization is only used with type='combined'. "
+                f"The VICReg configuration will be ignored.",
+                UserWarning
+            )
+
     if loss_type == 'hjepa' or loss_type == 'jepa' or loss_type == 'smoothl1':
         return HJEPALoss(
             loss_type=loss_config.get('jepa_loss_type', loss_type if loss_type in ['smoothl1', 'mse', 'cosine'] else 'smoothl1'),

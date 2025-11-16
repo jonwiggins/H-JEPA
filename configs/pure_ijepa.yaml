@@ -1,0 +1,227 @@
+# Pure I-JEPA Configuration
+# Strictly follows the I-JEPA paper (Assran et al., CVPR 2023)
+# https://arxiv.org/abs/2301.08243
+#
+# Key specifications:
+# - Single hierarchy level (no multi-scale)
+# - MSE loss in representation space
+# - Linear EMA schedule: 0.996 -> 1.0
+# - 4 target blocks at 15-20% scale each
+# - 1 context block at 85-100% scale
+# - Minimal augmentation
+# - No embedding normalization
+# - No VICReg regularization
+
+# Model architecture settings
+model:
+  # Vision Transformer backbone - I-JEPA uses ViT-Base/16 as baseline
+  encoder_type: "vit_base_patch16_224"
+
+  # Embedding dimension (768 for ViT-Base)
+  embed_dim: 768
+
+  # Single hierarchy level for pure I-JEPA (no H-JEPA extension)
+  num_hierarchies: 1
+
+  # Predictor configuration
+  # I-JEPA uses a narrow predictor (fewer layers than encoder)
+  predictor:
+    depth: 6           # 6 layers (vs 12 in ViT-Base encoder)
+    num_heads: 12      # Same number of heads as encoder
+    mlp_ratio: 4.0
+
+  # EMA (Exponential Moving Average) settings for target encoder
+  # I-JEPA spec: "momentum value of 0.996, which is linearly increased to 1.0"
+  ema:
+    momentum: 0.996           # Starting momentum
+    momentum_end: 1.0         # Final momentum
+    momentum_warmup_epochs: 30  # Warmup period for linear schedule
+
+# Dataset and data loading
+data:
+  # I-JEPA paper uses ImageNet-1K
+  dataset: "imagenet"
+
+  # Data directory
+  data_path: "/path/to/imagenet"
+
+  # Image size (I-JEPA uses 224x224)
+  image_size: 224
+
+  # Batch size per GPU
+  # I-JEPA paper uses batch size 2048 across 16 GPUs (128 per GPU)
+  batch_size: 128
+
+  # Number of data loading workers
+  num_workers: 8
+
+  # Pin memory for faster data transfer
+  pin_memory: true
+
+  # Data augmentation settings
+  # I-JEPA uses MINIMAL augmentation (unlike contrastive methods)
+  augmentation:
+    color_jitter: 0.0        # No color jitter in I-JEPA
+    horizontal_flip: true    # Only horizontal flip
+    random_crop: true        # Random resized crop
+
+# Multi-block masking strategy
+# I-JEPA specification:
+# - 4 target blocks with "sufficiently large scale (semantic)"
+# - 1 context block that is "sufficiently informative (spatially distributed)"
+masking:
+  # Number of target blocks to predict
+  num_masks: 4
+
+  # Target block scale range (as fraction of image)
+  # I-JEPA: 15-20% per target block
+  mask_scale: [0.15, 0.2]
+
+  # Aspect ratio range for masks
+  aspect_ratio: [0.75, 1.5]
+
+  # Number of context blocks
+  num_context_masks: 1
+
+  # Context block scale
+  # I-JEPA: 85-100% of image
+  context_scale: [0.85, 1.0]
+
+# Training hyperparameters
+training:
+  # Total number of epochs
+  # I-JEPA paper: 300 epochs on ImageNet
+  epochs: 300
+
+  # Warmup epochs
+  warmup_epochs: 40
+
+  # Base learning rate
+  # I-JEPA uses 1.5e-4 base LR
+  lr: 1.5e-4
+
+  # Minimum learning rate
+  min_lr: 1.0e-6
+
+  # Weight decay
+  weight_decay: 0.05
+
+  # Optimizer (I-JEPA uses AdamW)
+  optimizer: "adamw"
+
+  # Betas for AdamW
+  betas: [0.9, 0.95]
+
+  # Learning rate schedule
+  lr_schedule: "cosine"
+
+  # Gradient clipping
+  clip_grad: 3.0
+
+  # Mixed precision training
+  use_amp: true
+
+  # Gradient accumulation steps
+  accumulation_steps: 1
+
+# Loss function settings
+# I-JEPA specification: "Average L2 distance between predicted and target representations"
+loss:
+  # Loss type: MSE (L2 loss) as specified in I-JEPA
+  type: "mse"
+
+  # Hierarchical loss weights (only one level for pure I-JEPA)
+  hierarchy_weights: [1.0]
+
+  # Embedding normalization: DISABLED for pure I-JEPA
+  # The paper does not mention L2 normalization
+  normalize_embeddings: false
+
+  # NO VICReg regularization (not in I-JEPA)
+  # VICReg is not used in the original I-JEPA paper
+
+# Checkpointing and logging
+checkpoint:
+  # Save checkpoint every N epochs
+  save_frequency: 10
+
+  # Keep only the best N checkpoints
+  keep_best_n: 3
+
+  # Checkpoint directory
+  checkpoint_dir: "results/pure_ijepa/checkpoints"
+
+  # Resume from checkpoint
+  resume: null
+
+# Logging configuration
+logging:
+  # Experiment name
+  experiment_name: "pure_ijepa_imagenet"
+
+  # Logging directory
+  log_dir: "results/pure_ijepa/logs"
+
+  # Log every N steps
+  log_frequency: 100
+
+  # Weights & Biases settings
+  wandb:
+    enabled: true
+    project: "pure-ijepa"
+    entity: null  # Your W&B username/team
+    tags: ["pure-ijepa", "vit-base", "imagenet"]
+
+  # TensorBoard settings
+  tensorboard:
+    enabled: true
+
+# Distributed training settings
+# I-JEPA paper uses 16 A100 GPUs
+distributed:
+  # Enable distributed training
+  enabled: false
+
+  # Backend (nccl for GPU)
+  backend: "nccl"
+
+  # World size (number of GPUs)
+  world_size: 1
+
+# Evaluation settings
+evaluation:
+  # Evaluate every N epochs
+  eval_frequency: 10
+
+  # Linear probing settings
+  # I-JEPA evaluates with linear probe on frozen features
+  linear_probe:
+    enabled: false
+    dataset: "imagenet"
+    batch_size: 256
+    epochs: 90
+    lr: 0.1
+
+# Reproducibility
+seed: 42
+
+# Device settings
+device: "cuda"  # cuda or cpu
+
+# Notes:
+# ------
+# This configuration strictly follows the I-JEPA paper specifications.
+# Key differences from H-JEPA:
+# - Single hierarchy level (num_hierarchies: 1)
+# - No hierarchical masking
+# - No VICReg regularization
+# - No embedding normalization
+# - Minimal augmentation
+#
+# Expected performance (I-JEPA ViT-Base/16 on ImageNet):
+# - Pretraining: ~300 epochs
+# - Linear probe: ~70-72% top-1 accuracy
+# - Training time: <72 hours on 16 A100 GPUs
+#
+# To use this config:
+# python scripts/train.py --config configs/pure_ijepa.yaml

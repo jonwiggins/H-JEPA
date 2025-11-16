@@ -353,12 +353,12 @@ class HJEPATrainer:
 
         # Combine all target masks using OR operation (any target that covers a patch)
         # This gives us a single mask of shape [B, N] where 1 = predict, 0 = don't predict
-        context_mask = target_masks.any(dim=1)  # [B, N]
+        prediction_mask = target_masks.any(dim=1)  # [B, N] - positions to predict
 
         # Forward pass with automatic mixed precision
         with autocast(enabled=self.use_amp):
             # Forward through H-JEPA model
-            outputs = self.model(images, context_mask)
+            outputs = self.model(images, prediction_mask)
 
             # Extract predictions and targets for all hierarchy levels
             predictions = outputs['predictions']

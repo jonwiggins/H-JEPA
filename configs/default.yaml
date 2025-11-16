@@ -104,13 +104,13 @@ training:
 # Loss function settings
 loss:
   # Loss type (mse, smoothl1, huber)
-  type: "smoothl1"
+  type: "mse"
 
   # Hierarchical loss weights (one per hierarchy level)
   hierarchy_weights: [1.0, 0.5, 0.25]
 
   # Whether to normalize embeddings before loss computation
-  normalize_embeddings: true
+  normalize_embeddings: false
 
 # Checkpointing and logging
 checkpoint:

@@ -209,8 +209,8 @@ class TargetEncoder(nn.Module):
         """
         Update target encoder weights using EMA from context encoder.
 
-        Implements cosine schedule for momentum:
-        tau(t) = tau_base + (tau_end - tau_base) * (1 + cos(pi * t / T)) / 2
+        Implements linear schedule for momentum as per I-JEPA paper:
+        tau(t) = tau_base + (tau_end - tau_base) * min(1.0, t / T)
 
         Args:
             context_encoder: Context encoder to copy weights from
@@ -219,14 +219,9 @@ class TargetEncoder(nn.Module):
         Returns:
             Current momentum value
         """
-        # Calculate momentum with cosine schedule
-        if current_step < self.ema_warmup_steps:
-            # Cosine warmup schedule
-            momentum = self.momentum + (self.ema_momentum_end - self.momentum) * (
-                1 + math.cos(math.pi * current_step / self.ema_warmup_steps)
-            ) / 2
-        else:
-            momentum = self.ema_momentum_end
+        # Calculate momentum with linear schedule
+        progress = min(1.0, current_step / self.ema_warmup_steps)
+        momentum = self.momentum + (self.ema_momentum_end - self.momentum) * progress
 
         # Update weights: θ_target = momentum * θ_target + (1 - momentum) * θ_context
         for param_target, param_context in zip(
