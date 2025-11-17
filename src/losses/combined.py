@@ -452,7 +452,7 @@ def create_loss_from_config(config: Dict[str, Any]) -> nn.Module:
                 UserWarning,
             )
 
-    if loss_type == "hjepa" or loss_type == "jepa" or loss_type == "smoothl1":
+    if loss_type == "hjepa" or loss_type == "jepa" or loss_type == "smoothl1" or loss_type == "mse":
         # Determine jepa_loss_type with fallback logic
         if loss_type in ["smoothl1", "mse", "cosine"]:
             default_loss_type = loss_type
@@ -546,5 +546,5 @@ def create_loss_from_config(config: Dict[str, Any]) -> nn.Module:
     else:
         raise ValueError(
             f"Unknown loss type: {loss_type}. "
-            f"Must be one of ['hjepa', 'vicreg', 'sigreg', 'combined', 'hierarchical_combined', 'cjepa']"
+            f"Must be one of ['hjepa', 'vicreg', 'sigreg', 'combined', 'hierarchical_combined', 'cjepa', 'mse', 'smoothl1']"
         )

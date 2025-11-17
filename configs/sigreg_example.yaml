@@ -120,7 +120,7 @@ logging:
     - "learning_rate"
     - "ema_momentum"
 
----
+# ---
 # Alternative: Hybrid VICReg + SIGReg Configuration
 #
 # For ablation studies or gradual transition from VICReg to SIGReg
@@ -146,7 +146,7 @@ logging:
 #   flatten_patches: true
 #   eps: 1.0e-6
 
----
+# ---
 # Small Model Configuration (for limited resources)
 
 # model:
@@ -168,7 +168,7 @@ logging:
 # training:
 #   epochs: 100
 
----
+# ---
 # Large Model Configuration (for production training)
 
 # model:

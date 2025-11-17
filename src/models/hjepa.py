@@ -127,9 +127,10 @@ class HJEPA(nn.Module):
 
         # Hierarchical projection heads
         # Each level projects to different semantic granularity
-        if use_fpn and fpn_fusion_method == "concat":
-            # When using concat, final dimension is 2x fpn_feature_dim
-            final_dim = 2 * self.fpn_feature_dim
+        if use_fpn:
+            # When using FPN, the output dimension is always fpn_feature_dim
+            # (fusion convs reduce concat back to fpn_feature_dim)
+            final_dim = self.fpn_feature_dim
         else:
             final_dim = embed_dim
 
@@ -419,17 +420,22 @@ class HJEPA(nn.Module):
             target_fpn_features = self._apply_fpn(target_masked, is_prediction=False)
 
             # Process mask_valid through FPN pooling as well
-            # Convert to float for pooling, then back to bool
+            # Convert to float and expand to embedding dimension for FPN processing
             mask_valid_float = mask_valid.unsqueeze(-1).float()  # [B, N, 1]
-            mask_fpn_features = self._apply_fpn(mask_valid_float, is_prediction=False)
+            # Expand to match embedding dimension expected by FPN
+            mask_valid_expanded = mask_valid_float.expand(
+                -1, -1, self.embed_dim
+            )  # [B, N, embed_dim]
+            mask_fpn_features = self._apply_fpn(mask_valid_expanded, is_prediction=False)
 
             # Project FPN features to final embedding space
             for level in range(self.num_hierarchies):
                 pred_projected = self.hierarchy_projections[level](pred_fpn_features[level])
                 target_projected = self.hierarchy_projections[level](target_fpn_features[level])
 
-                # Convert pooled mask back to bool (use threshold to handle pooling artifacts)
-                mask_valid_level = mask_fpn_features[level].squeeze(-1) > 0.5
+                # Convert pooled mask back to bool (average across embedding dim, then threshold)
+                # Take mean across embedding dimension to get back mask shape
+                mask_valid_level = mask_fpn_features[level].mean(dim=-1) > 0.5
 
                 predictions_hierarchy.append(pred_projected)
                 targets_hierarchy.append(target_projected)

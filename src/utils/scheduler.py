@@ -200,6 +200,18 @@ class EMAScheduler:
 
         return momentum
 
+    def step(self, step: int) -> float:
+        """
+        Convenience method for getting EMA momentum at a given step.
+
+        Args:
+            step: Current training step
+
+        Returns:
+            EMA momentum coefficient for this step
+        """
+        return self(step)
+
 
 class HierarchicalScheduler:
     """

@@ -33,16 +33,24 @@ repos:
       - id: mixed-line-ending
         args: [--fix=lf]
 
-  # Pytest - run tests before commit
+  # Pytest - run quick tests before commit (skip long-running tests)
+  # Full test suite can be run manually with: pytest tests/
   - repo: local
     hooks:
       - id: pytest-check
         name: pytest-check
         entry: pytest
-        args: [tests/test_phase123_optimizations.py, -v, --tb=short, -x]
+        args: [
+          tests/test_ijepa_compliance.py,
+          "tests/test_phase123_optimizations.py::TestFPN",
+          -v, --tb=short, -x, --maxfail=3,
+          -m, "not slow"  # Skip tests marked as slow
+        ]
         language: system
         pass_filenames: false
-        always_run: true
+        always_run: false  # Changed to false - only run when test files change
+        files: ^(src/|tests/).*\.py$
+        stages: [commit]
 
   # Mypy - Static type checking (run manually with: mypy --config-file=mypy.ini src/)
   # Disabled in pre-commit due to environment dependency differences

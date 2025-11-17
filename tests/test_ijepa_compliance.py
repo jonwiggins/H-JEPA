@@ -77,8 +77,17 @@ def test_ema_schedule_is_linear():
 
     print("\n1.2 Testing EMAScheduler.step()...")
 
+    # Calculate epochs and steps_per_epoch from total_steps
+    steps_per_epoch = 1000
+    epochs = 10  # 10000 total_steps / 1000 steps_per_epoch
+    warmup_epochs = 1  # 1000 warmup_steps / 1000 steps_per_epoch
+
     scheduler = EMAScheduler(
-        base_value=0.996, final_value=1.0, total_steps=10000, warmup_steps=1000
+        base_value=0.996,
+        final_value=1.0,
+        epochs=epochs,
+        steps_per_epoch=steps_per_epoch,
+        warmup_epochs=warmup_epochs,
     )
 
     test_points = [1000, 3250, 5500, 7750, 10000, 12000]

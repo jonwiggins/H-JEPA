@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -107,7 +107,18 @@ class HJEPATrainer:
         )
 
         # Mixed precision training
-        self.scaler: Optional[GradScaler] = GradScaler() if self.use_amp else None
+        # Use appropriate device for scaler
+        device_type = "cuda" if torch.cuda.is_available() else "cpu"
+        if self.device.type == "mps":
+            # MPS doesn't support GradScaler, disable AMP for MPS
+            self.use_amp = False
+            self.scaler: Optional[GradScaler] = None
+            if config["training"].get("use_amp", False):
+                logger.warning("Mixed precision training not supported on MPS, disabling AMP")
+        else:
+            self.scaler: Optional[GradScaler] = (
+                GradScaler(device=device_type) if self.use_amp else None
+            )
 
         # Checkpoint manager
         self.checkpoint_manager = CheckpointManager(
@@ -375,7 +386,9 @@ class HJEPATrainer:
         prediction_mask = target_masks.any(dim=1)  # [B, N] - positions to predict
 
         # Forward pass with automatic mixed precision
-        with autocast(enabled=self.use_amp):
+        # Use appropriate device type for autocast
+        device_type = self.device.type if self.device.type != "mps" else "cpu"
+        with autocast(device_type=device_type, enabled=self.use_amp):
             # Forward through H-JEPA model
             outputs = self.model(images, prediction_mask)
 
@@ -441,7 +454,8 @@ class HJEPATrainer:
             )
 
             # Forward pass
-            with autocast(enabled=self.use_amp):
+            device_type = self.device.type if self.device.type != "mps" else "cpu"
+            with autocast(device_type=device_type, enabled=self.use_amp):
                 context_embeddings = self.model.encode_context(images, context_masks)  # type: ignore[operator]
                 target_embeddings = self.model.encode_target(images, target_masks)  # type: ignore[operator]
 
@@ -536,19 +550,24 @@ class HJEPATrainer:
             target_sample = target_flat
 
         try:
-            # Compute singular values
-            context_sv = torch.svd(context_sample)[1]
-            target_sv = torch.svd(target_sample)[1]
+            # Skip SVD computation on MPS (not supported)
+            if self.device.type == "mps":
+                metrics["context_eff_rank"] = -1
+                metrics["target_eff_rank"] = -1
+            else:
+                # Compute singular values
+                context_sv = torch.svd(context_sample)[1]
+                target_sv = torch.svd(target_sample)[1]
 
-            # Effective rank (normalized entropy of singular values)
-            context_sv_norm = context_sv / context_sv.sum()
-            target_sv_norm = target_sv / target_sv.sum()
+                # Effective rank (normalized entropy of singular values)
+                context_sv_norm = context_sv / context_sv.sum()
+                target_sv_norm = target_sv / target_sv.sum()
 
-            context_entropy = -(context_sv_norm * torch.log(context_sv_norm + 1e-8)).sum()
-            target_entropy = -(target_sv_norm * torch.log(target_sv_norm + 1e-8)).sum()
+                context_entropy = -(context_sv_norm * torch.log(context_sv_norm + 1e-8)).sum()
+                target_entropy = -(target_sv_norm * torch.log(target_sv_norm + 1e-8)).sum()
 
-            metrics["context_rank"] = torch.exp(context_entropy).item()
-            metrics["target_rank"] = torch.exp(target_entropy).item()
+                metrics["context_eff_rank"] = torch.exp(context_entropy).item()
+                metrics["target_eff_rank"] = torch.exp(target_entropy).item()
         except Exception:
             # SVD can fail, just skip rank computation
             pass
