@@ -146,8 +146,9 @@ class VICRegLoss(nn.Module):
         # Center the features (zero mean)
         z = z - z.mean(dim=0, keepdim=True)  # [N, D]
 
-        # Compute covariance matrix: Cov = (1/N) * Z^T @ Z
-        cov = (z.T @ z) / (N - 1)  # [D, D]
+        # Compute covariance matrix: Cov = (1/(N-1)) * Z^T @ Z
+        # Use max(1, N-1) to avoid division by zero when batch size is 1
+        cov = (z.T @ z) / max(1, N - 1)  # [D, D]
 
         # Extract off-diagonal elements and compute their squared sum
         # We want to minimize off-diagonal covariances

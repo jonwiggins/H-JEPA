@@ -547,7 +547,9 @@ class MetricsLogger:
                     util = pynvml.nvmlDeviceGetUtilizationRates(handle)
                     metrics[f"system/gpu{i}_utilization"] = util.gpu
                     metrics[f"system/gpu{i}_memory_utilization"] = util.memory
-                except:
+                except Exception:
+                    # GPU monitoring may fail for various reasons (drivers, permissions, etc)
+                    # Continue silently as this is optional telemetry
                     pass
 
         self.log_metrics(metrics, step=step, prefix="")
