@@ -251,6 +251,9 @@ class Predictor(nn.Module):
         """
         Alternative forward pass that takes full sequence with mask.
 
+        DEPRECATED: This method has a critical bug with boolean indexing that loses
+        batch structure. Use the standard forward() method instead.
+
         Args:
             features: Full encoded features [B, N, D] (masked positions zeroed)
             mask: Binary mask [B, N] where 1 indicates masked position
@@ -258,20 +261,19 @@ class Predictor(nn.Module):
 
         Returns:
             Predicted representations for masked positions [B, N_mask, D]
+
+        Raises:
+            NotImplementedError: This method is deprecated due to a critical bug.
         """
-        B, N, D = features.shape
-
-        # Split into context and mask tokens
-        mask_bool = mask.bool()
-
-        # Get context features (non-masked)
-        context_features = features[~mask_bool].view(B, -1, D)
-
-        # Get indices of masked positions
-        mask_indices = mask_bool.nonzero(as_tuple=True)[1].view(B, -1)
-
-        # Use standard forward pass
-        return self.forward(context_features, mask_indices, pos_embed)
+        raise NotImplementedError(
+            "forward_with_full_sequence() is deprecated due to incorrect boolean indexing "
+            "that loses batch structure. Use the standard forward() method instead:\n"
+            "  1. Extract mask_indices for each batch sample\n"
+            "  2. Extract context_features excluding masked positions\n"
+            "  3. Call forward(context_features, mask_indices, pos_embed)\n"
+            "\n"
+            "If you need this functionality, please implement proper batch-preserving extraction."
+        )
 
 
 def create_predictor(

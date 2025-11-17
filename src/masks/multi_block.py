@@ -189,13 +189,14 @@ class MultiBlockMaskGenerator:
             height = int(np.round(np.sqrt(area / aspect_ratio)))
             width = int(np.round(height * aspect_ratio))
 
-            # Ensure minimum size of 1 patch
+            # Ensure minimum size of 1 patch and doesn't exceed grid size
             height = max(1, min(height, self.num_patches_h))
             width = max(1, min(width, self.num_patches_w))
 
-            # Sample random position
-            top = np.random.randint(0, self.num_patches_h - height + 1)
-            left = np.random.randint(0, self.num_patches_w - width + 1)
+            # Sample random position with safety check for edge cases
+            # max() ensures the range is always valid (at least [0, 1))
+            top = np.random.randint(0, max(1, self.num_patches_h - height + 1))
+            left = np.random.randint(0, max(1, self.num_patches_w - width + 1))
 
             # Check for overlaps if occupied array provided
             if occupied is not None:
@@ -208,8 +209,9 @@ class MultiBlockMaskGenerator:
         # If we couldn't find non-overlapping block, return a small random block
         height = max(1, self.num_patches_h // 4)
         width = max(1, self.num_patches_w // 4)
-        top = np.random.randint(0, self.num_patches_h - height + 1)
-        left = np.random.randint(0, self.num_patches_w - width + 1)
+        # Safety check for edge cases
+        top = np.random.randint(0, max(1, self.num_patches_h - height + 1))
+        left = np.random.randint(0, max(1, self.num_patches_w - width + 1))
 
         return (top, left, height, width)
 
