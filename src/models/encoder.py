@@ -13,7 +13,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-from einops import rearrange
 
 # Check if Flash Attention is available via PyTorch's scaled_dot_product_attention
 # Available in PyTorch 2.0+ with CUDA 7.5+ or MPS

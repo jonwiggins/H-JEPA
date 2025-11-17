@@ -5,8 +5,7 @@ This module implements various metrics to assess the quality of learned
 representations, including rank analysis, variance measures, and isotropy.
 """
 
-import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt

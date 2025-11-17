@@ -5,7 +5,7 @@ Provides functions to visualize predictions vs ground truth,
 feature space embeddings, nearest neighbors, and reconstruction quality.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 
 import matplotlib.figure as mfigure
 import matplotlib.pyplot as plt

@@ -18,14 +18,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from PIL import Image
 from prometheus_client import Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
 from torchvision import transforms
 
 from ..models.hjepa import HJEPA, create_hjepa
-from ..utils.checkpoint import load_checkpoint
 
 # Configure logging
 logging.basicConfig(

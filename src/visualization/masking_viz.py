@@ -5,7 +5,7 @@ Provides functions to visualize multi-block masking strategies,
 context/target regions, and compare different masking approaches.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import matplotlib.animation as animation
 import matplotlib.figure as mfigure

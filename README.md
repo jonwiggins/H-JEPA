@@ -124,7 +124,7 @@ Performance on CIFAR-10 (ViT-Tiny, 100 epochs):
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/H-JEPA.git
+git clone https://github.com/jonwiggins/H-JEPA.git
 cd H-JEPA
 
 # Create virtual environment
@@ -937,7 +937,7 @@ conda install pytorch torchvision -c pytorch
 pip install flash-attn --no-build-isolation
 ```
 
-For more issues, see [GitHub Issues](https://github.com/yourusername/H-JEPA/issues) or [Discussions](https://github.com/yourusername/H-JEPA/discussions).
+For more issues, see [GitHub Issues](https://github.com/jonwiggins/H-JEPA/issues) or [Discussions](https://github.com/jonwiggins/H-JEPA/discussions).
 
 ---
 
@@ -1067,14 +1067,14 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 ## Contact and Support
 
 ### Questions and Discussion
-- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/yourusername/H-JEPA/discussions)
-- **GitHub Issues**: [Report bugs and request features](https://github.com/yourusername/H-JEPA/issues)
+- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/jonwiggins/H-JEPA/discussions)
+- **GitHub Issues**: [Report bugs and request features](https://github.com/jonwiggins/H-JEPA/issues)
 
 ### Community
 - **Discord**: Join our community server (coming soon)
 
 ### Maintainers
-- H-JEPA Team - [GitHub Profile](https://github.com/yourusername)
+- H-JEPA Team - [GitHub Profile](https://github.com/jonwiggins)
 
 ---
 
@@ -1142,6 +1142,6 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 Made with :heart: by the H-JEPA Team
 
-[![Star on GitHub](https://img.shields.io/github/stars/yourusername/H-JEPA?style=social)](https://github.com/yourusername/H-JEPA)
+[![Star on GitHub](https://img.shields.io/github/stars/jonwiggins/H-JEPA?style=social)](https://github.com/jonwiggins/H-JEPA)
 
 </div>

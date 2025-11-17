@@ -10,8 +10,7 @@ Provides:
 """
 
 import logging
-import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -425,7 +424,6 @@ def create_inference_config(
     import os
 
     from ..models.hjepa import create_hjepa
-    from ..utils.checkpoint import load_checkpoint
 
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)

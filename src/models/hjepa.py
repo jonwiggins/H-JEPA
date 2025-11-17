@@ -5,14 +5,14 @@ This module implements the main H-JEPA model that combines context encoder,
 target encoder, and predictor for hierarchical self-supervised learning.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import torch
 import torch.nn as nn
-from einops import rearrange, repeat
+from einops import rearrange
 
-from .encoder import ContextEncoder, TargetEncoder, create_encoder
-from .predictor import Predictor, create_predictor
+from .encoder import create_encoder
+from .predictor import create_predictor
 
 
 class HJEPA(nn.Module):

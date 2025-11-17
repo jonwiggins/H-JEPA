@@ -6,7 +6,6 @@ feature quality without any training. It classifies test samples based on their
 nearest neighbors in the training set.
 """
 
-import warnings
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np

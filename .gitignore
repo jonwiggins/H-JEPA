@@ -144,6 +144,10 @@ results/logs/*
 !results/checkpoints/.gitkeep
 !results/logs/.gitkeep
 
+# TensorBoard event files
+**/events.out.tfevents.*
+**/tensorboard/
+
 # Weights & Biases
 wandb/
 

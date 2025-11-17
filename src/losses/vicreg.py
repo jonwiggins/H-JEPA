@@ -22,7 +22,7 @@ References:
     https://arxiv.org/abs/2105.04906
 """
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
 import torch
 import torch.nn as nn

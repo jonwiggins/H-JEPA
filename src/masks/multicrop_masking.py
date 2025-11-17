@@ -11,7 +11,7 @@ This combines the benefits of multi-crop augmentation with H-JEPA's
 hierarchical predictive learning.
 """
 
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np

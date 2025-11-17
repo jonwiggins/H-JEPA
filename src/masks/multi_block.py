@@ -5,9 +5,8 @@ This module implements the multi-block masking strategy used in H-JEPA training,
 which samples multiple target blocks and a large context block for predictive learning.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt

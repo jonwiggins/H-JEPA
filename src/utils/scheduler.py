@@ -9,7 +9,7 @@ Supports:
 """
 
 import math
-from typing import List, Optional, Union
+from typing import List, Union
 
 
 class CosineScheduler:

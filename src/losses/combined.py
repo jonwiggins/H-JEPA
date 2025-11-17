@@ -25,7 +25,6 @@ References:
     - VICReg: https://arxiv.org/abs/2105.04906
 """
 
-from collections import defaultdict
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import torch

@@ -10,7 +10,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
-from einops import rearrange, repeat
+from einops import repeat
 
 
 class PredictorBlock(nn.Module):

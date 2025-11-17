@@ -6,12 +6,12 @@ to existing datasets, enabling multi-crop training with minimal code changes.
 """
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from .datasets import CIFAR10Dataset, CIFAR100Dataset, ImageNetDataset, STL10Dataset, build_dataset
+from .datasets import build_dataset
 from .multicrop_transforms import (
     MultiCropEvalTransform,
     MultiCropTransform,

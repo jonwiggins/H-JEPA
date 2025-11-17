@@ -14,16 +14,13 @@ References:
 
 import math
 import random
-import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import torch
-import torch.nn as nn
 from PIL import Image, ImageEnhance, ImageOps
 from torch import Tensor
 from torchvision import transforms
-from torchvision.transforms import functional as F
 
 # =============================================================================
 # RandAugment Implementation

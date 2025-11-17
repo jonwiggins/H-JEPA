@@ -6,14 +6,14 @@ few-shot learning, and domain adaptation evaluation.
 """
 
 import copy
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset, RandomSampler, Subset
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 

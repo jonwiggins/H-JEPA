@@ -6,17 +6,13 @@ custom transforms optimized for JEPA (Joint-Embedding Predictive Architecture).
 Unlike traditional contrastive learning, JEPA does not require heavy augmentations.
 """
 
-import os
-import warnings
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
-import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
-from torchvision.datasets.utils import check_integrity, download_and_extract_archive
 
 
 class JEPATransform:

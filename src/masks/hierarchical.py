@@ -5,7 +5,7 @@ This module implements hierarchical masking that generates different masks
 for different levels of the hierarchy, enabling multi-scale representation learning.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
