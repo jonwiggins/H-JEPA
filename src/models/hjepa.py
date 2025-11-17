@@ -345,6 +345,7 @@ class HJEPA(nn.Module):
             Dictionary containing:
                 - 'predictions': List of predictions for each hierarchy level
                 - 'targets': List of target representations for each hierarchy level
+                - 'masks_valid': Validity mask(s) indicating which positions are valid (not padding)
                 - 'context_features': Encoded context features
                 - 'target_features': Encoded target features (full image)
         """
@@ -369,10 +370,16 @@ class HJEPA(nn.Module):
         # Create padded mask indices tensor [B, max_masked]
         mask_indices = torch.zeros((B, max_masked), dtype=torch.long, device=mask.device)  # type: ignore[arg-type]
 
+        # Create validity mask to track which indices are actual (not padding)
+        # This fixes the bug where padded zeros would gather from patch 0 repeatedly
+        mask_valid = torch.zeros((B, max_masked), dtype=torch.bool, device=mask.device)
+
         # Fill in the actual mask indices for each sample
         for i in range(B):
             sample_mask_indices = mask_bool[i].nonzero(as_tuple=True)[0]
-            mask_indices[i, : len(sample_mask_indices)] = sample_mask_indices
+            num_masked = len(sample_mask_indices)
+            mask_indices[i, :num_masked] = sample_mask_indices
+            mask_valid[i, :num_masked] = True
 
         # Get positional embeddings from context encoder
         # pos_embed is [1, N+1, D], we need to expand to [B, N, D] (excluding CLS)
@@ -396,6 +403,7 @@ class HJEPA(nn.Module):
             return {
                 "predictions": [predicted_features],
                 "targets": [target_masked],
+                "mask_valid": mask_valid,  # Validity mask for padded positions
                 "context_features": context_features,
                 "target_features": target_features,
             }
@@ -403,25 +411,38 @@ class HJEPA(nn.Module):
         # Compute hierarchical predictions and targets
         predictions_hierarchy = []
         targets_hierarchy = []
+        masks_valid_hierarchy = []
 
         if self.use_fpn:
             # Apply FPN to create multi-scale features with top-down pathway
             pred_fpn_features = self._apply_fpn(predicted_features, is_prediction=True)
             target_fpn_features = self._apply_fpn(target_masked, is_prediction=False)
 
+            # Process mask_valid through FPN pooling as well
+            # Convert to float for pooling, then back to bool
+            mask_valid_float = mask_valid.unsqueeze(-1).float()  # [B, N, 1]
+            mask_fpn_features = self._apply_fpn(mask_valid_float, is_prediction=False)
+
             # Project FPN features to final embedding space
             for level in range(self.num_hierarchies):
                 pred_projected = self.hierarchy_projections[level](pred_fpn_features[level])
                 target_projected = self.hierarchy_projections[level](target_fpn_features[level])
 
+                # Convert pooled mask back to bool (use threshold to handle pooling artifacts)
+                mask_valid_level = mask_fpn_features[level].squeeze(-1) > 0.5
+
                 predictions_hierarchy.append(pred_projected)
                 targets_hierarchy.append(target_projected)
+                masks_valid_hierarchy.append(mask_valid_level)
         else:
             # Original hierarchical pooling without FPN
             for level in range(self.num_hierarchies):
                 # Project features to hierarchy-specific space
                 pred_projected = self.hierarchy_projections[level](predicted_features)
                 target_projected = self.hierarchy_projections[level](target_masked)
+
+                # Process mask_valid with same pooling
+                mask_valid_level = mask_valid.clone()
 
                 # Apply pooling for coarser levels
                 if level > 0:
@@ -437,12 +458,19 @@ class HJEPA(nn.Module):
                     pred_projected = rearrange(pred_projected, "b d n -> b n d")
                     target_projected = rearrange(target_projected, "b d n -> b n d")
 
+                    # Pool mask_valid as well (convert to float, pool, threshold back to bool)
+                    mask_valid_float = rearrange(mask_valid_level.float(), "b n -> b 1 n")
+                    mask_valid_float = self.hierarchy_pooling[level](mask_valid_float)
+                    mask_valid_level = rearrange(mask_valid_float, "b 1 n -> b n") > 0.5
+
                 predictions_hierarchy.append(pred_projected)
                 targets_hierarchy.append(target_projected)
+                masks_valid_hierarchy.append(mask_valid_level)
 
         return {
             "predictions": predictions_hierarchy,
             "targets": targets_hierarchy,
+            "masks_valid": masks_valid_hierarchy,  # Validity masks for each hierarchy level
             "context_features": context_features,
             "target_features": target_features,
         }

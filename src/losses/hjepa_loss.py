@@ -224,32 +224,41 @@ class HJEPALoss(nn.Module):
             # Compute base loss
             if masks is not None and masks[i] is not None:
                 # Apply mask: compute loss only on masked patches
-                mask = masks[i]  # [B, N]
+                mask = masks[i]  # [B, N] - boolean mask indicating valid positions
                 assert mask.shape[:2] == pred.shape[:2], (
                     f"Mask shape {mask.shape} incompatible with "
                     f"prediction shape {pred.shape} at level {i}"
                 )
 
-                # Expand mask to match feature dimension
-                mask = mask.unsqueeze(-1)  # [B, N, 1]
+                # Expand mask to match feature dimension if needed
+                if mask.ndim == 2:
+                    mask = mask.unsqueeze(-1)  # [B, N, 1]
 
-                # Masked loss computation
-                if self.reduction == "none":
-                    base_loss = self._compute_base_loss(pred, target)
-                    level_loss = (base_loss * mask).sum() / (mask.sum() + self.eps)
+                # Compute element-wise loss without reduction
+                # This allows us to properly mask and normalize
+                if self.loss_type == "mse":
+                    base_loss = F.mse_loss(pred, target, reduction="none")
+                elif self.loss_type == "smoothl1":
+                    base_loss = F.smooth_l1_loss(pred, target, reduction="none")
+                elif self.loss_type == "huber":
+                    base_loss = F.huber_loss(pred, target, reduction="none", delta=self.huber_delta)
                 else:
-                    # Apply mask before loss computation
-                    masked_pred = pred * mask
-                    masked_target = target * mask
-                    base_loss = self._compute_base_loss(masked_pred, masked_target)
+                    raise ValueError(f"Unknown loss type: {self.loss_type}")
 
-                    # Normalize by number of masked elements
-                    if self.reduction == "mean":
-                        level_loss = base_loss * pred.numel() / (mask.sum() + self.eps)
-                    else:  # sum
-                        level_loss = base_loss
+                # Apply mask and reduce correctly
+                # Only compute loss on valid (non-padded) positions
+                masked_loss = base_loss * mask.float()
+
+                if self.reduction == "mean":
+                    # Mean over valid elements only
+                    level_loss = masked_loss.sum() / (mask.sum() + self.eps)
+                elif self.reduction == "sum":
+                    # Sum over valid elements
+                    level_loss = masked_loss.sum()
+                else:  # none
+                    level_loss = masked_loss
             else:
-                # No masking
+                # No masking - use standard loss computation
                 level_loss = self._compute_base_loss(pred, target)
 
             losses.append(level_loss)

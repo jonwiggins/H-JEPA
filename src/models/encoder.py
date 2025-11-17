@@ -79,9 +79,11 @@ class VisionRoPE2D(nn.Module):
         half_dim = dim // 2
 
         # Compute frequency bands: theta^(-2i/d) for i in [0, d/4)
-        # We use d/4 because we're splitting across 2 dimensions (x and y)
-        freq_bands = torch.arange(0, half_dim, 2, dtype=torch.float32)
-        freq_bands = 1.0 / (theta ** (freq_bands / half_dim))
+        # Standard RoPE formula with clearer implementation
+        # For 2D, we need half_dim // 2 frequencies per dimension
+        num_freqs = half_dim // 2
+        freq_bands = torch.arange(0, num_freqs, dtype=torch.float32)
+        freq_bands = 1.0 / (theta ** (2.0 * freq_bands / half_dim))
 
         # Create 2D position grid for patches
         # Each patch has a (y, x) coordinate in [0, num_patches_per_side)
@@ -236,8 +238,10 @@ class VisionRoPE2D(nn.Module):
         freqs_h_device = cast(torch.Tensor, self.freqs_h).device
         freqs_w_device = cast(torch.Tensor, self.freqs_w).device
 
-        freq_bands = torch.arange(0, half_dim, 2, dtype=torch.float32, device=freqs_h_device)
-        freq_bands = 1.0 / (self.theta ** (freq_bands / half_dim))
+        # Use same formula as initialization for consistency
+        num_freqs = half_dim // 2
+        freq_bands = torch.arange(0, num_freqs, dtype=torch.float32, device=freqs_h_device)
+        freq_bands = 1.0 / (self.theta ** (2.0 * freq_bands / half_dim))
 
         # Create position grids for new resolution
         y_pos = torch.arange(num_patches_h, dtype=torch.float32, device=freqs_h_device)
@@ -728,6 +732,19 @@ def create_encoder(
     # Implementation would require:
     # 1. Add LayerScale layers after attention and MLP in each block
     # 2. Initialize with small values (layerscale_init)
+
+    # Warn user if LayerScale is requested but not implemented
+    import warnings
+
+    if use_layerscale:
+        warnings.warn(
+            "LayerScale is not yet implemented. The use_layerscale and layerscale_init "
+            "parameters are accepted but currently ignored. The model will be created "
+            "without LayerScale. To implement LayerScale, add learnable scale parameters "
+            "after attention and MLP in each transformer block.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     context_encoder = ContextEncoder(
         encoder_type=encoder_type,
