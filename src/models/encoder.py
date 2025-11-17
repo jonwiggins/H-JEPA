@@ -15,11 +15,11 @@ import torch.nn.functional as F
 import torch.utils.checkpoint
 
 # Check if Flash Attention is available via PyTorch's scaled_dot_product_attention
-# Available in PyTorch 2.0+ with CUDA 7.5+ or MPS
+# Available in PyTorch 2.0+ with CUDA 7.5+ (NOT MPS - causes severe slowdowns!)
 FLASH_ATTENTION_AVAILABLE = (
     hasattr(F, "scaled_dot_product_attention")
     and torch.__version__ >= "2.0.0"
-    and (torch.cuda.is_available() or torch.backends.mps.is_available())
+    and torch.cuda.is_available()  # CUDA only - MPS lacks optimized kernels
 )
 
 
