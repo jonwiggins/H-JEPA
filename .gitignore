@@ -160,3 +160,11 @@ wandb/
 *.bak
 *.swp
 *~
+
+# Generated audit/log files
+*_AUDIT*.txt
+*_SUMMARY*.txt
+PROJECT_STRUCTURE.txt
+install_log.txt
+mypy_errors.txt
+*_ARCHITECTURE*.txt
