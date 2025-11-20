@@ -9,11 +9,13 @@ import os
 import sys
 
 import torch
+import torch.nn as nn
 
 # Add src to path relative to the test file location
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.models.encoder import create_encoder
+from src.models.encoder import LayerScale, create_encoder
+from src.models.hjepa import create_hjepa
 
 
 def test_encoder_with_layerscale():
@@ -115,6 +117,100 @@ def test_forward_pass_with_layerscale():
     print("\n✓ Forward pass with LayerScale test passed")
 
 
+def test_layerscale_module():
+    """Test LayerScale module directly."""
+    print("\n" + "=" * 70)
+    print("Testing LayerScale Module")
+    print("=" * 70)
+
+    # Create LayerScale module
+    dim = 256
+    init_value = 1e-4
+    layer = LayerScale(dim, init_values=init_value)
+
+    print(f"\n1. LayerScale created with dim={dim}, init={init_value}")
+    print(f"   - Gamma shape: {layer.gamma.shape}")
+    print(f"   - Gamma mean: {layer.gamma.mean().item():.6f}")
+
+    # Test forward pass
+    batch_size = 4
+    seq_len = 196
+    x = torch.randn(batch_size, seq_len, dim)
+    output = layer(x)
+
+    print(f"\n2. Forward pass test:")
+    print(f"   - Input shape: {x.shape}")
+    print(f"   - Output shape: {output.shape}")
+    assert output.shape == x.shape, "Output shape mismatch"
+
+    # Check scaling
+    expected_scaled = x * init_value
+    assert torch.allclose(output, expected_scaled, rtol=1e-5), "Scaling incorrect"
+    print(f"   ✓ Scaling applied correctly")
+
+    # Test gradient flow
+    loss = output.sum()
+    loss.backward()
+
+    assert layer.gamma.grad is not None, "No gradients computed"
+    print(f"\n3. Gradient flow test:")
+    print(f"   - Gamma grad shape: {layer.gamma.grad.shape}")
+    print(f"   - Gamma grad norm: {layer.gamma.grad.norm().item():.6f}")
+    print(f"   ✓ Gradients flow correctly")
+
+    print("\n✓ LayerScale module test passed")
+
+
+def test_hjepa_with_layerscale():
+    """Test H-JEPA model with LayerScale."""
+    print("\n" + "=" * 70)
+    print("Testing H-JEPA Model with LayerScale")
+    print("=" * 70)
+
+    print("\nCreating H-JEPA model with LayerScale...")
+    model = create_hjepa(
+        encoder_type="vit_tiny_patch16_224",
+        img_size=224,
+        embed_dim=192,
+        num_hierarchies=3,
+        use_layerscale=True,
+        layerscale_init=1e-5,
+    )
+
+    print(f"  - Model type: {type(model).__name__}")
+    print(f"  - Embed dim: {model.context_encoder.embed_dim}")
+    print(f"  - Num hierarchies: {model.num_hierarchies}")
+
+    # Check for LayerScale modules
+    layerscale_count = 0
+    for name, module in model.named_modules():
+        if isinstance(module, LayerScale):
+            layerscale_count += 1
+
+    print(f"  - LayerScale modules found: {layerscale_count}")
+
+    # Test forward pass
+    batch_size = 2
+    images = torch.randn(batch_size, 3, 224, 224)
+    num_patches = model.get_num_patches()
+    mask = torch.zeros(batch_size, num_patches)
+    mask[:, : num_patches // 2] = 1
+
+    print("\nTesting forward pass...")
+    model.eval()
+    with torch.no_grad():
+        outputs = model(images, mask)
+
+    predictions = outputs["predictions"]
+    targets = outputs["targets"]
+
+    print(f"  - Predictions: {len(predictions)} levels")
+    for i, (pred, target) in enumerate(zip(predictions, targets)):
+        print(f"    Level {i}: pred={pred.shape}, target={target.shape}")
+
+    print("\n✓ H-JEPA with LayerScale test passed")
+
+
 def main():
     """Run all LayerScale tests."""
     print("\n" + "=" * 70)
@@ -122,9 +218,11 @@ def main():
     print("=" * 70)
 
     try:
+        test_layerscale_module()
         test_encoder_with_layerscale()
         test_create_encoder_factory()
         test_forward_pass_with_layerscale()
+        test_hjepa_with_layerscale()
 
         print("\n" + "=" * 70)
         print("✓ All LayerScale tests passed!")

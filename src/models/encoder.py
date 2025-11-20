@@ -35,6 +35,41 @@ FLASH_ATTENTION_AVAILABLE = (
 )
 
 
+class LayerScale(nn.Module):
+    """
+    LayerScale module for training stability in deep transformers.
+
+    Applies learnable per-channel scaling to residual connections.
+    This helps with training stability by controlling the magnitude of
+    residual updates, especially in deep networks.
+
+    Reference: "Going Deeper with Image Transformers" (Touvron et al., 2021)
+
+    Args:
+        dim: Dimension of the input features
+        init_values: Initial value for the scaling parameters (default: 1e-5)
+
+    Attributes:
+        gamma: Learnable scale parameters [dim]
+    """
+
+    def __init__(self, dim: int, init_values: float = 1e-5):
+        super().__init__()
+        self.gamma = nn.Parameter(torch.ones(dim) * init_values)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Apply per-channel scaling.
+
+        Args:
+            x: Input tensor [..., dim]
+
+        Returns:
+            Scaled tensor with same shape as input
+        """
+        return x * self.gamma
+
+
 class VisionRoPE2D(nn.Module):
     """
     2D Rotary Position Embeddings (RoPE) for Vision Transformers.
@@ -440,6 +475,8 @@ class ContextEncoder(nn.Module):
         rope_theta: float = 10000.0,
         use_flash_attention: bool = False,
         use_mps_optimization: bool = True,  # Enable MPS optimization by default
+        use_layerscale: bool = False,  # Add LayerScale support
+        layerscale_init: float = 1e-5,  # Initial value for LayerScale
     ):
         super().__init__()
 
@@ -496,6 +533,48 @@ class ContextEncoder(nn.Module):
             # When using RoPE, we can optionally reduce or remove absolute position embeddings
             # Here we keep them but they can be set to zero or removed
             # self.vit.pos_embed.data.zero_()  # Uncomment to disable absolute pos embeddings
+
+        # LayerScale configuration
+        self.use_layerscale = use_layerscale
+        if use_layerscale:
+            # Add LayerScale to each transformer block
+            for block in self.vit.blocks:  # type: ignore[union-attr]
+                # Create LayerScale for attention and MLP branches
+                block.ls_attn = LayerScale(self.embed_dim, init_values=layerscale_init)
+                block.ls_mlp = LayerScale(self.embed_dim, init_values=layerscale_init)
+
+                # Store original forward method
+                original_forward = block.forward
+
+                # Define new forward method with LayerScale
+                def forward_with_layerscale(self, x):
+                    # Standard transformer block with LayerScale:
+                    # x = x + LayerScale(Attention(LayerNorm(x)))
+                    # x = x + LayerScale(MLP(LayerNorm(x)))
+
+                    # Get the block's components
+                    if hasattr(self, "norm1"):
+                        # Attention branch
+                        attn_out = self.attn(self.norm1(x))
+                        if hasattr(self, "drop_path"):
+                            attn_out = self.drop_path(attn_out)
+                        x = x + self.ls_attn(attn_out)
+
+                        # MLP branch
+                        mlp_out = self.mlp(self.norm2(x))
+                        if hasattr(self, "drop_path"):
+                            mlp_out = self.drop_path(mlp_out)
+                        x = x + self.ls_mlp(mlp_out)
+                    else:
+                        # Fallback to original forward if structure is different
+                        x = original_forward(x)
+
+                    return x
+
+                # Replace forward method
+                import types
+
+                block.forward = types.MethodType(forward_with_layerscale, block)
 
     def forward(
         self,
@@ -602,6 +681,8 @@ class TargetEncoder(nn.Module):
         rope_theta: float = 10000.0,
         use_flash_attention: bool = False,
         use_mps_optimization: bool = True,  # Enable MPS optimization by default
+        use_layerscale: bool = False,  # Add LayerScale support
+        layerscale_init: float = 1e-5,  # Initial value for LayerScale
     ):
         super().__init__()
 
@@ -656,6 +737,48 @@ class TargetEncoder(nn.Module):
                     use_flash_attention=use_flash_attention,
                     use_mps_optimization=use_mps_optimization,
                 )
+
+        # LayerScale configuration
+        self.use_layerscale = use_layerscale
+        if use_layerscale:
+            # Add LayerScale to each transformer block
+            for block in self.vit.blocks:  # type: ignore[union-attr]
+                # Create LayerScale for attention and MLP branches
+                block.ls_attn = LayerScale(self.embed_dim, init_values=layerscale_init)
+                block.ls_mlp = LayerScale(self.embed_dim, init_values=layerscale_init)
+
+                # Store original forward method
+                original_forward = block.forward
+
+                # Define new forward method with LayerScale
+                def forward_with_layerscale(self, x):
+                    # Standard transformer block with LayerScale:
+                    # x = x + LayerScale(Attention(LayerNorm(x)))
+                    # x = x + LayerScale(MLP(LayerNorm(x)))
+
+                    # Get the block's components
+                    if hasattr(self, "norm1"):
+                        # Attention branch
+                        attn_out = self.attn(self.norm1(x))
+                        if hasattr(self, "drop_path"):
+                            attn_out = self.drop_path(attn_out)
+                        x = x + self.ls_attn(attn_out)
+
+                        # MLP branch
+                        mlp_out = self.mlp(self.norm2(x))
+                        if hasattr(self, "drop_path"):
+                            mlp_out = self.drop_path(mlp_out)
+                        x = x + self.ls_mlp(mlp_out)
+                    else:
+                        # Fallback to original forward if structure is different
+                        x = original_forward(x)
+
+                    return x
+
+                # Replace forward method
+                import types
+
+                block.forward = types.MethodType(forward_with_layerscale, block)
 
         # Disable gradient computation for target encoder
         for param in self.parameters():
@@ -758,8 +881,8 @@ def create_encoder(
         rope_theta: Base frequency for RoPE rotation
         use_flash_attention: Whether to use Flash Attention (PyTorch 2.0+ scaled_dot_product_attention)
         use_mps_optimization: Whether to use MPS-optimized attention for Apple Silicon
-        use_layerscale: Whether to use LayerScale (TODO: not implemented yet)
-        layerscale_init: Initial value for LayerScale (TODO: not implemented yet)
+        use_layerscale: Whether to use LayerScale for training stability in deep networks
+        layerscale_init: Initial value for LayerScale parameters (default: 1e-5)
 
     Returns:
         Tuple of (context_encoder, target_encoder)
@@ -770,26 +893,7 @@ def create_encoder(
         (Flash Attention, memory-efficient, or standard). Requires PyTorch 2.0+ and
         CUDA 7.5+ or MPS for best performance. Compatible with RoPE and all other features.
     """
-    # TODO: LayerScale integration
-    # LayerScale provides training stability for deep networks
-    # Currently these parameters are accepted but not used
-    # Implementation would require:
-    # 1. Add LayerScale layers after attention and MLP in each block
-    # 2. Initialize with small values (layerscale_init)
-
-    # Warn user if LayerScale is requested but not implemented
-    import warnings
-
-    if use_layerscale:
-        warnings.warn(
-            "LayerScale is not yet implemented. The use_layerscale and layerscale_init "
-            "parameters are accepted but currently ignored. The model will be created "
-            "without LayerScale. To implement LayerScale, add learnable scale parameters "
-            "after attention and MLP in each transformer block.",
-            UserWarning,
-            stacklevel=2,
-        )
-
+    # LayerScale has been implemented and can now be used
     context_encoder = ContextEncoder(
         encoder_type=encoder_type,
         img_size=img_size,
@@ -799,6 +903,8 @@ def create_encoder(
         rope_theta=rope_theta,
         use_flash_attention=use_flash_attention,
         use_mps_optimization=use_mps_optimization,
+        use_layerscale=use_layerscale,
+        layerscale_init=layerscale_init,
     )
 
     target_encoder = TargetEncoder(
@@ -810,6 +916,8 @@ def create_encoder(
         rope_theta=rope_theta,
         use_flash_attention=use_flash_attention,
         use_mps_optimization=use_mps_optimization,
+        use_layerscale=use_layerscale,
+        layerscale_init=layerscale_init,
     )
 
     # Initialize target encoder with context encoder weights

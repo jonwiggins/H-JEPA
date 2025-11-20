@@ -55,8 +55,8 @@ def test_fpn_creation():
     return model_add, model_concat, model_no_fpn
 
 
-def test_fpn_forward_pass(model, fusion_method="add"):
-    """Test forward pass through FPN model."""
+def verify_fpn_forward_pass(model, fusion_method="add"):
+    """Verify forward pass through FPN model."""
     print(f"Testing forward pass with '{fusion_method}' fusion...")
 
     # Create dummy input
@@ -86,8 +86,8 @@ def test_fpn_forward_pass(model, fusion_method="add"):
     return outputs
 
 
-def test_fpn_feature_extraction(model, fusion_method="add"):
-    """Test feature extraction at different hierarchy levels."""
+def verify_fpn_feature_extraction(model, fusion_method="add"):
+    """Verify feature extraction at different hierarchy levels."""
     print(f"Testing feature extraction with '{fusion_method}' fusion...")
 
     batch_size = 2
@@ -159,17 +159,17 @@ def main():
     model_add, model_concat, model_no_fpn = test_fpn_creation()
 
     # Test 2: Forward pass with 'add' fusion
-    test_fpn_forward_pass(model_add, fusion_method="add")
+    verify_fpn_forward_pass(model_add, fusion_method="add")
 
     # Test 3: Forward pass with 'concat' fusion
-    test_fpn_forward_pass(model_concat, fusion_method="concat")
+    verify_fpn_forward_pass(model_concat, fusion_method="concat")
 
     # Test 4: Forward pass without FPN
-    test_fpn_forward_pass(model_no_fpn, fusion_method="none")
+    verify_fpn_forward_pass(model_no_fpn, fusion_method="none")
 
     # Test 5: Feature extraction with FPN
-    test_fpn_feature_extraction(model_add, fusion_method="add")
-    test_fpn_feature_extraction(model_concat, fusion_method="concat")
+    verify_fpn_feature_extraction(model_add, fusion_method="add")
+    verify_fpn_feature_extraction(model_concat, fusion_method="concat")
 
     # Test 6: Parameter count comparison
     compare_parameter_counts()
