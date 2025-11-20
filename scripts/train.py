@@ -238,8 +238,9 @@ def validate_config(config: Dict[str, Any]) -> None:
     # Validate training config
     if config["training"]["epochs"] <= 0:
         raise ValueError("epochs must be positive")
-    if config["training"]["lr"] <= 0:
-        raise ValueError("lr must be positive")
+    lr = config["training"].get("lr", config["training"].get("learning_rate", 1e-4))
+    if lr <= 0:
+        raise ValueError("learning rate must be positive")
 
     # Validate loss hierarchy weights
     if len(config["loss"]["hierarchy_weights"]) != config["model"]["num_hierarchies"]:
@@ -373,8 +374,8 @@ def create_directories(config: Dict[str, Any]) -> None:
         config: Configuration dictionary
     """
     directories = [
-        config["checkpoint"]["checkpoint_dir"],
-        config["logging"]["log_dir"],
+        config.get("checkpoint", {}).get("checkpoint_dir", config["experiment"]["output_dir"]),
+        config.get("logging", {}).get("log_dir", f"{config['experiment']['output_dir']}/logs"),
     ]
 
     for directory in directories:
@@ -395,15 +396,15 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
     print("=" * 80)
 
     print("\nExperiment:")
-    print(f"  Name: {config['logging']['experiment_name']}")
-    print(f"  Seed: {config.get('seed', 42)}")
-    print(f"  Output: {config['checkpoint']['checkpoint_dir']}")
+    print(f"  Name: {config.get('experiment', {}).get('name', 'unnamed')}")
+    print(f"  Seed: {config.get('experiment', {}).get('seed', 42)}")
+    print(f"  Output: {config.get('experiment', {}).get('output_dir', './results')}")
 
     print("\nModel:")
     print(f"  Encoder: {config['model']['encoder_type']}")
     print(f"  Embedding dim: {config['model']['embed_dim']}")
     print(f"  Hierarchies: {config['model']['num_hierarchies']}")
-    print(f"  Predictor depth: {config['model']['predictor']['depth']}")
+    print(f"  Predictor depth: {config['model'].get('predictor_depth', 4)}")
 
     print("\nData:")
     if config["data"].get("use_multi_dataset", False):
@@ -421,11 +422,15 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
 
     print("\nTraining:")
     print(f"  Epochs: {config['training']['epochs']}")
-    print(f"  Learning rate: {config['training']['lr']}")
+    print(
+        f"  Learning rate: {config['training'].get('lr', config['training'].get('learning_rate', 1e-4))}"
+    )
     print(f"  Weight decay: {config['training']['weight_decay']}")
     print(f"  Warmup epochs: {config['training']['warmup_epochs']}")
     print(f"  Optimizer: {config['training']['optimizer']}")
-    print(f"  LR schedule: {config['training']['lr_schedule']}")
+    print(
+        f"  LR schedule: {config['training'].get('lr_schedule', config['training'].get('scheduler', 'cosine'))}"
+    )
     print(f"  Mixed precision: {config['training']['use_amp']}")
 
     print("\nMasking:")
@@ -471,6 +476,10 @@ def main():
     log_level = logging.DEBUG if args.debug else logging.INFO
     setup_logging(level=log_level)
 
+    # Initialize distributed variables
+    is_distributed = False
+    is_main_process = True
+
     try:
         # Load and validate configuration
         config = load_config(args.config)
@@ -490,7 +499,8 @@ def main():
         # Create output directories
         if is_main_process:
             create_directories(config)
-            print_training_summary(config, args)
+            # print_training_summary(config, args)  # Disabled due to config format changes
+            logger.info(f"Starting training: {config.get('experiment', {}).get('name', 'unnamed')}")
 
         # ====================================================================
         # Build Dataset and DataLoader
@@ -652,7 +662,8 @@ def main():
             config=config,
         )
 
-        logger.info(f"Optimizer: {config['training']['optimizer']} (lr={config['training']['lr']})")
+        lr = config["training"].get("lr", config["training"].get("learning_rate", 1e-4))
+        logger.info(f"Optimizer: {config['training']['optimizer']} (lr={lr})")
 
         # ====================================================================
         # Build Trainer

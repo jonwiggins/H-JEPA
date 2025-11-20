@@ -168,3 +168,4 @@ PROJECT_STRUCTURE.txt
 install_log.txt
 mypy_errors.txt
 *_ARCHITECTURE*.txt
+results/

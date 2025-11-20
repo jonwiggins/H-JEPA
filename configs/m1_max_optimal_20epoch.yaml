@@ -1,0 +1,151 @@
+# Optimal 20-epoch H-JEPA training configuration for M1 Max
+# Based on research papers and validated settings
+# Target: 70-78% linear probe accuracy on CIFAR-10
+
+# Experiment settings
+experiment:
+  name: "m1_max_optimal_20epoch"
+  seed: 42
+  output_dir: "results/m1_max_optimal_20epoch"
+
+# Model configuration - ViT-Tiny validated for M1 Max
+model:
+  encoder_type: "vit_tiny_patch16_224"
+  img_size: 224
+  num_hierarchies: 3  # Critical for multi-scale learning
+  embed_dim: 192
+  use_fpn: true  # Feature Pyramid Network for hierarchical features
+  fpn_channels: 128
+  use_rope: true  # Rotary Position Embeddings
+  rope_theta: 10000.0
+  use_flash_attention: false  # Disabled for MPS compatibility
+  use_mps_optimization: true
+  use_layerscale: true  # Helps with training stability
+  layerscale_init: 1e-5
+  predictor_depth: 6  # Deeper predictor for better representations
+  predictor_mlp_ratio: 4.0
+  predictor_use_norm: true
+
+# Data configuration
+data:
+  dataset: "cifar10"
+  data_path: "./data"
+  batch_size: 32  # Validated as stable on M1 Max
+  num_workers: 4
+  image_size: 224
+  transforms:
+    train:
+      RandomResizedCrop:
+        size: 224
+        scale: [0.2, 1.0]  # Stronger augmentation for self-supervised
+      RandomHorizontalFlip:
+        p: 0.5
+      RandomApply:
+        transforms:
+          - ColorJitter:
+              brightness: 0.4
+              contrast: 0.4
+              saturation: 0.2
+              hue: 0.1
+        p: 0.8
+      RandomGrayscale:
+        p: 0.2
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    val:
+      Resize:
+        size: 256
+      CenterCrop:
+        size: 224
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+
+# Masking configuration - Critical for H-JEPA
+masking:
+  num_target_masks: 4  # Multiple masks for better learning
+  target_mask_scale: [0.15, 0.4]  # Varied mask sizes
+  target_aspect_ratio: [0.5, 2.0]
+  num_context_masks: 2
+  context_mask_scale: [0.7, 1.0]  # Large context for prediction
+  hierarchical_masking: true
+  mask_at_levels: [1, 2, 3]  # Mask at all hierarchy levels
+  mask_overlap_threshold: 0.1
+
+# Loss configuration with VICReg
+loss:
+  type: "combined"  # Use combined loss with VICReg
+  smoothl1_beta: 0.01
+  hierarchy_weights: [1.0, 0.8, 0.6]  # Weighted hierarchy contributions
+  use_vicreg: true  # Critical for preventing collapse
+  vicreg_weight: 0.1  # Moderate regularization
+  variance_weight: 25.0
+  invariance_weight: 25.0
+  covariance_weight: 1.0
+  use_sigreg: false  # Can enable if needed
+
+# Training configuration - 20 epochs for meaningful learning
+training:
+  epochs: 20
+  warmup_epochs: 4  # 20% warmup
+  learning_rate: 1.5e-4  # Optimal for ViT-Tiny
+  lr: 1.5e-4  # Duplicate for compatibility
+  weight_decay: 0.04
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  optimizer: "adamw"
+  scheduler: "cosine"
+  lr_schedule: "cosine"
+  scheduler_params:
+    min_lr: 1.0e-6
+    warmup_start_lr: 1.0e-6
+  gradient_clip: 1.0
+  use_amp: false  # Disabled for MPS
+  use_gradient_checkpointing: false
+  use_compile: false
+  accumulation_steps: 1
+  # EMA momentum schedule - critical for target encoder
+  ema_momentum_schedule:
+    start: 0.996
+    end: 1.0
+    warmup_steps: 10000  # ~10 epochs
+  # Memory management for MPS
+  clear_cuda_cache_freq: 50  # Less frequent than debug
+
+# Logging configuration
+logging:
+  log_frequency: 50
+  save_frequency: 1560  # Save every epoch (50000/32)
+  use_wandb: false
+  use_tensorboard: true
+  log_images: true  # Enable to visualize masking
+  log_gradients: false  # Disable to save memory
+  log_memory: true  # Monitor memory usage
+  log_metrics: true
+
+# Evaluation configuration
+evaluation:
+  eval_frequency: 1560  # Evaluate every epoch
+  eval_linear_probe: true  # Test representation quality
+  eval_knn: true  # KNN evaluation for features
+  linear_probe_config:
+    num_classes: 10
+    learning_rate: 0.01
+    epochs: 100
+    batch_size: 256
+  knn_config:
+    k: 20
+    temperature: 0.07
+
+# Device configuration
+device: "mps"
+
+# Checkpointing
+checkpoint:
+  save_best: true  # Save best model
+  save_last: true
+  max_checkpoints: 3
+  metric: "val_linear_probe_accuracy"  # Track representation quality
+  mode: "max"
+  resume: null  # Set to checkpoint path to resume

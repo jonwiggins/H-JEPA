@@ -89,8 +89,8 @@ class HJEPATrainer:
         # Learning rate scheduler
         self.lr_scheduler: Callable[[int], float] = create_lr_scheduler(
             optimizer_type=config["training"]["optimizer"],
-            base_lr=config["training"]["lr"],
-            min_lr=config["training"]["min_lr"],
+            base_lr=config["training"].get("lr", config["training"].get("learning_rate", 1e-4)),
+            min_lr=config["training"].get("scheduler_params", {}).get("min_lr", 1e-6),
             epochs=self.epochs,
             steps_per_epoch=self.steps_per_epoch,
             warmup_epochs=self.warmup_epochs,
@@ -98,12 +98,17 @@ class HJEPATrainer:
         )
 
         # EMA scheduler for target encoder
+        ema_config = config.get("training", {}).get("ema_momentum_schedule", {})
         self.ema_scheduler: Callable[[int], float] = create_ema_scheduler(
-            base_momentum=config["model"]["ema"]["momentum"],
-            final_momentum=config["model"]["ema"]["momentum_end"],
+            base_momentum=ema_config.get("start", 0.996),
+            final_momentum=ema_config.get("end", 1.0),
             epochs=self.epochs,
             steps_per_epoch=self.steps_per_epoch,
-            warmup_epochs=config["model"]["ema"].get("momentum_warmup_epochs", 0),
+            warmup_epochs=(
+                ema_config.get("warmup_steps", 1000) // self.steps_per_epoch
+                if self.steps_per_epoch > 0
+                else 0
+            ),
         )
 
         # Mixed precision training
@@ -121,12 +126,15 @@ class HJEPATrainer:
             )
 
         # Checkpoint manager
+        checkpoint_dir = config.get("checkpoint", {}).get(
+            "checkpoint_dir", config.get("experiment", {}).get("output_dir", "checkpoints")
+        )
         self.checkpoint_manager = CheckpointManager(
-            checkpoint_dir=config["checkpoint"]["checkpoint_dir"],
-            keep_best_n=config["checkpoint"].get("keep_best_n", 3),
-            save_frequency=config["checkpoint"].get("save_frequency", 10),
-            metric_name="val_loss",
-            mode="min",
+            checkpoint_dir=checkpoint_dir,
+            keep_best_n=config.get("checkpoint", {}).get("keep_best_n", 3),
+            save_frequency=config.get("checkpoint", {}).get("save_frequency", 10),
+            metric_name=config.get("checkpoint", {}).get("metric", "val_loss"),
+            mode=config.get("checkpoint", {}).get("mode", "min"),
         )
 
         # Metrics logger
@@ -134,11 +142,19 @@ class HJEPATrainer:
         tensorboard_config = config["logging"].get("tensorboard", {})
 
         self.metrics_logger = MetricsLogger(
-            experiment_name=config["logging"]["experiment_name"],
-            log_dir=config["logging"]["log_dir"],
+            experiment_name=config.get("logging", {}).get(
+                "experiment_name", config.get("experiment", {}).get("name", "hjepa")
+            ),
+            log_dir=config.get("logging", {}).get(
+                "log_dir", config.get("experiment", {}).get("output_dir", "logs")
+            ),
             config=config,
-            use_wandb=wandb_config.get("enabled", False),
-            use_tensorboard=tensorboard_config.get("enabled", True),
+            use_wandb=config.get("logging", {}).get(
+                "use_wandb", wandb_config.get("enabled", False)
+            ),
+            use_tensorboard=config.get("logging", {}).get(
+                "use_tensorboard", tensorboard_config.get("enabled", True)
+            ),
             wandb_project=wandb_config.get("project", "h-jepa"),
             wandb_entity=wandb_config.get("entity", None),
             wandb_tags=wandb_config.get("tags", []),
@@ -288,8 +304,21 @@ class HJEPATrainer:
                 # Update global step
                 self.global_step += 1
 
-            # Accumulate metrics
+            # Accumulate metrics (before memory cleanup to avoid UnboundLocalError)
             self.metrics_logger.accumulate_metrics(loss_dict)
+
+            # Clear memory cache periodically to prevent leaks (especially on MPS)
+            if self.global_step % 50 == 0:
+                if self.device.type == "mps":
+                    # MPS doesn't have empty_cache, but we can trigger garbage collection
+                    import gc
+
+                    gc.collect()
+                    # Don't delete loss_dict as it may be needed later in the loop
+                    if "loss" in locals():
+                        del loss
+                elif self.device.type == "cuda":
+                    torch.cuda.empty_cache()
 
             # Log metrics
             if batch_idx % self.log_frequency == 0:
@@ -311,6 +340,16 @@ class HJEPATrainer:
                         "ema_momentum": self.ema_scheduler(self.global_step),
                     }
                     log_dict.update(loss_dict)
+
+                    # Add memory logging for debugging
+                    if self.device.type == "mps":
+                        log_dict["memory_mps_allocated_gb"] = (
+                            torch.mps.current_allocated_memory() / 1e9
+                        )
+                        log_dict["memory_mps_driver_gb"] = torch.mps.driver_allocated_memory() / 1e9
+                    elif self.device.type == "cuda":
+                        log_dict["memory_cuda_allocated_gb"] = torch.cuda.memory_allocated() / 1e9
+                        log_dict["memory_cuda_reserved_gb"] = torch.cuda.memory_reserved() / 1e9
                     self.metrics_logger.log_metrics(
                         log_dict,
                         step=self.global_step,
@@ -338,8 +377,11 @@ class HJEPATrainer:
         )
 
         # Return average metrics
-        avg_loss = np.mean([m["loss"] for m in [loss_dict]])
-        return {"loss": float(avg_loss)}
+        # Handle MPS tensors by moving to CPU first
+        loss_val = loss_dict["loss"]
+        if isinstance(loss_val, torch.Tensor):
+            loss_val = loss_val.cpu().item()
+        return {"loss": float(loss_val)}
 
     def _train_step(
         self,
@@ -448,10 +490,14 @@ class HJEPATrainer:
             images = images.to(self.device)
 
             # Generate masks
-            context_masks, target_masks = self.masking_fn(  # type: ignore[call-arg]
+            masks_dict = self.masking_fn(  # type: ignore[call-arg]
                 batch_size=images.size(0),
                 device=self.device,
             )
+
+            # Extract context and target masks from level 0
+            context_masks = masks_dict["level_0"]["context"]  # [B, N]
+            target_masks = masks_dict["level_0"]["targets"]  # [B, num_target_masks, N]
 
             # Forward pass
             device_type = self.device.type if self.device.type != "mps" else "cpu"
@@ -756,7 +802,7 @@ def create_optimizer(
         Optimizer instance
     """
     optimizer_type = config["training"]["optimizer"].lower()
-    lr = config["training"]["lr"]
+    lr = config["training"].get("lr", config["training"].get("learning_rate", 1e-4))
     weight_decay = config["training"].get("weight_decay", 0.0)
 
     optimizer: Union[torch.optim.AdamW, torch.optim.Adam, torch.optim.SGD]

@@ -1,0 +1,138 @@
+# MPS Optimized Configuration v2 - With new MPS attention optimizations
+# Optimized settings for Apple Silicon with H-JEPA model
+
+# Experiment settings
+experiment:
+  name: "hjepa_mps_optimized_v2"
+  seed: 42
+  output_dir: "results/mps_optimized_v2"
+
+# Model configuration
+model:
+  encoder_type: "vit_base_patch16_224"
+  img_size: 224
+  num_hierarchies: 3
+  embed_dim: 768
+  use_fpn: true
+  fpn_channels: 256
+  use_rope: true
+  rope_theta: 10000.0
+  use_flash_attention: false  # Disabled for MPS
+  use_mps_optimization: true  # Enable MPS-specific optimizations
+  use_layerscale: false
+  layerscale_init: 1e-5
+  predictor_depth: 4
+  predictor_mlp_ratio: 4.0
+  predictor_use_norm: true
+
+# Data configuration
+data:
+  dataset: "cifar10"
+  data_path: "./data"
+  batch_size: 32  # Optimal for M-series unified memory
+  num_workers: 4  # Balance between CPU and GPU usage
+  image_size: 224
+  transforms:
+    train:
+      RandomResizedCrop:
+        size: 224
+        scale: [0.4, 1.0]
+      RandomHorizontalFlip:
+        p: 0.5
+      ColorJitter:
+        brightness: 0.4
+        contrast: 0.4
+        saturation: 0.2
+        hue: 0.1
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+    val:
+      Resize:
+        size: 256
+      CenterCrop:
+        size: 224
+      Normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+  multi_crop:
+    enabled: false
+
+# Masking configuration
+masking:
+  num_target_masks: 4
+  target_mask_scale: [0.15, 0.2]
+  target_aspect_ratio: [0.75, 1.5]
+  num_context_masks: 1
+  context_mask_scale: [0.85, 1.0]
+  hierarchical_masking: true
+  mask_at_levels: [1, 2, 3]
+  mask_overlap_threshold: 0.0
+
+# Loss configuration
+loss:
+  type: "combined"
+  reconstruction_weight: 1.0
+  regularization_weight: 0.1
+  hierarchy_weights: [1.0, 0.7, 0.5]
+  use_vicreg: true
+  vicreg:
+    invariance_weight: 25.0
+    variance_weight: 25.0
+    covariance_weight: 1.0
+    variance_threshold: 1.0
+  use_smoothl1: false
+  smoothl1_beta: 0.01
+  use_sigreg: false
+  sigreg_loss_weight: 0.1
+  sigreg_threshold: 0.0
+
+# Training configuration
+training:
+  epochs: 100
+  warmup_epochs: 10
+  learning_rate: 1.5e-4
+  weight_decay: 0.04
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  optimizer: "adamw"
+  scheduler: "cosine"
+  scheduler_params:
+    min_lr: 1.0e-6
+  gradient_clip: 1.0
+  use_amp: false  # Disabled for MPS
+  use_gradient_checkpointing: false
+  use_compile: false  # Could enable for potential speedup
+  accumulation_steps: 1
+  ema_momentum_schedule:
+    start: 0.996
+    end: 1.0
+    warmup_steps: 1000
+
+# Logging configuration
+logging:
+  log_frequency: 50
+  save_frequency: 10
+  use_wandb: false
+  wandb_project: "hjepa_mps"
+  use_tensorboard: true
+  log_images: false
+  log_gradients: false
+
+# Evaluation configuration
+evaluation:
+  eval_frequency: 5
+  eval_linear_probe: false
+  eval_knn: false
+  knn_k: 20
+
+# Device configuration
+device: "mps"  # Explicitly set to MPS
+
+# Checkpointing
+checkpoint:
+  save_best: true
+  save_last: true
+  max_checkpoints: 3
+  metric: "val_loss"
+  mode: "min"

@@ -14,6 +14,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
 
+# Import MPS optimizations if available
+try:
+    from .mps_optimizations import MPSOptimizedAttention, is_mps_available
+
+    MPS_OPTIMIZATIONS_AVAILABLE = True
+except ImportError:
+    MPS_OPTIMIZATIONS_AVAILABLE = False
+
+    def is_mps_available():
+        return False
+
+
 # Check if Flash Attention is available via PyTorch's scaled_dot_product_attention
 # Available in PyTorch 2.0+ with CUDA 7.5+ (NOT MPS - causes severe slowdowns!)
 FLASH_ATTENTION_AVAILABLE = (
@@ -279,11 +291,20 @@ class RoPEAttentionWrapper(nn.Module):
         attn_module: nn.Module,
         rope_module: VisionRoPE2D,
         use_flash_attention: bool = False,
+        use_mps_optimization: bool = True,  # Enable MPS optimization by default on Apple Silicon
     ):
         super().__init__()
         self.attn = attn_module
         self.rope = rope_module
         self.use_flash = use_flash_attention and FLASH_ATTENTION_AVAILABLE
+
+        # Enable MPS optimization if available and requested
+        self.use_mps_opt = (
+            use_mps_optimization
+            and MPS_OPTIMIZATIONS_AVAILABLE
+            and is_mps_available()
+            and not self.use_flash  # Don't use both Flash and MPS optimization
+        )
 
         # Copy all attributes from original attention (typed as Any to handle dynamic attributes)
         self.num_heads: int = getattr(attn_module, "num_heads")
@@ -295,6 +316,16 @@ class RoPEAttentionWrapper(nn.Module):
         self.attn_drop: nn.Module = getattr(attn_module, "attn_drop")
         self.proj: nn.Module = getattr(attn_module, "proj")
         self.proj_drop: nn.Module = getattr(attn_module, "proj_drop")
+
+        # Create MPS-optimized attention if enabled
+        if self.use_mps_opt:
+            dropout_p = float(getattr(self.attn_drop, "p", 0.0))
+            self.mps_attention = MPSOptimizedAttention(
+                num_heads=self.num_heads,
+                head_dim=self.head_dim,
+                dropout=dropout_p,
+                use_pytorch_sdpa=True,  # Use PyTorch SDPA when beneficial
+            )
 
     def forward(self, x: torch.Tensor, attn_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
@@ -340,9 +371,9 @@ class RoPEAttentionWrapper(nn.Module):
             # No CLS token, apply RoPE to all tokens
             q, k = self.rope(q, k, num_patches_h=grid_size, num_patches_w=grid_size)
 
-        # Compute attention using Flash Attention if available
+        # Compute attention using optimal backend
         if self.use_flash:
-            # Use PyTorch's Flash Attention implementation
+            # Use PyTorch's Flash Attention implementation (CUDA only)
             # scaled_dot_product_attention automatically selects the best backend
             dropout_p = float(getattr(self.attn_drop, "p", 0.0)) if self.training else 0.0
             x = F.scaled_dot_product_attention(
@@ -352,6 +383,10 @@ class RoPEAttentionWrapper(nn.Module):
                 dropout_p=dropout_p,
                 scale=self.scale,
             )
+            x = x.transpose(1, 2).reshape(B, N, C)
+        elif self.use_mps_opt:
+            # Use MPS-optimized attention for Apple Silicon
+            x = self.mps_attention(q, k, v, attn_mask=attn_mask)
             x = x.transpose(1, 2).reshape(B, N, C)
         else:
             # Standard attention fallback
@@ -404,6 +439,7 @@ class ContextEncoder(nn.Module):
         use_rope: bool = False,
         rope_theta: float = 10000.0,
         use_flash_attention: bool = False,
+        use_mps_optimization: bool = True,  # Enable MPS optimization by default
     ):
         super().__init__()
 
@@ -451,7 +487,10 @@ class ContextEncoder(nn.Module):
             # Wrap all attention layers with RoPE
             for block in self.vit.blocks:  # type: ignore[union-attr]
                 block.attn = RoPEAttentionWrapper(
-                    block.attn, self.rope, use_flash_attention=use_flash_attention
+                    block.attn,
+                    self.rope,
+                    use_flash_attention=use_flash_attention,
+                    use_mps_optimization=use_mps_optimization,
                 )
 
             # When using RoPE, we can optionally reduce or remove absolute position embeddings
@@ -562,6 +601,7 @@ class TargetEncoder(nn.Module):
         use_rope: bool = False,
         rope_theta: float = 10000.0,
         use_flash_attention: bool = False,
+        use_mps_optimization: bool = True,  # Enable MPS optimization by default
     ):
         super().__init__()
 
@@ -611,7 +651,10 @@ class TargetEncoder(nn.Module):
             # Wrap all attention layers with RoPE
             for block in self.vit.blocks:  # type: ignore[union-attr]
                 block.attn = RoPEAttentionWrapper(
-                    block.attn, self.rope, use_flash_attention=use_flash_attention
+                    block.attn,
+                    self.rope,
+                    use_flash_attention=use_flash_attention,
+                    use_mps_optimization=use_mps_optimization,
                 )
 
         # Disable gradient computation for target encoder
@@ -699,6 +742,7 @@ def create_encoder(
     use_rope: bool = False,
     rope_theta: float = 10000.0,
     use_flash_attention: bool = False,
+    use_mps_optimization: bool = True,
     use_layerscale: bool = False,
     layerscale_init: float = 1e-5,
 ) -> Tuple[ContextEncoder, TargetEncoder]:
@@ -713,6 +757,7 @@ def create_encoder(
         use_rope: Whether to use Rotary Position Embeddings
         rope_theta: Base frequency for RoPE rotation
         use_flash_attention: Whether to use Flash Attention (PyTorch 2.0+ scaled_dot_product_attention)
+        use_mps_optimization: Whether to use MPS-optimized attention for Apple Silicon
         use_layerscale: Whether to use LayerScale (TODO: not implemented yet)
         layerscale_init: Initial value for LayerScale (TODO: not implemented yet)
 
@@ -753,6 +798,7 @@ def create_encoder(
         use_rope=use_rope,
         rope_theta=rope_theta,
         use_flash_attention=use_flash_attention,
+        use_mps_optimization=use_mps_optimization,
     )
 
     target_encoder = TargetEncoder(
@@ -763,6 +809,7 @@ def create_encoder(
         use_rope=use_rope,
         rope_theta=rope_theta,
         use_flash_attention=use_flash_attention,
+        use_mps_optimization=use_mps_optimization,
     )
 
     # Initialize target encoder with context encoder weights
