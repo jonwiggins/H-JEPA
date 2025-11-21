@@ -508,10 +508,11 @@ class HJEPATrainer:
                     context_masks,
                 )
 
-                loss, _ = self.loss_fn(
+                loss_dict = self.loss_fn(
                     predictions=predictions,
                     targets=target_embeddings,
                 )
+                loss = loss_dict["loss"]
 
             val_losses.append(loss.item())
             pbar.set_postfix({"val_loss": f"{loss.item():.4f}"})
@@ -698,7 +699,7 @@ class HJEPATrainer:
         epoch: int,
         val_loss: Optional[float],
         is_best: bool,
-    ) -> None:
+    ) -> str:
         """
         Save training checkpoint.
 
@@ -706,6 +707,9 @@ class HJEPATrainer:
             epoch: Current epoch
             val_loss: Validation loss (if available)
             is_best: Whether this is the best model so far
+
+        Returns:
+            Path to the saved checkpoint file
         """
         metrics: Dict[str, float] = {"epoch": float(epoch)}
         if val_loss is not None:
@@ -717,7 +721,7 @@ class HJEPATrainer:
             "ema_momentum": self.ema_scheduler(self.global_step),
         }
 
-        self.checkpoint_manager.save_checkpoint(
+        checkpoint_path = self.checkpoint_manager.save_checkpoint(
             epoch=epoch,
             model=self.model,
             optimizer=self.optimizer,
@@ -727,6 +731,8 @@ class HJEPATrainer:
             extra_state={"global_step": self.global_step},
             is_best=is_best,
         )
+
+        return checkpoint_path
 
     def _resume_from_checkpoint(self, checkpoint_path: str) -> None:
         """
@@ -746,7 +752,15 @@ class HJEPATrainer:
         )
 
         self.current_epoch = metadata["epoch"] + 1
-        self.best_val_loss = metadata.get("best_metric", float("inf"))
+
+        # Try to get best_metric from metadata, fallback to val_loss from metrics
+        best_metric = metadata.get("best_metric", float("inf"))
+        if best_metric == float("inf") and "metrics" in metadata:
+            # If best_metric is not set, try to get val_loss from metrics
+            val_loss = metadata["metrics"].get("val_loss", float("inf"))
+            self.best_val_loss = val_loss
+        else:
+            self.best_val_loss = best_metric
 
         logger.info(f"Resumed from epoch {metadata['epoch']}")
         if self.best_val_loss != float("inf"):
