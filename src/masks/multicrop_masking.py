@@ -348,9 +348,25 @@ class MultiCropMaskGenerator:
                 crop_masks = local_masks[crop_key]
 
                 if "level_0" in crop_masks:
-                    # Masked local crop
+                    # Masked local crop - only plot levels that exist
                     for level_idx in range(num_levels):
                         level_key = f"level_{level_idx}"
+
+                        # Check if this level exists in the crop masks
+                        if level_key not in crop_masks:
+                            # This level doesn't exist, skip it (leave axes empty or mark as N/A)
+                            row_ctx = level_idx * 2
+                            row_tgt = level_idx * 2 + 1
+                            axes[row_ctx, col_idx].text(
+                                0.5, 0.5, "N/A", ha="center", va="center", fontsize=8
+                            )
+                            axes[row_ctx, col_idx].axis("off")
+                            axes[row_tgt, col_idx].text(
+                                0.5, 0.5, "N/A", ha="center", va="center", fontsize=8
+                            )
+                            axes[row_tgt, col_idx].axis("off")
+                            continue
+
                         level_masks = crop_masks[level_key]
 
                         context_mask = level_masks["context"][sample_idx].cpu().numpy()
