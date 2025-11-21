@@ -13,10 +13,11 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 import torch
 import torch.nn as nn
+from torch.amp import GradScaler
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class CheckpointManager:
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: Any,
-        scaler: Optional[torch.cuda.amp.GradScaler] = None,
+        scaler: Optional[GradScaler] = None,
         metrics: Optional[Dict[str, float]] = None,
         extra_state: Optional[Dict[str, Any]] = None,
         is_best: bool = False,
@@ -145,8 +146,8 @@ class CheckpointManager:
         model: nn.Module,
         optimizer: Optional[torch.optim.Optimizer] = None,
         scheduler: Optional[Any] = None,
-        scaler: Optional[torch.cuda.amp.GradScaler] = None,
-        device: str = "cuda",
+        scaler: Optional[GradScaler] = None,
+        device: Union[str, torch.device] = "cuda",
     ) -> Dict[str, Any]:
         """
         Load a checkpoint and restore training state.

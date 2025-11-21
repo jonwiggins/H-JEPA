@@ -31,7 +31,7 @@ except ImportError:
     logging.warning("wandb not available. Install with: pip install wandb")
 
 try:
-    from torch.utils.tensorboard import SummaryWriter  # type: ignore[attr-defined]
+    from torch.utils.tensorboard import SummaryWriter
 
     TENSORBOARD_AVAILABLE = True
 except ImportError:

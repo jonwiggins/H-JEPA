@@ -12,7 +12,7 @@ Key Optimizations:
 """
 
 import math
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -245,7 +245,7 @@ def compile_for_mps(model: nn.Module, mode: str = "default") -> nn.Module:
         mode: Compilation mode - "default", "reduce-overhead", or "max-autotune"
 
     Returns:
-        Compiled model optimized for MPS
+        Compiled model optimized for MPS (or original model if compilation fails)
     """
     if not is_mps_available():
         print("MPS not available, returning uncompiled model")
@@ -258,7 +258,8 @@ def compile_for_mps(model: nn.Module, mode: str = "default") -> nn.Module:
 
     try:
         # Compile with MPS-friendly settings
-        compiled_model = torch.compile(
+        # torch.compile returns a callable that wraps the module
+        compiled_model: nn.Module = torch.compile(  # type: ignore[assignment]
             model,
             mode=mode,
             backend="inductor",  # Inductor backend supports MPS
@@ -334,7 +335,7 @@ def benchmark_attention_mps(
     seq_len: int = 196,
     head_dim: int = 64,
     num_iterations: int = 100,
-) -> dict:
+) -> Dict[str, Any]:
     """
     Benchmark different attention implementations on MPS.
     """
@@ -360,7 +361,6 @@ def benchmark_attention_mps(
 
     torch.mps.synchronize()
     start = torch.mps.current_allocated_memory()
-    start_time = torch.cuda.Event(enable_timing=True) if torch.cuda.is_available() else None
 
     for _ in range(num_iterations):
         _ = standard_attn._standard_attention(q, k, v)

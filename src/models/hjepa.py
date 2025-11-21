@@ -5,7 +5,7 @@ This module implements the main H-JEPA model that combines context encoder,
 target encoder, and predictor for hierarchical self-supervised learning.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import torch
 import torch.nn as nn
@@ -293,12 +293,14 @@ class HJEPA(nn.Module):
         # Propagate from coarse to fine
         for level in range(self.num_hierarchies - 2, -1, -1):
             # Get top-down features from coarser level
-            top_down = fpn_features[level + 1]
+            # fpn_features[level + 1] is guaranteed to be not None because we initialize
+            # the coarsest level above and iterate from coarse to fine
+            top_down = cast(torch.Tensor, fpn_features[level + 1])
 
             # Upsample top-down features to match current level resolution
             # For 1D sequence, we use interpolation
             current_n = lateral_features[level].shape[1]
-            top_down_n = top_down.shape[1]  # type: ignore[attr-defined]
+            top_down_n = top_down.shape[1]
 
             if top_down_n != current_n:
                 # Rearrange for interpolation: [B, N, D] -> [B, D, N]
@@ -366,10 +368,10 @@ class HJEPA(nn.Module):
 
         # Find the number of masked patches per sample
         num_masked_per_sample = mask_bool.sum(dim=1)
-        max_masked = num_masked_per_sample.max().item()
+        max_masked = int(num_masked_per_sample.max().item())
 
         # Create padded mask indices tensor [B, max_masked]
-        mask_indices = torch.zeros((B, max_masked), dtype=torch.long, device=mask.device)  # type: ignore[arg-type]
+        mask_indices = torch.zeros((B, max_masked), dtype=torch.long, device=mask.device)
 
         # Create validity mask to track which indices are actual (not padding)
         # This fixes the bug where padded zeros would gather from patch 0 repeatedly
@@ -480,6 +482,28 @@ class HJEPA(nn.Module):
             "context_features": context_features,
             "target_features": target_features,
         }
+
+    @torch.no_grad()
+    def encode_context(
+        self,
+        images: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Encode context (visible) patches using the context encoder.
+
+        This method is used during validation and evaluation to extract features
+        from the context encoder. If no mask is provided, encodes the full image.
+
+        Args:
+            images: Input images [B, C, H, W]
+            mask: Optional binary mask for patches [B, N] where 1 indicates masked position.
+                  If None, encodes full image without masking.
+
+        Returns:
+            Context features [B, N+1, D] where N is number of patches (includes CLS token)
+        """
+        return self.context_encoder(images, mask=mask)  # type: ignore[no-any-return]
 
     @torch.no_grad()
     def extract_features(

@@ -38,10 +38,10 @@ class TestHJEPALoss:
     def test_initialization_default(self):
         """Test default initialization of HJEPALoss."""
         loss_fn = HJEPALoss()
-        assert loss_fn.loss_type == "mse"
+        assert loss_fn.loss_type == "smoothl1"
         assert loss_fn.num_hierarchies == 3
         assert loss_fn.reduction == "mean"
-        assert loss_fn.normalize_embeddings == False
+        assert loss_fn.normalize_embeddings == True
         assert len(loss_fn.hierarchy_weights) == 3
         assert all(w == 1.0 for w in loss_fn.hierarchy_weights)
 
@@ -61,8 +61,11 @@ class TestHJEPALoss:
     def test_forward_mse_loss(self, setup):
         """Test forward pass with MSE loss."""
         loss_fn = HJEPALoss(loss_type="mse")
-        loss = loss_fn(self.predictions, self.targets)
+        loss_dict = loss_fn(self.predictions, self.targets)
 
+        assert isinstance(loss_dict, dict)
+        assert "loss" in loss_dict
+        loss = loss_dict["loss"]
         assert isinstance(loss, torch.Tensor)
         assert loss.dim() == 0  # Scalar output
         assert loss.item() >= 0  # Loss should be non-negative
@@ -72,8 +75,11 @@ class TestHJEPALoss:
     def test_forward_smoothl1_loss(self, setup):
         """Test forward pass with Smooth L1 loss."""
         loss_fn = HJEPALoss(loss_type="smoothl1")
-        loss = loss_fn(self.predictions, self.targets)
+        loss_dict = loss_fn(self.predictions, self.targets)
 
+        assert isinstance(loss_dict, dict)
+        assert "loss" in loss_dict
+        loss = loss_dict["loss"]
         assert isinstance(loss, torch.Tensor)
         assert loss.dim() == 0
         assert loss.item() >= 0
@@ -82,8 +88,11 @@ class TestHJEPALoss:
     def test_forward_huber_loss(self, setup):
         """Test forward pass with Huber loss."""
         loss_fn = HJEPALoss(loss_type="huber", huber_delta=2.0)
-        loss = loss_fn(self.predictions, self.targets)
+        loss_dict = loss_fn(self.predictions, self.targets)
 
+        assert isinstance(loss_dict, dict)
+        assert "loss" in loss_dict
+        loss = loss_dict["loss"]
         assert isinstance(loss, torch.Tensor)
         assert loss.dim() == 0
         assert loss.item() >= 0
@@ -93,11 +102,13 @@ class TestHJEPALoss:
         """Test that hierarchy weights are applied correctly."""
         # Test with equal weights
         loss_fn_equal = HJEPALoss(hierarchy_weights=1.0)
-        loss_equal = loss_fn_equal(self.predictions, self.targets)
+        loss_dict_equal = loss_fn_equal(self.predictions, self.targets)
+        loss_equal = loss_dict_equal["loss"]
 
         # Test with different weights
         loss_fn_weighted = HJEPALoss(hierarchy_weights=[2.0, 1.0, 0.5])
-        loss_weighted = loss_fn_weighted(self.predictions, self.targets)
+        loss_dict_weighted = loss_fn_weighted(self.predictions, self.targets)
+        loss_weighted = loss_dict_weighted["loss"]
 
         # Losses should be different due to different weights
         assert not torch.allclose(loss_equal, loss_weighted)
@@ -105,10 +116,12 @@ class TestHJEPALoss:
     def test_normalization(self, setup):
         """Test embedding normalization."""
         loss_fn = HJEPALoss(normalize_embeddings=True)
-        loss_normalized = loss_fn(self.predictions, self.targets)
+        loss_dict_normalized = loss_fn(self.predictions, self.targets)
+        loss_normalized = loss_dict_normalized["loss"]
 
         loss_fn_no_norm = HJEPALoss(normalize_embeddings=False)
-        loss_no_norm = loss_fn_no_norm(self.predictions, self.targets)
+        loss_dict_no_norm = loss_fn_no_norm(self.predictions, self.targets)
+        loss_no_norm = loss_dict_no_norm["loss"]
 
         # Losses should generally be different
         assert loss_normalized.item() >= 0
@@ -118,12 +131,14 @@ class TestHJEPALoss:
         """Test different reduction modes."""
         # Mean reduction
         loss_fn_mean = HJEPALoss(reduction="mean")
-        loss_mean = loss_fn_mean(self.predictions, self.targets)
+        loss_dict_mean = loss_fn_mean(self.predictions, self.targets)
+        loss_mean = loss_dict_mean["loss"]
         assert loss_mean.dim() == 0
 
         # Sum reduction
         loss_fn_sum = HJEPALoss(reduction="sum")
-        loss_sum = loss_fn_sum(self.predictions, self.targets)
+        loss_dict_sum = loss_fn_sum(self.predictions, self.targets)
+        loss_sum = loss_dict_sum["loss"]
         assert loss_sum.dim() == 0
 
         # Sum should be larger than mean for batch_size > 1
@@ -136,7 +151,8 @@ class TestHJEPALoss:
         # Make predictions require gradients
         predictions = [p.requires_grad_(True) for p in self.predictions]
 
-        loss = loss_fn(predictions, self.targets)
+        loss_dict = loss_fn(predictions, self.targets)
+        loss = loss_dict["loss"]
         loss.backward()
 
         # Check that gradients are computed
@@ -163,12 +179,14 @@ class TestHJEPALoss:
         # Test with zero targets (perfect prediction)
         zero_targets = [torch.zeros_like(p) for p in self.predictions]
         zero_predictions = [torch.zeros_like(p) for p in self.predictions]
-        loss = loss_fn(zero_predictions, zero_targets)
+        loss_dict = loss_fn(zero_predictions, zero_targets)
+        loss = loss_dict["loss"]
         assert torch.allclose(loss, torch.tensor(0.0), atol=1e-6)
 
         # Test with very large values
         large_predictions = [p * 1000 for p in self.predictions]
-        loss = loss_fn(large_predictions, self.targets)
+        loss_dict = loss_fn(large_predictions, self.targets)
+        loss = loss_dict["loss"]
         assert not torch.isnan(loss)
         assert not torch.isinf(loss)
 
@@ -190,8 +208,11 @@ class TestHJEPALoss:
         ]
 
         loss_fn = HJEPALoss()
-        loss = loss_fn(predictions, targets)
+        loss_dict = loss_fn(predictions, targets)
 
+        assert isinstance(loss_dict, dict)
+        assert "loss" in loss_dict
+        loss = loss_dict["loss"]
         assert isinstance(loss, torch.Tensor)
         assert loss.dim() == 0
         assert not torch.isnan(loss)
@@ -213,10 +234,11 @@ class TestHJEPALoss:
         ]
 
         loss_fn = HJEPALoss(normalize_embeddings=True)
-        loss = loss_fn(predictions, targets)
+        loss_dict = loss_fn(predictions, targets)
+        loss = loss_dict["loss"]
 
-        # For normalized embeddings, MSE loss should be in [0, 4] range
-        # (max distance between two unit vectors is 2)
+        # For normalized embeddings, loss should be in reasonable range
+        # (max distance between two unit vectors is 2, so MSE would be 4)
         assert 0 <= loss.item() <= 10  # Allow some margin
 
     def test_deterministic_loss(self):
@@ -227,8 +249,10 @@ class TestHJEPALoss:
         targets = [torch.randn(2, 10, 64) for _ in range(3)]
 
         loss_fn = HJEPALoss()
-        loss1 = loss_fn(predictions, targets)
-        loss2 = loss_fn(predictions, targets)
+        loss_dict1 = loss_fn(predictions, targets)
+        loss1 = loss_dict1["loss"]
+        loss_dict2 = loss_fn(predictions, targets)
+        loss2 = loss_dict2["loss"]
 
         assert torch.allclose(loss1, loss2)
 

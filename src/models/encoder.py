@@ -22,7 +22,7 @@ try:
 except ImportError:
     MPS_OPTIMIZATIONS_AVAILABLE = False
 
-    def is_mps_available():
+    def is_mps_available() -> bool:
         return False
 
 
@@ -547,7 +547,7 @@ class ContextEncoder(nn.Module):
                 original_forward = block.forward
 
                 # Define new forward method with LayerScale
-                def forward_with_layerscale(self, x):
+                def forward_with_layerscale(self: Any, x: torch.Tensor) -> torch.Tensor:
                     # Standard transformer block with LayerScale:
                     # x = x + LayerScale(Attention(LayerNorm(x)))
                     # x = x + LayerScale(MLP(LayerNorm(x)))
@@ -751,7 +751,7 @@ class TargetEncoder(nn.Module):
                 original_forward = block.forward
 
                 # Define new forward method with LayerScale
-                def forward_with_layerscale(self, x):
+                def forward_with_layerscale(self: Any, x: torch.Tensor) -> torch.Tensor:
                     # Standard transformer block with LayerScale:
                     # x = x + LayerScale(Attention(LayerNorm(x)))
                     # x = x + LayerScale(MLP(LayerNorm(x)))

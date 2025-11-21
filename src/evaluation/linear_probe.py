@@ -183,7 +183,15 @@ class LinearProbeEvaluator:
         all_features = []
         all_labels = []
 
-        for images, labels in tqdm(dataloader, desc=desc):
+        for batch in tqdm(dataloader, desc=desc):
+            # Handle different dataloader return formats
+            # Some dataloaders return (images, labels), others return (images, labels, metadata)
+            if isinstance(batch, (list, tuple)):
+                images = batch[0]
+                labels = batch[1]
+            else:
+                raise ValueError(f"Unexpected batch type: {type(batch)}")
+
             images = images.to(self.device)
 
             # Extract features at specified hierarchy level
@@ -266,7 +274,14 @@ class LinearProbeEvaluator:
                 tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}") if verbose else train_loader
             )
 
-            for images, labels in pbar:
+            for batch in pbar:
+                # Handle different dataloader return formats
+                if isinstance(batch, (list, tuple)):
+                    images = batch[0]
+                    labels = batch[1]
+                else:
+                    raise ValueError(f"Unexpected batch type: {type(batch)}")
+
                 images, labels = images.to(self.device), labels.to(self.device)
 
                 # Extract frozen features
@@ -362,7 +377,14 @@ class LinearProbeEvaluator:
 
         pbar = tqdm(dataloader, desc="Evaluating") if verbose else dataloader
 
-        for images, labels in pbar:
+        for batch in pbar:
+            # Handle different dataloader return formats
+            if isinstance(batch, (list, tuple)):
+                images = batch[0]
+                labels = batch[1]
+            else:
+                raise ValueError(f"Unexpected batch type: {type(batch)}")
+
             images, labels = images.to(self.device), labels.to(self.device)
 
             # Extract frozen features

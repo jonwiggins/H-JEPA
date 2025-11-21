@@ -61,7 +61,7 @@ class HJEPATrainer:
         loss_fn: nn.Module,
         masking_fn: Callable[[int, str], Dict[str, Any]],
         config: Dict[str, Any],
-        device: str = "cuda",
+        device: Union[str, torch.device] = "cuda",
         resume_checkpoint: Optional[str] = None,
     ) -> None:
         self.model = model
@@ -71,10 +71,11 @@ class HJEPATrainer:
         self.loss_fn = loss_fn
         self.masking_fn = masking_fn
         self.config = config
-        self.device = device
+        # Convert device string to torch.device object for proper type checking
+        self.device = torch.device(device) if isinstance(device, str) else device
 
         # Move model to device
-        self.model = self.model.to(device)
+        self.model = self.model.to(self.device)
 
         # Training config
         self.epochs = config["training"]["epochs"]
@@ -112,8 +113,6 @@ class HJEPATrainer:
         )
 
         # Mixed precision training
-        # Use appropriate device for scaler
-        device_type = "cuda" if torch.cuda.is_available() else "cpu"
         if self.device.type == "mps":
             # MPS doesn't support GradScaler, disable AMP for MPS
             self.use_amp = False
@@ -121,9 +120,9 @@ class HJEPATrainer:
             if config["training"].get("use_amp", False):
                 logger.warning("Mixed precision training not supported on MPS, disabling AMP")
         else:
-            self.scaler: Optional[GradScaler] = (
-                GradScaler(device=device_type) if self.use_amp else None
-            )
+            # Use appropriate device type for scaler (cuda or cpu)
+            device_type = "cuda" if self.device.type == "cuda" else "cpu"
+            self.scaler = GradScaler(device=device_type) if self.use_amp else None
 
         # Checkpoint manager
         checkpoint_dir = config.get("checkpoint", {}).get(
@@ -271,7 +270,8 @@ class HJEPATrainer:
 
             # Backward pass
             if self.use_amp and self.scaler is not None:
-                self.scaler.scale(loss).backward()
+                scaled_loss = self.scaler.scale(loss)
+                scaled_loss.backward()  # type: ignore[no-untyped-call]
             else:
                 loss.backward()  # type: ignore[no-untyped-call]
 
@@ -377,11 +377,8 @@ class HJEPATrainer:
         )
 
         # Return average metrics
-        # Handle MPS tensors by moving to CPU first
-        loss_val = loss_dict["loss"]
-        if isinstance(loss_val, torch.Tensor):
-            loss_val = loss_val.cpu().item()
-        return {"loss": float(loss_val)}
+        # loss_dict["loss"] is always a float, not a tensor
+        return {"loss": float(loss_dict["loss"])}
 
     def _train_step(
         self,
