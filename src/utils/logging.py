@@ -129,8 +129,8 @@ class MetricsLogger:
             prefix: Prefix to add to metric names (e.g., "train/", "val/")
             commit: Whether to commit the metrics (W&B)
         """
-        if step is not None:
-            self.step = step
+        # Determine step to use for logging
+        log_step = step if step is not None else self.step
 
         # Add prefix to metric names
         if prefix:
@@ -139,7 +139,7 @@ class MetricsLogger:
         # Log to W&B
         if self.use_wandb:
             try:
-                wandb.log(metrics, step=self.step, commit=commit)
+                wandb.log(metrics, step=log_step, commit=commit)
             except Exception as e:
                 logger.warning(f"Failed to log to W&B: {e}")
 
@@ -147,11 +147,15 @@ class MetricsLogger:
         if self.use_tensorboard:
             try:
                 for name, value in metrics.items():
-                    self.tb_writer.add_scalar(name, value, self.step)  # type: ignore[no-untyped-call]
+                    self.tb_writer.add_scalar(name, value, log_step)  # type: ignore[no-untyped-call]
             except Exception as e:
                 logger.warning(f"Failed to log to TensorBoard: {e}")
 
-        self.step += 1
+        # Update internal step counter
+        if step is not None:
+            self.step = step
+        else:
+            self.step += 1
 
     def log_image(
         self,
@@ -345,9 +349,6 @@ class MetricsLogger:
             step: Global step number
             prefix: Prefix for metric names
         """
-        if step is None:
-            step = self.step
-
         # Extract level losses
         level_losses: Dict[str, float] = {}
         total_loss: float = 0.0
@@ -358,7 +359,17 @@ class MetricsLogger:
                 total_loss += value
 
         # Log individual level losses and percentages
-        for level, loss_value in level_losses.items():
+        # Only increment step on the last call to log_metrics
+        num_levels = len(level_losses)
+        for i, (level, loss_value) in enumerate(level_losses.items()):
+            is_last = i == num_levels - 1
+            # For all but the last level, use explicit current step to avoid incrementing
+            # For the last level, pass the step parameter as-is to allow incrementing
+            if is_last:
+                metrics_step = step
+            else:
+                metrics_step = step if step is not None else self.step
+
             self.log_metrics(
                 {
                     f"{prefix}level_{level}_loss": loss_value,
@@ -366,7 +377,7 @@ class MetricsLogger:
                         (loss_value / total_loss * 100) if total_loss > 0 else 0
                     ),
                 },
-                step=step,
+                step=metrics_step,
                 commit=False,
             )
 
@@ -526,9 +537,6 @@ class MetricsLogger:
         Args:
             step: Global step number
         """
-        if step is None:
-            step = self.step
-
         metrics = {}
 
         # GPU metrics
@@ -552,6 +560,7 @@ class MetricsLogger:
                     # Continue silently as this is optional telemetry
                     pass
 
+        # Pass step as-is (None or explicit) to allow auto-increment behavior
         self.log_metrics(metrics, step=step, prefix="")
 
     def watch_model(

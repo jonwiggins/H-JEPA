@@ -63,19 +63,35 @@ class MultiCropDataset(Dataset[Union[List[torch.Tensor], Tuple[List[torch.Tensor
             If return_labels=True: (crops, label) where crops is a list of tensors
             If return_labels=False: crops (list of tensors)
         """
-        # Get base item
-        item = self.base_dataset[idx]
-
-        if isinstance(item, tuple):
-            image, label = item
+        # Get raw image without transform if possible
+        # Check if base_dataset has a .dataset attribute (wrapped dataset)
+        if hasattr(self.base_dataset, "dataset"):
+            # Access raw data from the underlying torchvision dataset
+            # temporarily disable transform
+            underlying_dataset = self.base_dataset.dataset
+            old_transform = underlying_dataset.transform
+            underlying_dataset.transform = None
+            try:
+                raw_data = underlying_dataset[idx]
+                if isinstance(raw_data, tuple):
+                    image, label = raw_data
+                else:
+                    image = raw_data
+                    label = None
+            finally:
+                # Restore original transform
+                underlying_dataset.transform = old_transform
         else:
-            image = item
-            label = None
+            # Get item normally
+            item = self.base_dataset[idx]
+            if isinstance(item, tuple):
+                image, label = item
+            else:
+                image = item
+                label = None
 
         # Apply multi-crop transform
-        # Note: base_dataset may already have a transform applied
-        # We need to get the raw image
-        # For now, assume the image is already a PIL Image or tensor
+        # The image should be a PIL Image at this point
         crops = self.multicrop_transform(image)
 
         if self.return_labels and label is not None:
@@ -205,13 +221,20 @@ class MultiCropDatasetRaw(Dataset[Tuple[Union[List[torch.Tensor], torch.Tensor],
         """
         # Get raw image and label from base dataset
         # The base_dataset has a .dataset attribute that holds the actual dataset
-        item = getattr(self.base_dataset, "dataset")[idx]
-
-        if isinstance(item, tuple):
-            image, label = item
-        else:
-            image = item
-            label = -1
+        # Temporarily disable transform to get raw PIL image
+        underlying_dataset = getattr(self.base_dataset, "dataset")
+        old_transform = underlying_dataset.transform
+        underlying_dataset.transform = None
+        try:
+            item = underlying_dataset[idx]
+            if isinstance(item, tuple):
+                image, label = item
+            else:
+                image = item
+                label = -1
+        finally:
+            # Restore original transform
+            underlying_dataset.transform = old_transform
 
         # Apply transform (multi-crop for train, single crop for val)
         transformed = self.transform(image)
