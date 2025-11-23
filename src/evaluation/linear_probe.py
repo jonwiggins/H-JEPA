@@ -416,18 +416,19 @@ class LinearProbeEvaluator:
         # Compute metrics
         accuracy = accuracy_score(all_labels, all_preds) * 100
 
-        # Top-k accuracy
-        top_k_acc = (
-            top_k_accuracy_score(all_labels, all_probs, k=min(top_k, all_probs.shape[1])) * 100
-        )
-
         avg_loss = total_loss / len(dataloader)
 
         metrics: Dict[str, Any] = {
             "loss": avg_loss,
             "accuracy": accuracy,
-            f"top_{top_k}_accuracy": top_k_acc,
         }
+
+        # Top-k accuracy (only for multiclass with > 2 classes)
+        num_classes = all_probs.shape[1]
+        if num_classes > 2:
+            # For binary classification, top-k doesn't make sense
+            top_k_acc = top_k_accuracy_score(all_labels, all_probs, k=min(top_k, num_classes)) * 100
+            metrics[f"top_{top_k}_accuracy"] = top_k_acc
 
         # Confusion matrix
         if compute_confusion:
@@ -523,7 +524,7 @@ class LinearProbeEvaluator:
 
         if verbose:
             print(f"\n{'='*50}")
-            print(f"Cross-Validation Results")
+            print("Cross-Validation Results")
             print(f"{'='*50}")
             print(
                 f"Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%"

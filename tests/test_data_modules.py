@@ -1132,10 +1132,16 @@ class TestMultiCropDataset:
 
     def test_getitem_with_labels(self, sample_pil_image):
         """Test getting item with labels."""
-        mock_dataset = MagicMock()
-        mock_dataset.__len__ = MagicMock(return_value=100)
-        mock_dataset.__getitem__ = MagicMock(return_value=(sample_pil_image, 5))
 
+        # Create a simple mock dataset that properly returns PIL images
+        class SimpleMockDataset:
+            def __len__(self):
+                return 100
+
+            def __getitem__(self, idx):
+                return (sample_pil_image, 5)
+
+        mock_dataset = SimpleMockDataset()
         transform = MultiCropTransform(num_global_crops=2, num_local_crops=6)
         dataset = MultiCropDataset(mock_dataset, transform, return_labels=True)
 
@@ -1147,10 +1153,16 @@ class TestMultiCropDataset:
 
     def test_getitem_without_labels(self, sample_pil_image):
         """Test getting item without labels."""
-        mock_dataset = MagicMock()
-        mock_dataset.__len__ = MagicMock(return_value=100)
-        mock_dataset.__getitem__ = MagicMock(return_value=(sample_pil_image, 5))
 
+        # Create a simple mock dataset that properly returns PIL images
+        class SimpleMockDataset:
+            def __len__(self):
+                return 100
+
+            def __getitem__(self, idx):
+                return (sample_pil_image, 5)
+
+        mock_dataset = SimpleMockDataset()
         transform = MultiCropTransform(num_global_crops=2, num_local_crops=6)
         dataset = MultiCropDataset(mock_dataset, transform, return_labels=False)
 
