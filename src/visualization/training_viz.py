@@ -487,7 +487,7 @@ def plot_collapse_metrics(
             bbox=dict(boxstyle="round", facecolor="red", alpha=0.3),
         )
 
-    plt.tight_layout(rect=[0, 0.05, 1, 1])
+    plt.tight_layout(rect=(0, 0.05, 1, 1))
 
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches="tight")

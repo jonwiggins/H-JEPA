@@ -122,6 +122,7 @@ data:
   # Use multi-dataset with CIFAR-10 + STL-10
   # These datasets are small, fast, and proven to work
   use_multi_dataset: true
+  data_path: "./data"  # Base path for datasets
 
   datasets:
     - name: cifar10
@@ -135,9 +136,9 @@ data:
   sampling_strategy: "weighted"
   image_size: 224
 
-  # Batch size: Conservative for M1 Max
-  # 32 should work well with gradient checkpointing enabled
-  batch_size: 32
+  # Batch size: Reduced for M1 Max memory constraints
+  # 16 to prevent memory exhaustion (was 32, caused 76GB usage)
+  batch_size: 16
 
   num_workers: 4  # Conservative worker count
   pin_memory: false  # Not needed for MPS
@@ -194,22 +195,26 @@ masking:
   context_scale: [0.85, 1.0]
 
 # =============================================================================
-# LOSS CONFIGURATION - Standard with VICReg
+# LOSS CONFIGURATION - Combined JEPA + VICReg (COLLAPSE PREVENTION)
 # =============================================================================
 loss:
-  type: "smoothl1"  # Smoother than MSE, more stable
+  # CRITICAL: Use "combined" to enable VICReg regularization
+  # The previous "smoothl1" type created HJEPALoss which IGNORED all VICReg settings!
+  # This was the root cause of representation collapse (all embeddings became identical)
+  type: "combined"
 
-  # Hierarchical weights
+  # Hierarchical weights for JEPA prediction loss
   hierarchy_weights: [1.0, 0.7, 0.5]
 
   normalize_embeddings: false
 
-  # VICReg regularization (prevent collapse)
-  use_vicreg: true
-  vicreg:
-    sim_coeff: 25.0
-    std_coeff: 25.0
-    cov_coeff: 1.0
+  # VICReg regularization (CRITICAL for collapse prevention)
+  # Applied to context_features (encoder output) to maintain feature diversity
+  # These flat keys match the factory's expected parameter names
+  vicreg_weight: 0.1             # Global VICReg weight relative to JEPA loss
+  vicreg_invariance_weight: 25.0 # Similarity between views
+  vicreg_variance_weight: 25.0   # Variance term (prevents collapse!)
+  vicreg_covariance_weight: 1.0  # Decorrelates features
 
   # NO contrastive component (C-JEPA not integrated)
   use_contrastive: false

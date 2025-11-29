@@ -435,11 +435,18 @@ class HJEPATrainer:
             predictions = outputs["predictions"]
             targets = outputs["targets"]
 
+            # Get context_features for VICReg collapse prevention
+            # context_features are the encoder outputs (with gradients) that we want
+            # to regularize to prevent representation collapse
+            context_features = outputs.get("context_features", None)
+
             # Compute loss
             # Loss function returns a dict with 'loss' key and other metrics
+            # Pass context_features so VICReg can be applied to encoder outputs
             loss_dict = self.loss_fn(
                 predictions=predictions,
                 targets=targets,
+                context_features=context_features,
             )
             loss = loss_dict["loss"]
 
@@ -492,25 +499,25 @@ class HJEPATrainer:
                 device=self.device,
             )
 
-            # Extract context and target masks from level 0
-            context_masks = masks_dict["level_0"]["context"]  # [B, N]
+            # Extract target masks from level 0 and combine them
             target_masks = masks_dict["level_0"]["targets"]  # [B, num_target_masks, N]
+            prediction_mask = target_masks.any(dim=1)  # [B, N] - positions to predict
 
-            # Forward pass
+            # Forward pass (same as training)
             device_type = self.device.type if self.device.type != "mps" else "cpu"
             with autocast(device_type=device_type, enabled=self.use_amp):
-                context_embeddings = self.model.encode_context(images, context_masks)  # type: ignore[operator]
-                target_embeddings = self.model.encode_target(images, target_masks)  # type: ignore[operator]
+                # Forward through H-JEPA model
+                outputs = self.model(images, prediction_mask)
 
-                predictions = self.model.predict(  # type: ignore[operator]
-                    context_embeddings,
-                    target_masks,
-                    context_masks,
-                )
+                # Extract predictions and targets
+                predictions = outputs["predictions"]
+                targets = outputs["targets"]
+                context_features = outputs.get("context_features", None)
 
                 loss_dict = self.loss_fn(
                     predictions=predictions,
-                    targets=target_embeddings,
+                    targets=targets,
+                    context_features=context_features,
                 )
                 loss = loss_dict["loss"]
 

@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
     print(f"Generated {len(crops)} crops:")
     print(f"  Global crops (0-1): {crops[0].shape}, {crops[1].shape}")
-    print(f"  Local crops (2-7): ", end="")
+    print("  Local crops (2-7): ", end="")
     print(", ".join([str(crop.shape) for crop in crops[2:]]))
     print()
 

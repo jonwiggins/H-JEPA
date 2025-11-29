@@ -473,9 +473,6 @@ class FewShotEvaluator:
         support_labels: torch.Tensor = torch.tensor(support_labels_list)
 
         # Compute class centroids
-        class_to_new_label = {c: i for i, c in enumerate(episode["classes"])}
-        n_way = len(episode["classes"])
-
         centroids_list: List[torch.Tensor] = []
         for class_idx in episode["classes"]:
             mask = support_labels == class_idx
@@ -613,7 +610,7 @@ def fine_tune_eval(
     )
 
     # Fine-tune
-    history = evaluator.fine_tune(
+    evaluator.fine_tune(
         train_loader=train_loader,
         val_loader=val_loader,
         epochs=epochs,

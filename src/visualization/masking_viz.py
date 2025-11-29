@@ -83,7 +83,7 @@ def visualize_masking_strategy(
     num_masked = int(mask_np.sum())
     num_visible = len(mask_np) - num_masked
 
-    stats_text = f"Masking Statistics:\n\n"
+    stats_text = "Masking Statistics:\n\n"
     stats_text += f"Total patches: {len(mask_np)}\n"
     stats_text += f"Masked patches: {num_masked}\n"
     stats_text += f"Visible patches: {num_visible}\n"
@@ -318,7 +318,7 @@ def compare_masking_strategies(
         mask_2d = mask_np.reshape(grid_size, grid_size)
 
         # Plot mask
-        im = ax.imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
+        ax.imshow(mask_2d, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
 
         mask_ratio = mask_np.mean()
         ax.set_title(f"{label}\n({mask_ratio:.1%} masked)", fontsize=10)
@@ -470,7 +470,7 @@ def visualize_multi_block_masking(
             mask[row_start : row_start + block_h, col_start : col_start + block_w] = 1
 
         # Plot
-        im = ax.imshow(mask, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
+        ax.imshow(mask, cmap="RdYlGn_r", vmin=0, vmax=1, interpolation="nearest")
 
         mask_ratio = mask.mean()
         ax.set_title(f"Sample {idx + 1}\n({mask_ratio:.1%} masked)", fontsize=9)

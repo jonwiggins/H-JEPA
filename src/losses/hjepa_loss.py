@@ -153,6 +153,7 @@ class HJEPALoss(nn.Module):
         predictions: Union[List[torch.Tensor], torch.Tensor],
         targets: Union[List[torch.Tensor], torch.Tensor],
         masks: Optional[List[torch.Tensor]] = None,
+        context_features: Optional[torch.Tensor] = None,  # Ignored, for API compatibility
     ) -> Dict[str, torch.Tensor]:
         """
         Compute hierarchical JEPA loss.
@@ -164,6 +165,7 @@ class HJEPALoss(nn.Module):
             targets: Target representations. Same format as predictions.
             masks: Optional binary masks [B, N] indicating which patches to include
                 in loss computation. One per hierarchy level or None.
+            context_features: Ignored. Present for API compatibility with CombinedLoss.
 
         Returns:
             Dictionary containing:
@@ -174,6 +176,8 @@ class HJEPALoss(nn.Module):
         Raises:
             AssertionError: If input shapes or types are invalid
         """
+        # Note: context_features is intentionally ignored - it's only used by CombinedLoss
+        # for VICReg regularization. HJEPALoss doesn't include VICReg.
         # Convert single tensor to list
         if isinstance(predictions, torch.Tensor):
             predictions = [predictions]

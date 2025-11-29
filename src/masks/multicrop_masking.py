@@ -118,7 +118,7 @@ class MultiCropMaskGenerator:
         else:
             self.local_mask_gen = None
 
-    def __call__(self, batch_size: int, device: str = "cuda") -> Dict[str, Any]:
+    def __call__(self, batch_size: int, device: str = "cpu") -> Dict[str, Any]:
         """
         Generate masks for multi-crop inputs.
 

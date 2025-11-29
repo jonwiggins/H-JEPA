@@ -444,7 +444,6 @@ def visualize_reconstruction(
     # Convert to numpy
     pred_np: npt.NDArray[np.float64] = predictions[0].cpu().numpy()
     target_np: npt.NDArray[np.float64] = targets[0].cpu().numpy()
-    mask_np: npt.NDArray[np.float64] = mask[0].cpu().numpy()
 
     # Compute reconstruction error
     if len(pred_np.shape) == 2:  # Feature space [N, D]

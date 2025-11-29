@@ -88,7 +88,7 @@ class WeightedMultiDataset(Dataset[Any]):
         # We oversample smaller datasets to match weights
         self.effective_size = self._compute_effective_size()
 
-        print(f"Created WeightedMultiDataset:")
+        print("Created WeightedMultiDataset:")
         for i, (name, size, weight) in enumerate(
             zip(self.dataset_names, self.dataset_sizes, self.weights)
         ):
@@ -190,7 +190,7 @@ class BalancedMultiDataset(Dataset[Any]):
         # Pre-generate sampling indices for reproducibility
         self.resample_indices()
 
-        print(f"Created BalancedMultiDataset:")
+        print("Created BalancedMultiDataset:")
         for name, size in zip(self.dataset_names, self.dataset_sizes):
             print(f"  {name}: {size:,} images -> {self.samples_per_dataset:,} samples/epoch")
         print(f"Total samples per epoch: {self._length:,}")

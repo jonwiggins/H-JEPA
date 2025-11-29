@@ -279,7 +279,7 @@ async def startup_event() -> None:
 
     # Initialize model server
     try:
-        server = get_model_server()
+        get_model_server()
         logger.info("Model server ready")
     except Exception as e:
         logger.error(f"Failed to initialize model server: {e}")

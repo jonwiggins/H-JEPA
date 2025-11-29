@@ -119,7 +119,7 @@ def check_disk_space(data_path: Path, required_gb: float, buffer_gb: float = 5.0
     total_gb, used_gb, free_gb = get_disk_usage(data_path)
 
     if free_gb < required_gb + buffer_gb:
-        print(f"\n⚠️  WARNING: Insufficient disk space!")
+        print("\n⚠️  WARNING: Insufficient disk space!")
         print(f"  Required: {required_gb:.1f} GB + {buffer_gb:.1f} GB buffer")
         print(f"  Available: {free_gb:.1f} GB")
         print(f"  Total: {total_gb:.1f} GB, Used: {used_gb:.1f} GB")
@@ -189,7 +189,7 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             val_classes = [d for d in val_dir.iterdir() if d.is_dir()]
 
             if len(train_classes) == 0 or len(val_classes) == 0:
-                print(f"✗ ImageNet directories exist but appear empty")
+                print("✗ ImageNet directories exist but appear empty")
                 return False
 
             print(
@@ -202,7 +202,7 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
                     print(
                         f"  Note: Found {len(train_classes)} classes, expected >= 100 for ImageNet-100"
                     )
-                    print(f"  Will filter to 100 classes at runtime")
+                    print("  Will filter to 100 classes at runtime")
 
             return True
 

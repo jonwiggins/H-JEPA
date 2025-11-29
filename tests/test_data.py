@@ -207,7 +207,9 @@ class TestAugmentations:
         _, mixed_targets = mixup_no_apply(images, targets)
 
         # Should just convert to one-hot, not mix
-        assert mixed_targets.sum(dim=1).allclose(torch.ones(images.shape[0]))
+        assert mixed_targets.sum(dim=1).allclose(
+            torch.ones(images.shape[0], device=mixed_targets.device)
+        )
 
     def test_cutmix_basic(self, sample_batch_224):
         """Test CutMix augmentation."""

@@ -144,6 +144,7 @@ class CombinedLoss(nn.Module):
         predictions: Union[List[torch.Tensor], torch.Tensor],
         targets: Union[List[torch.Tensor], torch.Tensor],
         masks: Optional[List[torch.Tensor]] = None,
+        context_features: Optional[torch.Tensor] = None,
     ) -> Dict[str, torch.Tensor]:
         """
         Compute combined H-JEPA + VICReg loss.
@@ -154,6 +155,9 @@ class CombinedLoss(nn.Module):
                 - Single tensor [B, N, D] (treated as single hierarchy)
             targets: Target representations. Same format as predictions.
             masks: Optional binary masks [B, N] for JEPA loss
+            context_features: Optional encoder features [B, N, D] for VICReg collapse prevention.
+                When provided, VICReg is applied to these features to ensure the encoder
+                maintains diverse representations across the batch.
 
         Returns:
             Dictionary containing:
@@ -176,8 +180,31 @@ class CombinedLoss(nn.Module):
         # 2. Compute VICReg loss
         loss_dict = {}
 
-        if self.apply_vicreg_per_level:
-            # Apply VICReg at each hierarchy level
+        # CRITICAL: Apply VICReg to context_features (encoder output) when available
+        # This prevents representation collapse by ensuring the encoder maintains
+        # diverse representations across the batch.
+        if context_features is not None:
+            # Apply VICReg to encoder features for collapse prevention
+            # Split batch into two halves to create pseudo-views
+            if context_features.shape[0] >= 2:
+                mid = context_features.shape[0] // 2
+                features_a = context_features[:mid]
+                features_b = context_features[mid : 2 * mid]
+                vicreg_dict = self.vicreg_loss(features_a, features_b)
+            else:
+                # Single sample - compute variance/covariance on the features themselves
+                # Use same tensor for both views (variance term will still work)
+                vicreg_dict = self.vicreg_loss(context_features, context_features)
+
+            weighted_vicreg = self.vicreg_weights[0] * vicreg_dict["loss"]
+            loss_dict["vicreg_loss"] = weighted_vicreg
+            loss_dict["vicreg_encoder"] = vicreg_dict["loss"]
+            loss_dict["vicreg_invariance"] = vicreg_dict["invariance_loss"]
+            loss_dict["vicreg_variance"] = vicreg_dict["variance_loss"]
+            loss_dict["vicreg_covariance"] = vicreg_dict["covariance_loss"]
+
+        elif self.apply_vicreg_per_level:
+            # Fallback: Apply VICReg at each hierarchy level (legacy behavior)
             vicreg_losses = []
 
             for i, (pred, target) in enumerate(zip(predictions, targets)):
@@ -215,7 +242,7 @@ class CombinedLoss(nn.Module):
             loss_dict["vicreg_loss"] = weighted_vicreg
 
         else:
-            # Apply VICReg only at the last (finest) hierarchy level
+            # Fallback: Apply VICReg only at the last (finest) hierarchy level
             last_pred = predictions[-1]
             last_target = targets[-1]
 

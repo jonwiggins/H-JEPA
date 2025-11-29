@@ -7,6 +7,7 @@ for different levels of the hierarchy, enabling multi-scale representation learn
 
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -120,7 +121,7 @@ class HierarchicalMaskGenerator:
 
         return configs
 
-    def __call__(self, batch_size: int, device: str = "cuda") -> Dict[str, Dict[str, torch.Tensor]]:
+    def __call__(self, batch_size: int, device: str = "cpu") -> Dict[str, Dict[str, torch.Tensor]]:
         """
         Generate hierarchical masks for a batch.
 
@@ -402,7 +403,7 @@ class HierarchicalMaskGenerator:
             # Different colors for targets
             for i, tgt_mask in enumerate(target_masks):
                 tgt_2d = tgt_mask.reshape(self.num_patches_h, self.num_patches_w)
-                color = plt.cm.Set1(i / self.num_target_masks)[:3]
+                color = cm.get_cmap("Set1")(i / self.num_target_masks)[:3]
                 combined[tgt_2d > 0] = color
 
             axes[level_idx].imshow(combined)

@@ -157,10 +157,6 @@ class NTXentLoss(nn.Module):
         # Negatives are all other positions
         labels = torch.arange(batch_size, device=z_i.device)
 
-        # Mask out self-similarity (diagonal elements)
-        # Create mask: 1 for valid negatives, 0 for self and positive
-        mask_self = torch.eye(2 * batch_size, device=z_i.device, dtype=torch.bool)
-
         # Apply temperature scaling
         similarity_matrix = similarity_matrix / self.temperature
 

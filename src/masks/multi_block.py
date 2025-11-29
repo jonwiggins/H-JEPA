@@ -7,6 +7,7 @@ which samples multiple target blocks and a large context block for predictive le
 
 from typing import Dict, Optional, Tuple, Union
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -76,7 +77,7 @@ class MultiBlockMaskGenerator:
         self.num_patches_w = self.input_size[1] // patch_size
         self.num_patches = self.num_patches_h * self.num_patches_w
 
-    def __call__(self, batch_size: int, device: str = "cuda") -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, batch_size: int, device: str = "cpu") -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate multi-block masks for a batch.
 
@@ -284,7 +285,7 @@ class MultiBlockMaskGenerator:
         for i, tgt_mask in enumerate(tgt_masks):
             tgt_mask_2d = tgt_mask.reshape(self.num_patches_h, self.num_patches_w)
             # Different colors for each target
-            color = plt.cm.Set1(i / self.num_target_masks)[:3]
+            color = cm.get_cmap("Set1")(i / self.num_target_masks)[:3]
             combined[tgt_mask_2d > 0] = color
 
         axes[2].imshow(combined)
@@ -383,7 +384,7 @@ def demo() -> None:
 
     # Visualize
     print("Generating visualization...")
-    fig = mask_gen.visualize_masks(context_mask, target_masks, sample_idx=0)
+    mask_gen.visualize_masks(context_mask, target_masks, sample_idx=0)
     plt.savefig("/tmp/multi_block_masks_demo.png", dpi=150, bbox_inches="tight")
     print("Visualization saved to /tmp/multi_block_masks_demo.png")
     plt.close()
