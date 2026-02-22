@@ -415,8 +415,8 @@ class TestTrainerInitialization:
             device=device,
         )
 
-        assert trainer.use_amp == (device.type != "mps")
-        if device.type != "mps":
+        assert trainer.use_amp == (device.type == "cuda")
+        if device.type == "cuda":
             assert trainer.scaler is not None
 
     def test_trainer_init_checkpoint_manager(self, trainer):
