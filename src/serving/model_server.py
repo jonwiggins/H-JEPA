@@ -272,7 +272,7 @@ def get_model_server() -> ModelServer:
     return model_server
 
 
-@app.on_event("startup")  # type: ignore[misc]
+@app.on_event("startup")  # type: ignore[misc, untyped-decorator]
 async def startup_event() -> None:
     """Initialize model server on startup."""
     logger.info("Starting H-JEPA Model Server...")
@@ -286,7 +286,7 @@ async def startup_event() -> None:
         raise
 
 
-@app.get("/", response_model=dict[str, str])  # type: ignore[misc]
+@app.get("/", response_model=dict[str, str])  # type: ignore[misc, untyped-decorator]
 async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
@@ -296,7 +296,7 @@ async def root() -> dict[str, str]:
     }
 
 
-@app.get("/health", response_model=HealthResponse)  # type: ignore[misc]
+@app.get("/health", response_model=HealthResponse)  # type: ignore[misc, untyped-decorator]
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
     start_time = time.time()
@@ -322,7 +322,7 @@ async def health_check() -> HealthResponse:
         raise HTTPException(status_code=503, detail=str(e)) from e
 
 
-@app.post("/extract", response_model=FeatureResponse)  # type: ignore[misc]
+@app.post("/extract", response_model=FeatureResponse)  # type: ignore[misc, untyped-decorator]
 async def extract_features(
     file: UploadFile = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
@@ -376,7 +376,7 @@ async def extract_features(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/extract_batch", response_model=BatchFeatureResponse)  # type: ignore[misc]
+@app.post("/extract_batch", response_model=BatchFeatureResponse)  # type: ignore[misc, untyped-decorator]
 async def extract_features_batch(
     files: list[UploadFile] = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
@@ -438,13 +438,13 @@ async def extract_features_batch(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/metrics")  # type: ignore[misc]
+@app.get("/metrics")  # type: ignore[misc, untyped-decorator]
 async def metrics() -> Response:
     """Prometheus metrics endpoint."""
     return Response(content=generate_latest(), media_type="text/plain")
 
 
-@app.get("/info")  # type: ignore[misc]
+@app.get("/info")  # type: ignore[misc, untyped-decorator]
 async def model_info() -> dict[str, Any]:
     """Get model information."""
     try:
