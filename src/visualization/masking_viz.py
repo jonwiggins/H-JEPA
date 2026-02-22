@@ -19,7 +19,7 @@ try:
     from einops import rearrange
 except ImportError:
 
-    def rearrange(  # type: ignore[misc]
+    def rearrange(  # type: ignore[misc, no-redef]
         tensor: torch.Tensor | list[torch.Tensor], pattern: str, **axes_lengths: Any
     ) -> torch.Tensor:
         """Fallback rearrange for basic patterns."""
