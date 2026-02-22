@@ -1,6 +1,5 @@
 # Pre-commit hooks for H-JEPA
-# Install: pip install pre-commit
-# Setup: pre-commit install
+# Install: pip install pre-commit && pre-commit install
 # Run manually: pre-commit run --all-files
 
 repos:
@@ -26,13 +25,22 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        args: [--allow-multiple-documents]
       - id: check-added-large-files
-        args: [--maxkb=10000]  # 10MB max
+        args: [--maxkb=10000]
       - id: check-merge-conflict
       - id: debug-statements
       - id: mixed-line-ending
         args: [--fix=lf]
 
-  # Mypy - run locally with: mypy --config-file=mypy.ini src/
-  # Not included in pre-commit because the isolated environment installs
-  # different torch/numpy stubs than the project, causing false positives.
+  # Mypy - static type checking (uses your local environment to avoid stub mismatches)
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy src/
+        args: [--no-error-summary]
+        language: system
+        types: [python]
+        files: ^src/
+        pass_filenames: false

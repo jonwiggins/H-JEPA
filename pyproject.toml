@@ -89,6 +89,58 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+warn_return_any = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_calls = true
+no_implicit_optional = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+ignore_missing_imports = true
+no_implicit_reexport = false
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "torch.*",
+    "torchvision.*",
+    "numpy.*",
+    "matplotlib.*",
+    "PIL.*",
+    "tqdm.*",
+    "wandb.*",
+    "einops.*",
+    "timm.*",
+    "sklearn.*",
+    "seaborn.*",
+    "tensorboard.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "src.inference.optimized_model"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.serving.model_server"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.models.hjepa"
+disallow_untyped_defs = false
+disallow_any_generics = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
