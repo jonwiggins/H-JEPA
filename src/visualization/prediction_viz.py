@@ -5,7 +5,7 @@ Provides functions to visualize predictions vs ground truth,
 feature space embeddings, nearest neighbors, and reconstruction quality.
 """
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import matplotlib.figure as mfigure
 import matplotlib.pyplot as plt
@@ -36,9 +36,9 @@ def visualize_predictions(
     model: nn.Module,
     image: torch.Tensor,
     mask: torch.Tensor,
-    original_image: Optional[npt.NDArray[np.float64]] = None,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (16, 5),
+    original_image: npt.NDArray[np.float64] | None = None,
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (16, 5),
 ) -> mfigure.Figure:
     """
     Visualize model predictions for masked regions.
@@ -154,8 +154,8 @@ def visualize_hierarchical_predictions(
     model: nn.Module,
     image: torch.Tensor,
     mask: torch.Tensor,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (16, 10),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (16, 10),
 ) -> mfigure.Figure:
     """
     Visualize predictions at different hierarchical levels.
@@ -233,10 +233,10 @@ def visualize_hierarchical_predictions(
 
 def visualize_feature_space(
     features: torch.Tensor,
-    labels: Optional[npt.NDArray[np.int64]] = None,
+    labels: npt.NDArray[np.int64] | None = None,
     method: str = "tsne",
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 10),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (12, 10),
     **kwargs: Any,
 ) -> mfigure.Figure:
     """
@@ -331,11 +331,11 @@ def visualize_nearest_neighbors(
     model: nn.Module,
     query_image: torch.Tensor,
     database_images: torch.Tensor,
-    database_labels: Optional[List[str]] = None,
+    database_labels: list[str] | None = None,
     k: int = 5,
     level: int = 0,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (14, 4),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (14, 4),
 ) -> mfigure.Figure:
     """
     Visualize nearest neighbors in embedding space.
@@ -423,9 +423,9 @@ def visualize_reconstruction(
     predictions: torch.Tensor,
     targets: torch.Tensor,
     mask: torch.Tensor,
-    original_image: Optional[npt.NDArray[np.float64]] = None,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (14, 4),
+    original_image: npt.NDArray[np.float64] | None = None,
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (14, 4),
 ) -> mfigure.Figure:
     """
     Visualize reconstruction quality (if using a decoder).
@@ -505,8 +505,8 @@ def visualize_reconstruction(
 
 def visualize_embedding_distribution(
     features: torch.Tensor,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (14, 5),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (14, 5),
 ) -> mfigure.Figure:
     """
     Visualize the distribution of embedding features.

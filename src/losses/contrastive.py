@@ -25,7 +25,7 @@ References:
     - C-JEPA concept from recent self-supervised learning literature
 """
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 import torch
 import torch.nn as nn
@@ -102,8 +102,8 @@ class NTXentLoss(nn.Module):
         self,
         z_i: torch.Tensor,
         z_j: torch.Tensor,
-        mask: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        mask: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """
         Compute NT-Xent contrastive loss.
 
@@ -316,12 +316,12 @@ class ContrastiveJEPALoss(nn.Module):
         self,
         predictions: torch.Tensor,
         targets: torch.Tensor,
-        context_features_i: Optional[torch.Tensor] = None,
-        context_features_j: Optional[torch.Tensor] = None,
-        target_features_i: Optional[torch.Tensor] = None,
-        target_features_j: Optional[torch.Tensor] = None,
-        masks: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        context_features_i: torch.Tensor | None = None,
+        context_features_j: torch.Tensor | None = None,
+        target_features_i: torch.Tensor | None = None,
+        target_features_j: torch.Tensor | None = None,
+        masks: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """
         Compute combined C-JEPA loss.
 
@@ -410,7 +410,7 @@ class ContrastiveJEPALoss(nn.Module):
 
     def get_loss_summary(
         self,
-        loss_dict: Dict[str, torch.Tensor],
+        loss_dict: dict[str, torch.Tensor],
     ) -> str:
         """
         Generate a formatted summary of all loss components.
@@ -454,7 +454,7 @@ class ContrastiveJEPALoss(nn.Module):
 
 
 def create_cjepa_loss_from_config(
-    config: Dict[str, Any], jepa_loss: nn.Module
+    config: dict[str, Any], jepa_loss: nn.Module
 ) -> ContrastiveJEPALoss:
     """
     Create C-JEPA loss from configuration dictionary.

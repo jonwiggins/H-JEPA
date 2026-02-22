@@ -24,7 +24,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -32,17 +32,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import numpy as np
 import torch
 import torch.distributed as dist
-import torch.multiprocessing as mp
 import yaml
 
 from src.data import build_dataloader, build_dataset
 from src.losses import create_loss_from_config
-from src.masks import HierarchicalMaskGenerator, MultiBlockMaskGenerator
+from src.masks import HierarchicalMaskGenerator
 
 # Import H-JEPA components
 from src.models import create_hjepa_from_config
 from src.trainers import HJEPATrainer, create_optimizer
-from src.utils import CheckpointManager, MetricsLogger, ProgressTracker, setup_logging
+from src.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +121,7 @@ Examples:
     return parser.parse_args()
 
 
-def load_config(config_path: str) -> Dict[str, Any]:
+def load_config(config_path: str) -> dict[str, Any]:
     """
     Load configuration from YAML file.
 
@@ -141,15 +140,15 @@ def load_config(config_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     try:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
         logger.info(f"Loaded configuration from {config_path}")
         return config
     except yaml.YAMLError as e:
-        raise yaml.YAMLError(f"Error parsing config file {config_path}: {e}")
+        raise yaml.YAMLError(f"Error parsing config file {config_path}: {e}") from e
 
 
-def apply_config_overrides(config: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+def apply_config_overrides(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     """
     Apply command-line argument overrides to configuration.
 
@@ -215,7 +214,7 @@ def apply_config_overrides(config: Dict[str, Any], args: argparse.Namespace) -> 
     return config
 
 
-def validate_config(config: Dict[str, Any]) -> None:
+def validate_config(config: dict[str, Any]) -> None:
     """
     Validate configuration parameters.
 
@@ -275,7 +274,7 @@ def validate_config(config: Dict[str, Any]) -> None:
     logger.info("Configuration validation passed")
 
 
-def setup_device(config: Dict[str, Any], args: argparse.Namespace) -> torch.device:
+def setup_device(config: dict[str, Any], args: argparse.Namespace) -> torch.device:
     """
     Setup computation device.
 
@@ -366,7 +365,7 @@ def set_seed(seed: int, distributed: bool = False) -> None:
     logger.info(f"Set random seed: {seed}")
 
 
-def create_directories(config: Dict[str, Any]) -> None:
+def create_directories(config: dict[str, Any]) -> None:
     """
     Create necessary directories for outputs.
 
@@ -383,7 +382,7 @@ def create_directories(config: Dict[str, Any]) -> None:
         logger.debug(f"Created directory: {directory}")
 
 
-def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> None:
+def print_training_summary(config: dict[str, Any], args: argparse.Namespace) -> None:
     """
     Print training configuration summary.
 
@@ -457,7 +456,7 @@ def print_training_summary(config: Dict[str, Any], args: argparse.Namespace) -> 
 
     if args.distributed:
         print("\nDistributed:")
-        print(f"  Enabled: True")
+        print("  Enabled: True")
         print(f"  World size: {config['distributed']['world_size']}")
         print(f"  Backend: {config['distributed']['backend']}")
 

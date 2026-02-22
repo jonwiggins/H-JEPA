@@ -5,7 +5,7 @@ This module implements hierarchical masking that generates different masks
 for different levels of the hierarchy, enabling multi-scale representation learning.
 """
 
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import cast
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -53,13 +53,13 @@ class HierarchicalMaskGenerator:
 
     def __init__(
         self,
-        input_size: Union[int, Tuple[int, int]] = 224,
+        input_size: int | tuple[int, int] = 224,
         patch_size: int = 16,
         num_hierarchies: int = 3,
         num_target_masks: int = 4,
         scale_progression: str = "geometric",
-        base_scale: Tuple[float, float] = (0.05, 0.15),
-        aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
+        base_scale: tuple[float, float] = (0.05, 0.15),
+        aspect_ratio_range: tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
     ) -> None:
         # Handle input size
@@ -84,14 +84,14 @@ class HierarchicalMaskGenerator:
         # Compute scale ranges for each hierarchy level
         self.level_configs = self._compute_level_configs()
 
-    def _compute_level_configs(self) -> List[Dict[str, Union[Tuple[float, float], int]]]:
+    def _compute_level_configs(self) -> list[dict[str, tuple[float, float] | int]]:
         """
         Compute masking configurations for each hierarchy level.
 
         Returns:
             List of dicts with 'target_scale' and 'context_scale' for each level.
         """
-        configs: List[Dict[str, Union[Tuple[float, float], int]]] = []
+        configs: list[dict[str, tuple[float, float] | int]] = []
 
         for level in range(self.num_hierarchies):
             if self.scale_progression == "geometric":
@@ -112,7 +112,7 @@ class HierarchicalMaskGenerator:
             context_min = min(0.95, context_ratio)
             context_max = min(1.0, context_ratio + 0.15)
 
-            config_dict: Dict[str, Union[Tuple[float, float], int]] = {
+            config_dict: dict[str, tuple[float, float] | int] = {
                 "target_scale": (target_min, target_max),
                 "context_scale": (context_min, context_max),
                 "level": level,
@@ -121,7 +121,7 @@ class HierarchicalMaskGenerator:
 
         return configs
 
-    def __call__(self, batch_size: int, device: str = "cpu") -> Dict[str, Dict[str, torch.Tensor]]:
+    def __call__(self, batch_size: int, device: str = "cpu") -> dict[str, dict[str, torch.Tensor]]:
         """
         Generate hierarchical masks for a batch.
 
@@ -164,8 +164,8 @@ class HierarchicalMaskGenerator:
 
     def _generate_level_masks(
         self,
-        config: Dict[str, Union[Tuple[float, float], int]],
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        config: dict[str, tuple[float, float] | int],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate masks for a specific hierarchy level.
 
@@ -175,8 +175,8 @@ class HierarchicalMaskGenerator:
         Returns:
             Tuple of (context_mask, target_masks) as boolean tensors.
         """
-        target_scale = cast(Tuple[float, float], config["target_scale"])
-        context_scale = cast(Tuple[float, float], config["context_scale"])
+        target_scale = cast(tuple[float, float], config["target_scale"])
+        context_scale = cast(tuple[float, float], config["context_scale"])
         level = cast(int, config["level"])
 
         # Sample target blocks
@@ -231,10 +231,10 @@ class HierarchicalMaskGenerator:
 
     def _sample_block(
         self,
-        scale_range: Tuple[float, float],
-        occupied: Optional[npt.NDArray[np.bool_]] = None,
+        scale_range: tuple[float, float],
+        occupied: npt.NDArray[np.bool_] | None = None,
         level: int = 0,
-    ) -> Tuple[int, int, int, int]:
+    ) -> tuple[int, int, int, int]:
         """
         Sample a single block at a specific hierarchy level.
 
@@ -288,7 +288,7 @@ class HierarchicalMaskGenerator:
 
         return (top, left, height, width)
 
-    def _block_to_mask(self, block: Tuple[int, int, int, int]) -> torch.Tensor:
+    def _block_to_mask(self, block: tuple[int, int, int, int]) -> torch.Tensor:
         """
         Convert a block specification to a boolean mask over patches.
 
@@ -306,10 +306,10 @@ class HierarchicalMaskGenerator:
 
     def visualize_hierarchical_masks(
         self,
-        masks: Dict[str, Dict[str, torch.Tensor]],
+        masks: dict[str, dict[str, torch.Tensor]],
         sample_idx: int = 0,
-        figsize: Tuple[int, int] = (15, 5),
-        save_path: Optional[str] = None,
+        figsize: tuple[int, int] = (15, 5),
+        save_path: str | None = None,
     ) -> "plt.Figure":
         """
         Visualize masks across all hierarchy levels.
@@ -363,10 +363,10 @@ class HierarchicalMaskGenerator:
 
     def visualize_combined_view(
         self,
-        masks: Dict[str, Dict[str, torch.Tensor]],
+        masks: dict[str, dict[str, torch.Tensor]],
         sample_idx: int = 0,
-        figsize: Tuple[int, int] = (15, 5),
-        save_path: Optional[str] = None,
+        figsize: tuple[int, int] = (15, 5),
+        save_path: str | None = None,
     ) -> "plt.Figure":
         """
         Visualize all hierarchy levels in a combined view.
@@ -420,8 +420,8 @@ class HierarchicalMaskGenerator:
 
     def get_hierarchical_statistics(
         self,
-        masks: Dict[str, Dict[str, torch.Tensor]],
-    ) -> Dict[str, Dict[str, float]]:
+        masks: dict[str, dict[str, torch.Tensor]],
+    ) -> dict[str, dict[str, float]]:
         """
         Compute statistics for masks at each hierarchy level.
 
@@ -453,7 +453,7 @@ class HierarchicalMaskGenerator:
                         overlap = (ctx & tgt).float().sum() / tgt.float().sum()
                         overlaps.append(overlap.item())
 
-            level_stats: Dict[str, float] = {
+            level_stats: dict[str, float] = {
                 "context_coverage_mean": float(context_coverage.mean().item()),
                 "context_coverage_std": float(context_coverage.std().item()),
                 "target_coverage_mean": float(target_coverage.mean().item()),

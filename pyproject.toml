@@ -42,8 +42,9 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
+    "ruff>=0.9.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
 ]
 
 [project.urls]
@@ -60,9 +61,33 @@ line-length = 100
 target-version = ['py311']
 include = '\.pyi?$'
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (handled by black)
+    "E712",   # comparison to True/False (common in tests with torch tensors)
+    "B006",   # mutable default arguments (too many to refactor safely)
+    "B007",   # unused loop control variable (prefix with _ is noise)
+    "B008",   # do not perform function calls in argument defaults
+    "B028",   # no explicit stacklevel in warnings.warn
+    "B905",   # zip() without strict= parameter
+    "E741",   # ambiguous variable name
+    "UP038",  # isinstance(x, (A, B)) is valid and more readable than X | Y
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

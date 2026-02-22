@@ -11,7 +11,6 @@ Tests cover:
 
 import pytest
 import torch
-import torch.nn as nn
 
 from src.losses import (
     EppsPulleyTest,

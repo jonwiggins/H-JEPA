@@ -7,7 +7,7 @@ gradient flow, and collapse monitoring.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib.figure as mfigure
 import matplotlib.pyplot as plt
@@ -23,9 +23,9 @@ except ImportError:
 
 
 def plot_training_curves(
-    metrics: Dict[str, List[float]],
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (16, 10),
+    metrics: dict[str, list[float]],
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (16, 10),
     smooth_window: int = 10,
 ) -> mfigure.Figure:
     """
@@ -96,9 +96,9 @@ def plot_training_curves(
 
 
 def plot_hierarchical_losses(
-    hierarchical_losses: Dict[int, List[float]],
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 6),
+    hierarchical_losses: dict[int, list[float]],
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (12, 6),
 ) -> mfigure.Figure:
     """
     Plot losses for different hierarchical levels.
@@ -150,11 +150,11 @@ def visualize_loss_landscape(
     model: nn.Module,
     dataloader: "torch.utils.data.DataLoader[Any]",
     criterion: nn.Module,
-    directions: Optional[Tuple[List[torch.Tensor], List[torch.Tensor]]] = None,
+    directions: tuple[list[torch.Tensor], list[torch.Tensor]] | None = None,
     steps: int = 20,
-    alpha_range: Tuple[float, float] = (-1.0, 1.0),
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 10),
+    alpha_range: tuple[float, float] = (-1.0, 1.0),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (12, 10),
 ) -> mfigure.Figure:
     """
     Visualize loss landscape around current parameters.
@@ -177,8 +177,8 @@ def visualize_loss_landscape(
 
     # Generate random directions if not provided
     if directions is None:
-        direction1: List[torch.Tensor] = []
-        direction2: List[torch.Tensor] = []
+        direction1: list[torch.Tensor] = []
+        direction2: list[torch.Tensor] = []
 
         for param in model.parameters():
             if param.requires_grad:
@@ -298,9 +298,9 @@ def visualize_loss_landscape(
 
 def visualize_gradient_flow(
     model: nn.Module,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (14, 8),
-) -> Optional[mfigure.Figure]:
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (14, 8),
+) -> mfigure.Figure | None:
     """
     Visualize gradient flow through the network.
 
@@ -391,8 +391,8 @@ def visualize_gradient_flow(
 
 def plot_collapse_metrics(
     features: torch.Tensor,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (14, 5),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (14, 5),
 ) -> mfigure.Figure:
     """
     Plot metrics for detecting representational collapse.
@@ -496,9 +496,9 @@ def plot_collapse_metrics(
 
 
 def plot_ema_momentum(
-    momentum_history: List[float],
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (10, 5),
+    momentum_history: list[float],
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (10, 5),
 ) -> mfigure.Figure:
     """
     Plot EMA momentum schedule over training.
@@ -547,7 +547,7 @@ def plot_ema_momentum(
     return fig
 
 
-def load_training_logs(log_dir: Union[str, Path]) -> Dict[str, Any]:
+def load_training_logs(log_dir: str | Path) -> dict[str, Any]:
     """
     Load training logs from directory.
 
@@ -564,7 +564,7 @@ def load_training_logs(log_dir: Union[str, Path]) -> Dict[str, Any]:
     # Try to load JSON logs
     for json_file in log_dir.glob("*.json"):
         try:
-            with open(json_file, "r") as f:
+            with open(json_file) as f:
                 data = json.load(f)
                 metrics[json_file.stem] = data
         except Exception as e:

@@ -11,8 +11,7 @@ Tests coverage for:
 import json
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -35,18 +34,13 @@ from src.visualization import (
     visualize_feature_space,
     visualize_gradient_flow,
     visualize_hierarchical_attention,
-    visualize_hierarchical_predictions,
-    visualize_loss_landscape,
     visualize_masked_image,
     visualize_masking_strategy,
     visualize_multi_block_masking,
     visualize_multihead_attention,
-    visualize_nearest_neighbors,
-    visualize_predictions,
     visualize_reconstruction,
 )
 from src.visualization.attention_viz import (
-    extract_attention_maps,
     visualize_patch_to_patch_attention,
 )
 

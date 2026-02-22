@@ -6,7 +6,7 @@ Includes support for Rotary Position Embeddings (RoPE) for improved positional e
 """
 
 import math
-from typing import Any, Optional, Tuple, cast
+from typing import Any, cast
 
 import timm
 import torch
@@ -154,7 +154,7 @@ class VisionRoPE2D(nn.Module):
         self.register_buffer("freqs_h", freqs_y, persistent=False)
         self.register_buffer("freqs_w", freqs_x, persistent=False)
 
-    def _compute_rope_rotation(self, freqs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _compute_rope_rotation(self, freqs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute cos and sin components for RoPE rotation.
 
@@ -214,9 +214,9 @@ class VisionRoPE2D(nn.Module):
         self,
         q: torch.Tensor,
         k: torch.Tensor,
-        num_patches_h: Optional[int] = None,
-        num_patches_w: Optional[int] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        num_patches_h: int | None = None,
+        num_patches_w: int | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Apply 2D RoPE to query and key tensors.
 
@@ -267,7 +267,7 @@ class VisionRoPE2D(nn.Module):
         self,
         num_patches_h: int,
         num_patches_w: int,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute frequencies for dynamic image resolution.
 
@@ -341,16 +341,16 @@ class RoPEAttentionWrapper(nn.Module):
             and not self.use_flash  # Don't use both Flash and MPS optimization
         )
 
-        # Copy all attributes from original attention (typed as Any to handle dynamic attributes)
-        self.num_heads: int = getattr(attn_module, "num_heads")
-        self.head_dim: int = getattr(attn_module, "head_dim")
-        self.scale: float = getattr(attn_module, "scale")
-        self.qkv: nn.Module = getattr(attn_module, "qkv")
-        self.q_norm: Optional[nn.Module] = getattr(attn_module, "q_norm", None)
-        self.k_norm: Optional[nn.Module] = getattr(attn_module, "k_norm", None)
-        self.attn_drop: nn.Module = getattr(attn_module, "attn_drop")
-        self.proj: nn.Module = getattr(attn_module, "proj")
-        self.proj_drop: nn.Module = getattr(attn_module, "proj_drop")
+        # Copy all attributes from original attention (dynamic attributes from timm)
+        self.num_heads: int = attn_module.num_heads  # type: ignore[assignment]
+        self.head_dim: int = attn_module.head_dim  # type: ignore[assignment]
+        self.scale: float = attn_module.scale  # type: ignore[assignment]
+        self.qkv: nn.Module = attn_module.qkv  # type: ignore[assignment]
+        self.q_norm: nn.Module | None = getattr(attn_module, "q_norm", None)
+        self.k_norm: nn.Module | None = getattr(attn_module, "k_norm", None)
+        self.attn_drop: nn.Module = attn_module.attn_drop  # type: ignore[assignment]
+        self.proj: nn.Module = attn_module.proj  # type: ignore[assignment]
+        self.proj_drop: nn.Module = attn_module.proj_drop  # type: ignore[assignment]
 
         # Create MPS-optimized attention if enabled
         if self.use_mps_opt:
@@ -362,7 +362,7 @@ class RoPEAttentionWrapper(nn.Module):
                 use_pytorch_sdpa=True,  # Use PyTorch SDPA when beneficial
             )
 
-    def forward(self, x: torch.Tensor, attn_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None) -> torch.Tensor:
         """
         Forward pass with RoPE applied to Q and K.
 
@@ -547,7 +547,11 @@ class ContextEncoder(nn.Module):
                 original_forward = block.forward
 
                 # Define new forward method with LayerScale
-                def forward_with_layerscale(self: Any, x: torch.Tensor) -> torch.Tensor:
+                def forward_with_layerscale(
+                    self: Any,
+                    x: torch.Tensor,
+                    _orig_fwd: Any = original_forward,
+                ) -> torch.Tensor:
                     # Standard transformer block with LayerScale:
                     # x = x + LayerScale(Attention(LayerNorm(x)))
                     # x = x + LayerScale(MLP(LayerNorm(x)))
@@ -567,7 +571,7 @@ class ContextEncoder(nn.Module):
                         x = x + self.ls_mlp(mlp_out)
                     else:
                         # Fallback to original forward if structure is different
-                        x = original_forward(x)
+                        x = _orig_fwd(x)
 
                     return x
 
@@ -579,7 +583,7 @@ class ContextEncoder(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        mask: Optional[torch.Tensor] = None,
+        mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Forward pass through the context encoder.
@@ -751,7 +755,11 @@ class TargetEncoder(nn.Module):
                 original_forward = block.forward
 
                 # Define new forward method with LayerScale
-                def forward_with_layerscale(self: Any, x: torch.Tensor) -> torch.Tensor:
+                def forward_with_layerscale(
+                    self: Any,
+                    x: torch.Tensor,
+                    _orig_fwd: Any = original_forward,
+                ) -> torch.Tensor:
                     # Standard transformer block with LayerScale:
                     # x = x + LayerScale(Attention(LayerNorm(x)))
                     # x = x + LayerScale(MLP(LayerNorm(x)))
@@ -771,7 +779,7 @@ class TargetEncoder(nn.Module):
                         x = x + self.ls_mlp(mlp_out)
                     else:
                         # Fallback to original forward if structure is different
-                        x = original_forward(x)
+                        x = _orig_fwd(x)
 
                     return x
 
@@ -868,7 +876,7 @@ def create_encoder(
     use_mps_optimization: bool = True,
     use_layerscale: bool = False,
     layerscale_init: float = 1e-5,
-) -> Tuple[ContextEncoder, TargetEncoder]:
+) -> tuple[ContextEncoder, TargetEncoder]:
     """
     Factory function to create context and target encoders.
 

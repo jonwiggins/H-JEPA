@@ -9,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import numpy as np
-import torch
 
 from src.masks import HierarchicalMaskGenerator
 
@@ -35,7 +34,7 @@ print("=" * 80)
 print("MASK SEMANTICS VERIFICATION")
 print("=" * 80)
 
-print(f"\nMask shapes:")
+print("\nMask shapes:")
 print(f"  context_masks: {context_masks.shape}")
 print(f"  target_masks: {target_masks.shape}")
 
@@ -67,17 +66,17 @@ for i in range(batch_size):
     target_coverages.append(target_pct)
     overlap_counts.append(overlap)
 
-print(f"\nContext Coverage (VISIBLE patches):")
+print("\nContext Coverage (VISIBLE patches):")
 print(f"  Mean: {np.mean(context_coverages):.1f}%")
 print(f"  Std:  {np.std(context_coverages):.1f}%")
 print(f"  Range: [{np.min(context_coverages):.1f}%, {np.max(context_coverages):.1f}%]")
 
-print(f"\nTarget Coverage (patches to PREDICT):")
+print("\nTarget Coverage (patches to PREDICT):")
 print(f"  Mean: {np.mean(target_coverages):.1f}%")
 print(f"  Std:  {np.std(target_coverages):.1f}%")
 print(f"  Range: [{np.min(target_coverages):.1f}%, {np.max(target_coverages):.1f}%]")
 
-print(f"\nOverlap between context and targets:")
+print("\nOverlap between context and targets:")
 print(f"  Mean: {np.mean(overlap_counts):.1f} patches")
 print(f"  Max:  {np.max(overlap_counts)} patches")
 
@@ -107,7 +106,7 @@ if 85 <= actual_context <= 100:
     print(f"  ✓ Context coverage ({actual_context:.1f}%) is in expected range (85-100%)")
 else:
     print(f"  ❌ Context coverage ({actual_context:.1f}%) is OUTSIDE expected range (85-100%)")
-    print(f"     This is a PROBLEM - context encoder sees too little of the image!")
+    print("     This is a PROBLEM - context encoder sees too little of the image!")
 
 if 15 <= actual_targets <= 20:
     print(f"  ✓ Target coverage ({actual_targets:.1f}%) is in expected range (15-20%)")
@@ -129,7 +128,7 @@ print("  context_mask = target_masks.any(dim=1)")
 print("\nVariable naming issue:")
 print(f"  - Generator's 'context': True = VISIBLE ({np.mean(context_coverages):.1f}%)")
 print(f"  - Generator's 'targets': True = PREDICT ({np.mean(target_coverages):.1f}%)")
-print(f"  - Trainer's 'context_mask' = targets.any() = True = PREDICT")
+print("  - Trainer's 'context_mask' = targets.any() = True = PREDICT")
 print("\n  ❌ CONFUSING NAMING: 'context_mask' actually contains TARGET patches!")
 
 # Test encoder behavior
@@ -145,13 +144,13 @@ masked_count = mask_to_encoder.sum().item()
 masked_pct = (masked_count / num_patches) * 100
 
 print(f"\n  Mask passed to encoder has {masked_count}/{num_patches} = {masked_pct:.1f}% True")
-print(f"  These patches will be ZEROED OUT")
+print("  These patches will be ZEROED OUT")
 print(f"  Context encoder will see {100-masked_pct:.1f}% of the image")
 
 if 0 <= (100 - masked_pct) <= 20:
     print(f"\n  ❌ CRITICAL BUG: Context encoder only sees {100-masked_pct:.1f}% of image!")
     print(f"     Expected: 85-100% visible, but got {100-masked_pct:.1f}% visible")
-    print(f"     The mask semantics are INVERTED!")
+    print("     The mask semantics are INVERTED!")
 elif 85 <= (100 - masked_pct) <= 100:
     print(f"\n  ✓ Context encoder sees {100-masked_pct:.1f}% - CORRECT!")
 

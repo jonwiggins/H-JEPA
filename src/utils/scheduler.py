@@ -9,7 +9,6 @@ Supports:
 """
 
 import math
-from typing import List, Union
 
 
 class CosineScheduler:
@@ -234,11 +233,11 @@ class HierarchicalScheduler:
         >>> lrs = hier_sched(step=500)  # Returns list of 3 learning rates
     """
 
-    def __init__(self, schedulers: List[Union[CosineScheduler, LinearScheduler, EMAScheduler]]):
+    def __init__(self, schedulers: list[CosineScheduler | LinearScheduler | EMAScheduler]):
         self.schedulers = schedulers
         self.num_levels = len(schedulers)
 
-    def __call__(self, step: int) -> List[float]:
+    def __call__(self, step: int) -> list[float]:
         """
         Get values for all hierarchy levels at the given step.
 
@@ -272,7 +271,7 @@ def create_lr_scheduler(
     steps_per_epoch: int,
     warmup_epochs: int = 0,
     schedule_type: str = "cosine",
-) -> Union[CosineScheduler, LinearScheduler]:
+) -> CosineScheduler | LinearScheduler:
     """
     Factory function to create learning rate scheduler.
 

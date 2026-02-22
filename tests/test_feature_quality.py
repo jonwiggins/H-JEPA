@@ -98,7 +98,7 @@ def test_analyzer_freezes_model(mock_model):
     param.requires_grad = True
     mock_model.parameters = MagicMock(return_value=[param])
 
-    analyzer = FeatureQualityAnalyzer(model=mock_model, device="cpu")
+    FeatureQualityAnalyzer(model=mock_model, device="cpu")
 
     mock_model.eval.assert_called()
     assert not param.requires_grad

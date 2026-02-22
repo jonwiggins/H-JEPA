@@ -47,23 +47,16 @@ from src.models.hjepa import create_hjepa_from_config
 from src.visualization import (
     compare_masking_strategies,
     load_training_logs,
-    plot_collapse_metrics,
     plot_ema_momentum,
-    plot_hierarchical_losses,
     plot_masking_statistics,
     plot_training_curves,
-    visualize_attention_maps,
     visualize_attention_rollout,
     visualize_embedding_distribution,
     visualize_feature_space,
-    visualize_gradient_flow,
     visualize_hierarchical_attention,
     visualize_hierarchical_predictions,
-    visualize_masked_image,
-    visualize_masking_strategy,
     visualize_multi_block_masking,
     visualize_multihead_attention,
-    visualize_nearest_neighbors,
     visualize_predictions,
 )
 
@@ -115,7 +108,7 @@ def parse_args():
 
 def load_config(config_path):
     """Load configuration from YAML file."""
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
     return config
 
@@ -146,7 +139,7 @@ def load_image(image_path, img_size=224):
     """Load and preprocess image."""
     # Load image
     image_pil = Image.open(image_path).convert("RGB")
-    original_image = np.array(image_pil)
+    np.array(image_pil)
 
     # Transform for model
     transform = transforms.Compose(
@@ -189,7 +182,7 @@ def visualize_all_attention(model, image, original_image, output_dir, device):
     layer_indices = [0, num_layers // 2, num_layers - 1]
 
     print("Extracting attention maps...")
-    attention_maps = extract_attention_maps(model, image, layer_indices)
+    extract_attention_maps(model, image, layer_indices)
 
     # 1. Multi-head attention for last layer
     print("Visualizing multi-head attention...")

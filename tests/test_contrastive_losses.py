@@ -11,7 +11,6 @@ This module tests the contrastive learning components:
 
 import pytest
 import torch
-import torch.nn as nn
 
 from src.losses.contrastive import ContrastiveJEPALoss, NTXentLoss, create_cjepa_loss_from_config
 from src.losses.hjepa_loss import HJEPALoss

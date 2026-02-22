@@ -13,7 +13,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 
 import torch
 import torch.nn as nn
@@ -57,7 +57,7 @@ class CheckpointManager:
         self.mode = mode
 
         # Track best checkpoints
-        self.best_checkpoints: List[Dict[str, Any]] = []
+        self.best_checkpoints: list[dict[str, Any]] = []
         self.best_metric = float("inf") if mode == "min" else float("-inf")
 
         logger.info(f"CheckpointManager initialized: {checkpoint_dir}")
@@ -69,9 +69,9 @@ class CheckpointManager:
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: Any,
-        scaler: Optional[GradScaler] = None,
-        metrics: Optional[Dict[str, float]] = None,
-        extra_state: Optional[Dict[str, Any]] = None,
+        scaler: GradScaler | None = None,
+        metrics: dict[str, float] | None = None,
+        extra_state: dict[str, Any] | None = None,
         is_best: bool = False,
     ) -> str:
         """
@@ -144,11 +144,11 @@ class CheckpointManager:
         self,
         checkpoint_path: str,
         model: nn.Module,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        scheduler: Optional[Any] = None,
-        scaler: Optional[GradScaler] = None,
-        device: Union[str, torch.device] = "cuda",
-    ) -> Dict[str, Any]:
+        optimizer: torch.optim.Optimizer | None = None,
+        scheduler: Any | None = None,
+        scaler: GradScaler | None = None,
+        device: str | torch.device = "cuda",
+    ) -> dict[str, Any]:
         """
         Load a checkpoint and restore training state.
 
@@ -314,7 +314,7 @@ class CheckpointManager:
                     except Exception as e:
                         logger.warning(f"Failed to remove checkpoint {ckpt_path}: {e}")
 
-    def get_latest_checkpoint(self) -> Optional[str]:
+    def get_latest_checkpoint(self) -> str | None:
         """
         Get the path to the latest checkpoint.
 
@@ -333,7 +333,7 @@ class CheckpointManager:
 
         return None
 
-    def get_best_checkpoint(self) -> Optional[str]:
+    def get_best_checkpoint(self) -> str | None:
         """
         Get the path to the best checkpoint.
 
@@ -364,7 +364,7 @@ def save_checkpoint(
     else:
         model_state = model.state_dict()
 
-    checkpoint: Dict[str, Any] = {
+    checkpoint: dict[str, Any] = {
         "epoch": epoch,
         "model_state_dict": model_state,
         "optimizer_state_dict": optimizer.state_dict(),
@@ -378,9 +378,9 @@ def save_checkpoint(
 def load_checkpoint(
     filepath: str,
     model: nn.Module,
-    optimizer: Optional[torch.optim.Optimizer] = None,
+    optimizer: torch.optim.Optimizer | None = None,
     device: str = "cuda",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Simple checkpoint loading utility function.
 
@@ -393,7 +393,7 @@ def load_checkpoint(
     Returns:
         Checkpoint dictionary with metadata
     """
-    checkpoint: Dict[str, Any] = torch.load(filepath, map_location=device)
+    checkpoint: dict[str, Any] = torch.load(filepath, map_location=device)
 
     if hasattr(model, "module"):
         cast(nn.Module, model.module).load_state_dict(checkpoint["model_state_dict"])

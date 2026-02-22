@@ -5,8 +5,6 @@ This module implements the multi-block masking strategy used in H-JEPA training,
 which samples multiple target blocks and a large context block for predictive learning.
 """
 
-from typing import Dict, Optional, Tuple, Union
-
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -51,12 +49,12 @@ class MultiBlockMaskGenerator:
 
     def __init__(
         self,
-        input_size: Union[int, Tuple[int, int]] = 224,
+        input_size: int | tuple[int, int] = 224,
         patch_size: int = 16,
         num_target_masks: int = 4,
-        target_scale: Tuple[float, float] = (0.15, 0.2),
-        context_scale: Tuple[float, float] = (0.85, 1.0),
-        aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
+        target_scale: tuple[float, float] = (0.15, 0.2),
+        context_scale: tuple[float, float] = (0.85, 1.0),
+        aspect_ratio_range: tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
     ) -> None:
         # Handle input size
@@ -77,7 +75,7 @@ class MultiBlockMaskGenerator:
         self.num_patches_w = self.input_size[1] // patch_size
         self.num_patches = self.num_patches_h * self.num_patches_w
 
-    def __call__(self, batch_size: int, device: str = "cpu") -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, batch_size: int, device: str = "cpu") -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate multi-block masks for a batch.
 
@@ -107,7 +105,7 @@ class MultiBlockMaskGenerator:
 
         return context_mask_batch, target_mask_batch
 
-    def _generate_single_mask_set(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _generate_single_mask_set(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate one set of context and target masks.
 
@@ -166,9 +164,9 @@ class MultiBlockMaskGenerator:
 
     def _sample_block(
         self,
-        scale_range: Tuple[float, float],
-        occupied: Optional[npt.NDArray[np.bool_]] = None,
-    ) -> Tuple[int, int, int, int]:
+        scale_range: tuple[float, float],
+        occupied: npt.NDArray[np.bool_] | None = None,
+    ) -> tuple[int, int, int, int]:
         """
         Sample a single block (top, left, height, width) in patch coordinates.
 
@@ -215,7 +213,7 @@ class MultiBlockMaskGenerator:
 
         return (top, left, height, width)
 
-    def _block_to_mask(self, block: Tuple[int, int, int, int]) -> torch.Tensor:
+    def _block_to_mask(self, block: tuple[int, int, int, int]) -> torch.Tensor:
         """
         Convert a block specification to a boolean mask over patches.
 
@@ -239,8 +237,8 @@ class MultiBlockMaskGenerator:
         context_mask: torch.Tensor,
         target_masks: torch.Tensor,
         sample_idx: int = 0,
-        figsize: Tuple[int, int] = (12, 4),
-        save_path: Optional[str] = None,
+        figsize: tuple[int, int] = (12, 4),
+        save_path: str | None = None,
     ) -> "plt.Figure":
         """
         Visualize the generated masks.
@@ -303,7 +301,7 @@ class MultiBlockMaskGenerator:
         self,
         context_mask: torch.Tensor,
         target_masks: torch.Tensor,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute statistics about the generated masks.
 

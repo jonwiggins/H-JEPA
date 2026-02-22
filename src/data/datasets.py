@@ -6,8 +6,9 @@ custom transforms optimized for JEPA (Joint-Embedding Predictive Architecture).
 Unlike traditional contrastive learning, JEPA does not require heavy augmentations.
 """
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import torch
 from PIL import Image
@@ -27,12 +28,12 @@ class JEPATransform:
     def __init__(
         self,
         image_size: int = 224,
-        crop_scale: Tuple[float, float] = (0.8, 1.0),
+        crop_scale: tuple[float, float] = (0.8, 1.0),
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BICUBIC,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
         horizontal_flip: bool = True,
-        color_jitter: Optional[float] = None,
+        color_jitter: float | None = None,
     ):
         """
         Args:
@@ -81,7 +82,7 @@ class JEPATransform:
 
         self.transform = transforms.Compose(transform_list)
 
-    def __call__(self, img: Union[Image.Image, torch.Tensor]) -> torch.Tensor:
+    def __call__(self, img: Image.Image | torch.Tensor) -> torch.Tensor:
         return cast(torch.Tensor, self.transform(img))
 
 
@@ -96,8 +97,8 @@ class JEPAEvalTransform:
         self,
         image_size: int = 224,
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BICUBIC,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
     ):
         """
         Args:
@@ -115,11 +116,11 @@ class JEPAEvalTransform:
             ]
         )
 
-    def __call__(self, img: Union[Image.Image, torch.Tensor]) -> torch.Tensor:
+    def __call__(self, img: Image.Image | torch.Tensor) -> torch.Tensor:
         return cast(torch.Tensor, self.transform(img))
 
 
-class ImageNetDataset(Dataset[Tuple[torch.Tensor, int]]):
+class ImageNetDataset(Dataset[tuple[torch.Tensor, int]]):
     """
     ImageNet dataset with JEPA transforms.
 
@@ -141,11 +142,11 @@ class ImageNetDataset(Dataset[Tuple[torch.Tensor, int]]):
 
     def __init__(
         self,
-        data_path: Union[str, Path],
+        data_path: str | Path,
         split: str = "train",
         image_size: int = 224,
-        color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable[[Any], Any]] = None,
+        color_jitter: float | None = 0.4,
+        transform: Callable[[Any], Any] | None = None,
     ) -> None:
         """
         Args:
@@ -191,12 +192,12 @@ class ImageNetDataset(Dataset[Tuple[torch.Tensor, int]]):
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
-        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        return cast(tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self) -> List[str]:
-        return cast(List[str], self.dataset.classes)
+    def classes(self) -> list[str]:
+        return cast(list[str], self.dataset.classes)
 
     @property
     def class_to_idx(self) -> dict[str, int]:
@@ -319,11 +320,11 @@ class ImageNet100Dataset(ImageNetDataset):
 
     def __init__(
         self,
-        data_path: Union[str, Path],
+        data_path: str | Path,
         split: str = "train",
         image_size: int = 224,
-        color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable[[Any], Any]] = None,
+        color_jitter: float | None = 0.4,
+        transform: Callable[[Any], Any] | None = None,
     ) -> None:
         """
         Args:
@@ -353,7 +354,7 @@ class ImageNet100Dataset(ImageNetDataset):
     def _filter_classes(self) -> None:
         """Filter dataset to only include ImageNet-100 classes."""
         # Get indices of samples that belong to ImageNet-100 classes
-        valid_indices: List[int] = []
+        valid_indices: list[int] = []
         for idx in range(len(self.dataset)):
             path, _ = self.dataset.samples[idx]
             class_name = Path(path).parent.name
@@ -367,12 +368,12 @@ class ImageNet100Dataset(ImageNetDataset):
     def __len__(self) -> int:
         return len(self._valid_indices)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
         original_idx = self._valid_indices[idx]
-        return cast(Tuple[torch.Tensor, int], self._original_dataset[original_idx])
+        return cast(tuple[torch.Tensor, int], self._original_dataset[original_idx])
 
 
-class CIFAR10Dataset(Dataset[Tuple[torch.Tensor, int]]):
+class CIFAR10Dataset(Dataset[tuple[torch.Tensor, int]]):
     """
     CIFAR-10 dataset with JEPA transforms.
 
@@ -382,11 +383,11 @@ class CIFAR10Dataset(Dataset[Tuple[torch.Tensor, int]]):
 
     def __init__(
         self,
-        data_path: Union[str, Path],
+        data_path: str | Path,
         split: str = "train",
         image_size: int = 224,
-        color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable[[Any], Any]] = None,
+        color_jitter: float | None = 0.4,
+        transform: Callable[[Any], Any] | None = None,
         download: bool = True,
     ) -> None:
         """
@@ -428,15 +429,15 @@ class CIFAR10Dataset(Dataset[Tuple[torch.Tensor, int]]):
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
-        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        return cast(tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self) -> List[str]:
-        return cast(List[str], self.dataset.classes)
+    def classes(self) -> list[str]:
+        return cast(list[str], self.dataset.classes)
 
 
-class CIFAR100Dataset(Dataset[Tuple[torch.Tensor, int]]):
+class CIFAR100Dataset(Dataset[tuple[torch.Tensor, int]]):
     """
     CIFAR-100 dataset with JEPA transforms.
 
@@ -446,11 +447,11 @@ class CIFAR100Dataset(Dataset[Tuple[torch.Tensor, int]]):
 
     def __init__(
         self,
-        data_path: Union[str, Path],
+        data_path: str | Path,
         split: str = "train",
         image_size: int = 224,
-        color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable[[Any], Any]] = None,
+        color_jitter: float | None = 0.4,
+        transform: Callable[[Any], Any] | None = None,
         download: bool = True,
     ) -> None:
         """
@@ -492,15 +493,15 @@ class CIFAR100Dataset(Dataset[Tuple[torch.Tensor, int]]):
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
-        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        return cast(tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self) -> List[str]:
-        return cast(List[str], self.dataset.classes)
+    def classes(self) -> list[str]:
+        return cast(list[str], self.dataset.classes)
 
 
-class STL10Dataset(Dataset[Tuple[torch.Tensor, int]]):
+class STL10Dataset(Dataset[tuple[torch.Tensor, int]]):
     """
     STL-10 dataset with JEPA transforms.
 
@@ -510,11 +511,11 @@ class STL10Dataset(Dataset[Tuple[torch.Tensor, int]]):
 
     def __init__(
         self,
-        data_path: Union[str, Path],
+        data_path: str | Path,
         split: str = "train",
         image_size: int = 224,
-        color_jitter: Optional[float] = 0.4,
-        transform: Optional[Callable[[Any], Any]] = None,
+        color_jitter: float | None = 0.4,
+        transform: Callable[[Any], Any] | None = None,
         download: bool = True,
         use_unlabeled: bool = True,
     ) -> None:
@@ -566,23 +567,23 @@ class STL10Dataset(Dataset[Tuple[torch.Tensor, int]]):
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
-        return cast(Tuple[torch.Tensor, int], self.dataset[idx])
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        return cast(tuple[torch.Tensor, int], self.dataset[idx])
 
     @property
-    def classes(self) -> Optional[List[str]]:
-        return cast(List[str], self.dataset.classes) if hasattr(self.dataset, "classes") else None
+    def classes(self) -> list[str] | None:
+        return cast(list[str], self.dataset.classes) if hasattr(self.dataset, "classes") else None
 
 
 def build_dataset(
     dataset_name: str,
-    data_path: Union[str, Path],
+    data_path: str | Path,
     split: str = "train",
     image_size: int = 224,
-    color_jitter: Optional[float] = 0.4,
+    color_jitter: float | None = 0.4,
     download: bool = True,
     **kwargs: Any,
-) -> Dataset[Tuple[torch.Tensor, int]]:
+) -> Dataset[tuple[torch.Tensor, int]]:
     """
     Factory function to build datasets.
 
@@ -655,14 +656,14 @@ def build_dataset(
 
 
 def build_dataloader(
-    dataset: Dataset[Tuple[torch.Tensor, int]],
+    dataset: Dataset[tuple[torch.Tensor, int]],
     batch_size: int,
     num_workers: int = 4,
     pin_memory: bool = True,
     shuffle: bool = True,
     drop_last: bool = True,
     **kwargs: Any,
-) -> DataLoader[Tuple[torch.Tensor, int]]:
+) -> DataLoader[tuple[torch.Tensor, int]]:
     """
     Build a DataLoader from a dataset.
 

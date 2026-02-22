@@ -13,7 +13,7 @@ This provides the model with different scales and contexts to learn from,
 improving robustness and scale invariance.
 """
 
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -66,13 +66,13 @@ class MultiCropTransform:
         local_crop_size: int = 96,
         num_global_crops: int = 2,
         num_local_crops: int = 6,
-        global_crop_scale: Tuple[float, float] = (0.4, 1.0),
-        local_crop_scale: Tuple[float, float] = (0.05, 0.4),
+        global_crop_scale: tuple[float, float] = (0.4, 1.0),
+        local_crop_scale: tuple[float, float] = (0.05, 0.4),
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BICUBIC,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
-        global_color_jitter: Optional[float] = 0.4,
-        local_color_jitter: Optional[float] = 0.4,
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
+        global_color_jitter: float | None = 0.4,
+        local_color_jitter: float | None = 0.4,
         horizontal_flip_prob: float = 0.5,
     ):
         self.global_crop_size = global_crop_size
@@ -105,12 +105,12 @@ class MultiCropTransform:
     def _build_crop_transform(
         self,
         crop_size: int,
-        crop_scale: Tuple[float, float],
-        color_jitter: Optional[float],
+        crop_scale: tuple[float, float],
+        color_jitter: float | None,
         horizontal_flip_prob: float,
         interpolation: transforms.InterpolationMode,
-        mean: Tuple[float, float, float],
-        std: Tuple[float, float, float],
+        mean: tuple[float, float, float],
+        std: tuple[float, float, float],
     ) -> transforms.Compose:
         """Build a crop-specific augmentation pipeline."""
         transform_list = []
@@ -145,7 +145,7 @@ class MultiCropTransform:
 
         return transforms.Compose(transform_list)
 
-    def __call__(self, image: Union[Image.Image, npt.NDArray[np.uint8]]) -> List[torch.Tensor]:
+    def __call__(self, image: Image.Image | npt.NDArray[np.uint8]) -> list[torch.Tensor]:
         """
         Apply multi-crop augmentation to an image.
 
@@ -194,8 +194,8 @@ class MultiCropEvalTransform:
         self,
         crop_size: int = 224,
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BICUBIC,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
     ):
         self.transform = transforms.Compose(
             [
@@ -206,7 +206,7 @@ class MultiCropEvalTransform:
             ]
         )
 
-    def __call__(self, image: Union[Image.Image, npt.NDArray[np.uint8]]) -> torch.Tensor:
+    def __call__(self, image: Image.Image | npt.NDArray[np.uint8]) -> torch.Tensor:
         """
         Apply evaluation transform.
 
@@ -267,7 +267,7 @@ class AdaptiveMultiCropTransform(MultiCropTransform):
             )
             self.num_local_crops = num_crops
 
-    def __call__(self, image: Union[Image.Image, npt.NDArray[np.uint8]]) -> List[torch.Tensor]:
+    def __call__(self, image: Image.Image | npt.NDArray[np.uint8]) -> list[torch.Tensor]:
         """Apply multi-crop with adaptive number of local crops."""
         crops = []
 
@@ -287,8 +287,8 @@ def build_multicrop_transform(
     num_local_crops: int = 6,
     global_crop_size: int = 224,
     local_crop_size: int = 96,
-    global_crop_scale: Tuple[float, float] = (0.4, 1.0),
-    local_crop_scale: Tuple[float, float] = (0.05, 0.4),
+    global_crop_scale: tuple[float, float] = (0.4, 1.0),
+    local_crop_scale: tuple[float, float] = (0.05, 0.4),
     global_color_jitter: float = 0.4,
     local_color_jitter: float = 0.4,
     adaptive: bool = False,

@@ -40,7 +40,6 @@ References:
 """
 
 import math
-from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -232,7 +231,7 @@ class SIGRegLoss(nn.Module):
         )
 
         # Pre-allocated fixed random slices if requested
-        self._fixed_random_slices: Optional[torch.Tensor] = None
+        self._fixed_random_slices: torch.Tensor | None = None
 
     def _generate_random_slices(
         self,
@@ -337,8 +336,8 @@ class SIGRegLoss(nn.Module):
     def forward(
         self,
         z_a: torch.Tensor,
-        z_b: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        z_b: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """
         Compute SIGReg loss.
 
@@ -491,8 +490,8 @@ class HybridVICRegSIGRegLoss(nn.Module):
     def forward(
         self,
         z_a: torch.Tensor,
-        z_b: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        z_b: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """
         Compute hybrid VICReg + SIGReg loss.
 

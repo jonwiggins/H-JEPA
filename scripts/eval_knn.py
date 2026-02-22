@@ -13,7 +13,6 @@ self-supervised learning models.
 import argparse
 import json
 from pathlib import Path
-from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -26,7 +25,7 @@ from src.data.datasets import get_dataset
 from src.models.hjepa import create_hjepa
 
 
-def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple:
+def load_pretrained_encoder(checkpoint_path: str, device: str) -> tuple:
     """Load pretrained H-JEPA encoder"""
     print(f"Loading checkpoint: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -56,14 +55,14 @@ def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple:
 
     encoder = encoder.to(device)
 
-    print(f"✓ Encoder loaded and frozen")
+    print("✓ Encoder loaded and frozen")
 
     return encoder, config
 
 
 def extract_features(
     encoder, dataloader: DataLoader, device: str, hierarchy_level: int = -1
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Extract features from the encoder"""
     all_features = []
     all_labels = []
@@ -105,7 +104,7 @@ def knn_classify(
     k: int = 20,
     temperature: float = 0.07,
     batch_size: int = 256,
-) -> Tuple[float, np.ndarray]:
+) -> tuple[float, np.ndarray]:
     """
     Perform k-NN classification with temperature-scaled similarities.
 

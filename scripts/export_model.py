@@ -80,7 +80,7 @@ def main():
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
 
-    logger.info(f"Model loaded successfully")
+    logger.info("Model loaded successfully")
     logger.info(f"Export formats: {args.formats}")
 
     # Export to TorchScript

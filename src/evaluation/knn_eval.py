@@ -6,7 +6,7 @@ feature quality without any training. It classifies test samples based on their
 nearest neighbors in the training set.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -57,9 +57,9 @@ class KNNEvaluator:
             param.requires_grad = False
 
         # Will store training features and labels
-        self.train_features: Optional[npt.NDArray[np.float64]] = None
-        self.train_labels: Optional[npt.NDArray[np.int64]] = None
-        self.knn_index: Optional[NearestNeighbors] = None
+        self.train_features: npt.NDArray[np.float64] | None = None
+        self.train_labels: npt.NDArray[np.int64] | None = None
+        self.knn_index: NearestNeighbors | None = None
 
     def pool_features(self, features: torch.Tensor) -> torch.Tensor:
         """
@@ -84,7 +84,7 @@ class KNNEvaluator:
     @torch.no_grad()
     def extract_features(
         self, dataloader: DataLoader[Any], normalize: bool = True, desc: str = "Extracting features"
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
         """
         Extract and pool features from dataset.
 
@@ -162,7 +162,7 @@ class KNNEvaluator:
         self,
         test_features: npt.NDArray[np.float64],
         num_classes: int,
-    ) -> Tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float64]]:
         """
         Predict labels using k-NN.
 
@@ -214,9 +214,9 @@ class KNNEvaluator:
         test_loader: DataLoader[Any],
         num_classes: int,
         normalize: bool = True,
-        top_k_list: List[int] = [1, 5],
+        top_k_list: list[int] = [1, 5],
         verbose: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Evaluate k-NN classifier on test set.
 
@@ -270,10 +270,10 @@ class KNNEvaluator:
         self,
         test_loader: DataLoader[Any],
         num_classes: int,
-        k_values: List[int] = [1, 5, 10, 20, 50, 100, 200],
+        k_values: list[int] = [1, 5, 10, 20, 50, 100, 200],
         normalize: bool = True,
         verbose: bool = True,
-    ) -> Dict[int, Dict[str, float]]:
+    ) -> dict[int, dict[str, float]]:
         """
         Evaluate k-NN with different k values.
 
@@ -292,7 +292,7 @@ class KNNEvaluator:
             test_loader, normalize=normalize, desc="Extracting test features"
         )
 
-        results: Dict[int, Dict[str, float]] = {}
+        results: dict[int, dict[str, float]] = {}
 
         for k in k_values:
             if self.train_features is None or k > len(self.train_features):
@@ -333,7 +333,7 @@ def knn_eval(
     temperature: float = 0.07,
     device: str = "cuda",
     verbose: bool = True,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Convenience function for k-NN evaluation.
 
@@ -380,11 +380,11 @@ def sweep_knn_params(
     test_loader: DataLoader[Any],
     num_classes: int,
     hierarchy_level: int = 0,
-    k_values: List[int] = [10, 20, 50, 100, 200],
-    temperatures: List[float] = [0.01, 0.05, 0.07, 0.1, 0.5],
-    distance_metrics: List[str] = ["cosine", "euclidean"],
+    k_values: list[int] = [10, 20, 50, 100, 200],
+    temperatures: list[float] = [0.01, 0.05, 0.07, 0.1, 0.5],
+    distance_metrics: list[str] = ["cosine", "euclidean"],
     device: str = "cuda",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Sweep over k-NN hyperparameters to find best configuration.
 
@@ -402,9 +402,9 @@ def sweep_knn_params(
     Returns:
         Dictionary with results for each configuration
     """
-    results: Dict[str, Any] = {}
+    results: dict[str, Any] = {}
     best_acc = 0.0
-    best_config: Optional[str] = None
+    best_config: str | None = None
 
     print("Sweeping k-NN hyperparameters...")
     print(f"k values: {k_values}")

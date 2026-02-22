@@ -18,7 +18,7 @@ def parse_log_file(log_path):
     if not log_path.exists():
         return None
 
-    with open(log_path, "r") as f:
+    with open(log_path) as f:
         content = f.read()
 
     # Extract progress information from the most recent line
@@ -107,7 +107,7 @@ def display_dashboard(metrics):
     print()
 
     # Epoch progress
-    print(f"📊 EPOCH PROGRESS")
+    print("📊 EPOCH PROGRESS")
     print(f"   Epoch: {metrics['current_epoch']}/{metrics['total_epochs']}")
     epoch_bar = create_progress_bar(metrics["current_epoch"], metrics["total_epochs"], 50)
     print(f"   {epoch_bar}")
@@ -121,7 +121,7 @@ def display_dashboard(metrics):
     print()
 
     # Training metrics
-    print(f"🎯 TRAINING METRICS")
+    print("🎯 TRAINING METRICS")
     print(f"   Current Loss:      {metrics['loss']:.6f}")
     print(f"   Initial Loss:      {metrics['initial_loss']:.6f}")
     print(f"   Minimum Loss:      {metrics['min_loss']:.6f}")
@@ -131,14 +131,14 @@ def display_dashboard(metrics):
     print()
 
     # Performance
-    print(f"⚡ PERFORMANCE")
+    print("⚡ PERFORMANCE")
     print(f"   Iteration Time:    {metrics['iter_time']:.2f}s/it")
     steps_per_min = 60 / metrics["iter_time"] if metrics["iter_time"] > 0 else 0
     print(f"   Steps per Minute:  {steps_per_min:.1f}")
     print()
 
     # Time estimates
-    print(f"⏱️  TIME ESTIMATES")
+    print("⏱️  TIME ESTIMATES")
     print(f"   Elapsed:           {format_time(metrics['elapsed'])}")
     print(f"   Remaining (Epoch): {format_time(metrics['remaining'])}")
 
@@ -158,7 +158,7 @@ def display_dashboard(metrics):
     print()
 
     # Statistics
-    print(f"📊 STATISTICS")
+    print("📊 STATISTICS")
     print(f"   Total Data Points: {metrics['total_data_points']:,}")
     print(
         f"   Steps Completed:   {metrics['current_step']:,} / {metrics['total_steps'] * metrics['total_epochs']:,} (total)"

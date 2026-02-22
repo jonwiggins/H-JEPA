@@ -10,7 +10,6 @@ import torch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from src.models.hjepa import HJEPA
-from src.utils.checkpoint import CheckpointManager
 
 
 def main():

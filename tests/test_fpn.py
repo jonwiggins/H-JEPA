@@ -82,7 +82,7 @@ def verify_fpn_forward_pass(model, fusion_method="add"):
     for i, (pred, target) in enumerate(zip(predictions, targets)):
         print(f"  Level {i}: pred shape={pred.shape}, target shape={target.shape}")
 
-    print(f"  ✓ Forward pass successful\n")
+    print("  ✓ Forward pass successful\n")
     return outputs
 
 
@@ -99,7 +99,7 @@ def verify_fpn_feature_extraction(model, fusion_method="add"):
             features = model.extract_features(images, level=level)
             print(f"  Level {level}: features shape={features.shape}")
 
-    print(f"  ✓ Feature extraction successful\n")
+    print("  ✓ Feature extraction successful\n")
 
 
 def compare_parameter_counts():

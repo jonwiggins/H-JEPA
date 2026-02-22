@@ -8,7 +8,6 @@ visualization and analysis capabilities to understand what the model learned.
 
 import argparse
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,13 +15,12 @@ import seaborn as sns
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from PIL import Image
 
 from src.data.datasets import get_dataset
 from src.models.hjepa import create_hjepa
 
 
-def load_model(checkpoint_path: str, device: str = "mps") -> Tuple:
+def load_model(checkpoint_path: str, device: str = "mps") -> tuple:
     """Load model from checkpoint"""
     print(f"Loading checkpoint from {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -48,7 +46,7 @@ def load_model(checkpoint_path: str, device: str = "mps") -> Tuple:
     model = model.to(device)
     model.eval()
 
-    print(f"✓ Model loaded successfully")
+    print("✓ Model loaded successfully")
     print(f"  Parameters: {sum(p.numel() for p in model.parameters()):,}")
     print(f"  Device: {device}")
 
@@ -56,7 +54,7 @@ def load_model(checkpoint_path: str, device: str = "mps") -> Tuple:
 
 
 def visualize_attention_maps(
-    model, image: torch.Tensor, device: str = "mps", save_path: Optional[str] = None
+    model, image: torch.Tensor, device: str = "mps", save_path: str | None = None
 ):
     """Visualize attention maps from the encoder"""
     print("\n=== Attention Map Visualization ===")
@@ -84,7 +82,7 @@ def visualize_attention_maps(
             qkv = block.attn.qkv(block.norm1(x))
             qkv = qkv.reshape(B, N, 3, block.attn.num_heads, C // block.attn.num_heads)
             qkv = qkv.permute(2, 0, 3, 1, 4)
-            q, k, v = qkv[0], qkv[1], qkv[2]
+            q, k, _v = qkv[0], qkv[1], qkv[2]
 
             # Compute attention weights
             attn = (q @ k.transpose(-2, -1)) * block.attn.scale
@@ -130,7 +128,7 @@ def visualize_attention_maps(
 
 
 def visualize_hierarchical_representations(
-    model, image: torch.Tensor, device: str = "mps", save_path: Optional[str] = None
+    model, image: torch.Tensor, device: str = "mps", save_path: str | None = None
 ):
     """Visualize hierarchical representations learned by the model"""
     print("\n=== Hierarchical Representation Visualization ===")
@@ -184,7 +182,7 @@ def masked_prediction_demo(
     image: torch.Tensor,
     device: str = "mps",
     mask_ratio: float = 0.5,
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
 ):
     """Demonstrate masked region prediction"""
     print("\n=== Masked Prediction Demonstration ===")
@@ -250,7 +248,7 @@ def masked_prediction_demo(
 
 
 def embedding_similarity_analysis(
-    model, dataset, num_samples: int = 100, device: str = "mps", save_path: Optional[str] = None
+    model, dataset, num_samples: int = 100, device: str = "mps", save_path: str | None = None
 ):
     """Analyze embedding similarities across the dataset"""
     print(f"\n=== Embedding Similarity Analysis ({num_samples} samples) ===")
@@ -310,7 +308,7 @@ def embedding_similarity_analysis(
     else:
         plt.show()
 
-    print(f"\nEmbedding Statistics:")
+    print("\nEmbedding Statistics:")
     print(f"  Dimension: {embeddings.shape[1]}")
     print(
         f"  Mean similarity (same class): {similarity[labels.unsqueeze(0) == labels.unsqueeze(1)].mean():.4f}"

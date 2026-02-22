@@ -20,7 +20,7 @@ References:
     - VICReg: https://arxiv.org/abs/2105.04906
 """
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import Literal
 
 import torch
 import torch.nn as nn
@@ -64,7 +64,7 @@ class HJEPALoss(nn.Module):
     def __init__(
         self,
         loss_type: Literal["mse", "smoothl1", "huber"] = "smoothl1",
-        hierarchy_weights: Union[float, List[float]] = 1.0,
+        hierarchy_weights: float | list[float] = 1.0,
         num_hierarchies: int = 3,
         reduction: Literal["mean", "sum", "none"] = "mean",
         normalize_embeddings: bool = True,
@@ -150,11 +150,11 @@ class HJEPALoss(nn.Module):
 
     def forward(
         self,
-        predictions: Union[List[torch.Tensor], torch.Tensor],
-        targets: Union[List[torch.Tensor], torch.Tensor],
-        masks: Optional[List[torch.Tensor]] = None,
-        context_features: Optional[torch.Tensor] = None,  # Ignored, for API compatibility
-    ) -> Dict[str, torch.Tensor]:
+        predictions: list[torch.Tensor] | torch.Tensor,
+        targets: list[torch.Tensor] | torch.Tensor,
+        masks: list[torch.Tensor] | None = None,
+        context_features: torch.Tensor | None = None,  # Ignored, for API compatibility
+    ) -> dict[str, torch.Tensor]:
         """
         Compute hierarchical JEPA loss.
 

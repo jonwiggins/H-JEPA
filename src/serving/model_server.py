@@ -13,7 +13,7 @@ import io
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -57,8 +57,8 @@ class FeatureRequest(BaseModel):
 class FeatureResponse(BaseModel):
     """Response model for feature extraction."""
 
-    features: Union[List[List[float]], str]
-    shape: List[int]
+    features: list[list[float]] | str
+    shape: list[int]
     hierarchy_level: int
     inference_time_ms: float
 
@@ -66,8 +66,8 @@ class FeatureResponse(BaseModel):
 class BatchFeatureResponse(BaseModel):
     """Response model for batch feature extraction."""
 
-    features: List[Union[List[List[float]], str]]
-    shapes: List[List[int]]
+    features: list[list[list[float]] | str]
+    shapes: list[list[int]]
     hierarchy_level: int
     batch_size: int
     total_inference_time_ms: float
@@ -88,8 +88,8 @@ class ModelServer:
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
-        device: Optional[str] = None,
+        model_path: str | None = None,
+        device: str | None = None,
         img_size: int = 224,
     ) -> None:
         """
@@ -102,7 +102,7 @@ class ModelServer:
         """
         self.img_size = img_size
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.model: Optional[HJEPA] = None
+        self.model: HJEPA | None = None
         self.transform = self._create_transform()
 
         # Load model if path provided
@@ -182,7 +182,7 @@ class ModelServer:
         self,
         image: torch.Tensor,
         hierarchy_level: int = 0,
-    ) -> Tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray, float]:
         """
         Extract features from image.
 
@@ -218,7 +218,7 @@ class ModelServer:
         self,
         images: torch.Tensor,
         hierarchy_level: int = 0,
-    ) -> Tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray, float]:
         """
         Extract features from batch of images.
 
@@ -251,7 +251,7 @@ class ModelServer:
 
 
 # Global model server instance
-model_server: Optional[ModelServer] = None
+model_server: ModelServer | None = None
 
 
 def get_model_server() -> ModelServer:
@@ -286,8 +286,8 @@ async def startup_event() -> None:
         raise
 
 
-@app.get("/", response_model=Dict[str, str])
-async def root() -> Dict[str, str]:
+@app.get("/", response_model=dict[str, str])
+async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
         "message": "H-JEPA Model Server",
@@ -319,7 +319,7 @@ async def health_check() -> HealthResponse:
     except Exception as e:
         REQUEST_COUNT.labels(endpoint="health", status="error").inc()
         logger.error(f"Health check failed: {e}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail=str(e)) from e
 
 
 @app.post("/extract", response_model=FeatureResponse)
@@ -373,12 +373,12 @@ async def extract_features(
     except Exception as e:
         REQUEST_COUNT.labels(endpoint="extract", status="error").inc()
         logger.error(f"Feature extraction failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/extract_batch", response_model=BatchFeatureResponse)
 async def extract_features_batch(
-    files: List[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
     return_numpy: bool = Query(default=True),
 ) -> BatchFeatureResponse:
@@ -435,7 +435,7 @@ async def extract_features_batch(
     except Exception as e:
         REQUEST_COUNT.labels(endpoint="extract_batch", status="error").inc()
         logger.error(f"Batch feature extraction failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/metrics")
@@ -445,7 +445,7 @@ async def metrics() -> Response:
 
 
 @app.get("/info")
-async def model_info() -> Dict[str, Any]:
+async def model_info() -> dict[str, Any]:
     """Get model information."""
     try:
         server = get_model_server()
@@ -465,7 +465,7 @@ async def model_info() -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Failed to get model info: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":

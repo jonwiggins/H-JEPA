@@ -13,7 +13,8 @@ Features:
 """
 
 import logging
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import torch
@@ -56,13 +57,13 @@ class HJEPATrainer:
         self,
         model: nn.Module,
         train_loader: DataLoader[Any],
-        val_loader: Optional[DataLoader[Any]],
+        val_loader: DataLoader[Any] | None,
         optimizer: torch.optim.Optimizer,
         loss_fn: nn.Module,
-        masking_fn: Callable[[int, str], Dict[str, Any]],
-        config: Dict[str, Any],
-        device: Union[str, torch.device] = "cuda",
-        resume_checkpoint: Optional[str] = None,
+        masking_fn: Callable[[int, str], dict[str, Any]],
+        config: dict[str, Any],
+        device: str | torch.device = "cuda",
+        resume_checkpoint: str | None = None,
     ) -> None:
         self.model = model
         self.train_loader = train_loader
@@ -112,17 +113,16 @@ class HJEPATrainer:
             ),
         )
 
-        # Mixed precision training
-        if self.device.type == "mps":
-            # MPS doesn't support GradScaler, disable AMP for MPS
-            self.use_amp = False
-            self.scaler: Optional[GradScaler] = None
-            if config["training"].get("use_amp", False):
-                logger.warning("Mixed precision training not supported on MPS, disabling AMP")
+        # Mixed precision training (only supported on CUDA)
+        if self.device.type == "cuda":
+            self.scaler: GradScaler | None = GradScaler(device="cuda") if self.use_amp else None
         else:
-            # Use appropriate device type for scaler (cuda or cpu)
-            device_type = "cuda" if self.device.type == "cuda" else "cpu"
-            self.scaler = GradScaler(device=device_type) if self.use_amp else None
+            if self.use_amp:
+                logger.warning(
+                    f"Mixed precision training not supported on {self.device.type}, disabling AMP"
+                )
+            self.use_amp = False
+            self.scaler = None
 
         # Checkpoint manager
         checkpoint_dir = config.get("checkpoint", {}).get(
@@ -241,7 +241,7 @@ class HJEPATrainer:
         logger.info("Training completed!")
         self.metrics_logger.finish()
 
-    def _train_epoch(self, epoch: int) -> Dict[str, float]:
+    def _train_epoch(self, epoch: int) -> dict[str, float]:
         """
         Train for one epoch.
 
@@ -385,7 +385,7 @@ class HJEPATrainer:
         batch: Any,
         epoch: int,
         step: int,
-    ) -> Tuple[torch.Tensor, Dict[str, float]]:
+    ) -> tuple[torch.Tensor, dict[str, float]]:
         """
         Single training step with forward pass and loss computation.
 
@@ -465,7 +465,7 @@ class HJEPATrainer:
         return loss, loss_dict
 
     @torch.no_grad()
-    def _validate_epoch(self, epoch: int) -> Dict[str, float]:
+    def _validate_epoch(self, epoch: int) -> dict[str, float]:
         """
         Validation loop for one epoch.
 
@@ -555,7 +555,7 @@ class HJEPATrainer:
         self,
         context_embeddings: torch.Tensor,
         target_embeddings: torch.Tensor,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute metrics to monitor representation collapse.
 
@@ -704,7 +704,7 @@ class HJEPATrainer:
     def _save_checkpoint(
         self,
         epoch: int,
-        val_loss: Optional[float],
+        val_loss: float | None,
         is_best: bool,
     ) -> str:
         """
@@ -718,7 +718,7 @@ class HJEPATrainer:
         Returns:
             Path to the saved checkpoint file
         """
-        metrics: Dict[str, float] = {"epoch": float(epoch)}
+        metrics: dict[str, float] = {"epoch": float(epoch)}
         if val_loss is not None:
             metrics["val_loss"] = val_loss
 
@@ -776,8 +776,8 @@ class HJEPATrainer:
     def _print_epoch_summary(
         self,
         epoch: int,
-        train_metrics: Dict[str, float],
-        val_metrics: Optional[Dict[str, float]],
+        train_metrics: dict[str, float],
+        val_metrics: dict[str, float] | None,
     ) -> None:
         """
         Print epoch summary.
@@ -807,8 +807,8 @@ class HJEPATrainer:
 
 def create_optimizer(
     model: nn.Module,
-    config: Dict[str, Any],
-) -> Union[torch.optim.AdamW, torch.optim.Adam, torch.optim.SGD]:
+    config: dict[str, Any],
+) -> torch.optim.AdamW | torch.optim.Adam | torch.optim.SGD:
     """
     Create optimizer from config.
 
@@ -823,7 +823,7 @@ def create_optimizer(
     lr = config["training"].get("lr", config["training"].get("learning_rate", 1e-4))
     weight_decay = config["training"].get("weight_decay", 0.0)
 
-    optimizer: Union[torch.optim.AdamW, torch.optim.Adam, torch.optim.SGD]
+    optimizer: torch.optim.AdamW | torch.optim.Adam | torch.optim.SGD
     if optimizer_type == "adamw":
         betas = config["training"].get("betas", [0.9, 0.95])
         optimizer = torch.optim.AdamW(

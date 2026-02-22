@@ -11,7 +11,7 @@ This combines the benefits of multi-crop augmentation with H-JEPA's
 hierarchical predictive learning.
 """
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -69,8 +69,8 @@ class MultiCropMaskGenerator:
         masking_strategy: Literal[
             "global_only", "global_with_local_context", "cross_crop_prediction"
         ] = "global_only",
-        base_scale: Tuple[float, float] = (0.05, 0.15),
-        aspect_ratio_range: Tuple[float, float] = (0.75, 1.5),
+        base_scale: tuple[float, float] = (0.05, 0.15),
+        aspect_ratio_range: tuple[float, float] = (0.75, 1.5),
         max_attempts: int = 10,
     ) -> None:
         self.global_crop_size = global_crop_size
@@ -104,7 +104,7 @@ class MultiCropMaskGenerator:
         )
 
         # Create mask generator for local crops if needed
-        self.local_mask_gen: Optional[HierarchicalMaskGenerator]
+        self.local_mask_gen: HierarchicalMaskGenerator | None
         if masking_strategy == "cross_crop_prediction":
             self.local_mask_gen = HierarchicalMaskGenerator(
                 input_size=local_crop_size,
@@ -118,7 +118,7 @@ class MultiCropMaskGenerator:
         else:
             self.local_mask_gen = None
 
-    def __call__(self, batch_size: int, device: str = "cpu") -> Dict[str, Any]:
+    def __call__(self, batch_size: int, device: str = "cpu") -> dict[str, Any]:
         """
         Generate masks for multi-crop inputs.
 
@@ -154,7 +154,7 @@ class MultiCropMaskGenerator:
 
         return masks
 
-    def _generate_global_only_masks(self, batch_size: int, device: str) -> Dict[str, Any]:
+    def _generate_global_only_masks(self, batch_size: int, device: str) -> dict[str, Any]:
         """
         Generate masks only for global crops.
 
@@ -172,7 +172,7 @@ class MultiCropMaskGenerator:
             "local_masks": None,
         }
 
-    def _generate_global_with_local_masks(self, batch_size: int, device: str) -> Dict[str, Any]:
+    def _generate_global_with_local_masks(self, batch_size: int, device: str) -> dict[str, Any]:
         """
         Generate masks for global crops, treat local crops as context.
 
@@ -202,7 +202,7 @@ class MultiCropMaskGenerator:
             "local_masks": local_masks,
         }
 
-    def _generate_cross_crop_masks(self, batch_size: int, device: str) -> Dict[str, Any]:
+    def _generate_cross_crop_masks(self, batch_size: int, device: str) -> dict[str, Any]:
         """
         Generate masks for cross-crop prediction.
 
@@ -251,7 +251,7 @@ class MultiCropMaskGenerator:
             "local_masks": local_masks,
         }
 
-    def get_crop_info(self) -> Dict[str, int]:
+    def get_crop_info(self) -> dict[str, int]:
         """
         Get information about crop dimensions.
 
@@ -270,10 +270,10 @@ class MultiCropMaskGenerator:
 
     def visualize_multicrop_masks(
         self,
-        masks: Dict[str, Any],
+        masks: dict[str, Any],
         sample_idx: int = 0,
-        figsize: Tuple[int, int] = (20, 10),
-        save_path: Optional[str] = None,
+        figsize: tuple[int, int] = (20, 10),
+        save_path: str | None = None,
     ) -> "plt.Figure":
         """
         Visualize masks across all crops.
@@ -429,7 +429,7 @@ def demo() -> None:
     print("Multi-Crop Mask Generator Demo")
     print("=" * 70)
 
-    strategies: List[
+    strategies: list[
         Literal["global_only", "global_with_local_context", "cross_crop_prediction"]
     ] = ["global_only", "global_with_local_context", "cross_crop_prediction"]
 

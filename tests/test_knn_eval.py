@@ -98,7 +98,7 @@ def test_knn_evaluator_freezes_model(mock_model):
     param.requires_grad = True
     mock_model.parameters = MagicMock(return_value=[param])
 
-    evaluator = KNNEvaluator(model=mock_model, k=20, device="cpu")
+    KNNEvaluator(model=mock_model, k=20, device="cpu")
 
     # Check model is in eval mode
     mock_model.eval.assert_called()

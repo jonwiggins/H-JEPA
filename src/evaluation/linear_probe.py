@@ -7,7 +7,7 @@ self-supervised learning models.
 """
 
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -169,7 +169,7 @@ class LinearProbeEvaluator:
     @torch.no_grad()
     def extract_features(
         self, dataloader: DataLoader[Any], desc: str = "Extracting features"
-    ) -> Tuple[npt.NDArray[Any], npt.NDArray[Any]]:
+    ) -> tuple[npt.NDArray[Any], npt.NDArray[Any]]:
         """
         Extract features from dataset.
 
@@ -212,14 +212,14 @@ class LinearProbeEvaluator:
     def train_probe(
         self,
         train_loader: DataLoader[Any],
-        val_loader: Optional[DataLoader[Any]] = None,
+        val_loader: DataLoader[Any] | None = None,
         epochs: int = 100,
         lr: float = 0.1,
         weight_decay: float = 0.0,
         momentum: float = 0.9,
         scheduler_type: str = "cosine",
         verbose: bool = True,
-    ) -> Dict[str, List[float]]:
+    ) -> dict[str, list[float]]:
         """
         Train linear probe on frozen features.
 
@@ -245,9 +245,9 @@ class LinearProbeEvaluator:
         )
 
         # Setup scheduler
-        scheduler: Optional[
-            Union[torch.optim.lr_scheduler.CosineAnnealingLR, torch.optim.lr_scheduler.StepLR]
-        ] = None
+        scheduler: (
+            torch.optim.lr_scheduler.CosineAnnealingLR | torch.optim.lr_scheduler.StepLR | None
+        ) = None
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
         elif scheduler_type == "step":
@@ -256,7 +256,7 @@ class LinearProbeEvaluator:
         criterion = nn.CrossEntropyLoss()
 
         # Training history
-        history: Dict[str, List[float]] = {
+        history: dict[str, list[float]] = {
             "train_loss": [],
             "train_acc": [],
             "val_loss": [],
@@ -270,7 +270,7 @@ class LinearProbeEvaluator:
             train_correct = 0
             train_total = 0
 
-            pbar: Union[tqdm[Any], DataLoader[Any]] = (
+            pbar: tqdm[Any] | DataLoader[Any] = (
                 tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}") if verbose else train_loader
             )
 
@@ -353,7 +353,7 @@ class LinearProbeEvaluator:
         compute_confusion: bool = False,
         top_k: int = 5,
         verbose: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate linear probe.
 
@@ -418,7 +418,7 @@ class LinearProbeEvaluator:
 
         avg_loss = total_loss / len(dataloader)
 
-        metrics: Dict[str, Any] = {
+        metrics: dict[str, Any] = {
             "loss": avg_loss,
             "accuracy": accuracy,
         }
@@ -446,7 +446,7 @@ class LinearProbeEvaluator:
         lr: float = 0.1,
         num_workers: int = 4,
         verbose: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform k-fold cross-validation.
 
@@ -464,7 +464,7 @@ class LinearProbeEvaluator:
         """
         kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "fold_accuracies": [],
             "fold_losses": [],
             "mean_accuracy": 0.0,
@@ -544,7 +544,7 @@ def linear_probe_eval(
     lr: float = 0.1,
     device: str = "cuda",
     verbose: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function for linear probe evaluation.
 

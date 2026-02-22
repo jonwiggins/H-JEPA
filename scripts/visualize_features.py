@@ -13,21 +13,18 @@ across the hierarchical representations. It shows:
 
 import argparse
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from PIL import Image
 
 from src.data.datasets import get_dataset
 from src.models.hjepa import create_hjepa
 
 
-def load_model(checkpoint_path: str, device: str) -> Tuple:
+def load_model(checkpoint_path: str, device: str) -> tuple:
     """Load model from checkpoint"""
     print(f"Loading checkpoint from {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -49,7 +46,7 @@ def load_model(checkpoint_path: str, device: str) -> Tuple:
     model = model.to(device)
     model.eval()
 
-    print(f"✓ Model loaded successfully")
+    print("✓ Model loaded successfully")
 
     return model, config
 
@@ -60,7 +57,7 @@ def visualize_feature_maps(
     hierarchy_idx: int,
     num_channels: int = 16,
     device: str = "mps",
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
 ):
     """Visualize feature activation maps for top channels"""
     print(f"\n=== Feature Activation Maps (Hierarchy {hierarchy_idx+1}) ===")
@@ -125,7 +122,7 @@ def visualize_top_activating_patches(
     num_samples: int = 100,
     top_k: int = 9,
     device: str = "mps",
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
 ):
     """Find and visualize patches that maximally activate a specific channel"""
     print(f"\n=== Top Activating Patches (Hierarchy {hierarchy_idx+1}, Channel {channel_idx}) ===")
@@ -229,7 +226,7 @@ def visualize_feature_statistics(
     hierarchy_idx: int,
     num_samples: int = 200,
     device: str = "mps",
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
 ):
     """Visualize feature statistics across the dataset"""
     print(f"\n=== Feature Statistics (Hierarchy {hierarchy_idx+1}) ===")
@@ -307,7 +304,7 @@ def visualize_feature_statistics(
     else:
         plt.show()
 
-    print(f"\nStatistics Summary:")
+    print("\nStatistics Summary:")
     print(f"  Num channels: {all_features.shape[1]}")
     print(f"  Mean activation: {mean_activation.mean():.4f} ± {mean_activation.std():.4f}")
     print(f"  Mean std: {std_activation.mean():.4f}")

@@ -6,15 +6,14 @@ Tests for:
 2. LinearProbe dataloader tuple unpacking robustness
 """
 
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.evaluation.linear_probe import LinearProbe, LinearProbeEvaluator
-from src.models.hjepa import HJEPA, create_hjepa
+from src.evaluation.linear_probe import LinearProbeEvaluator
+from src.models.hjepa import create_hjepa
 
 # ============================================================================
 # Test encode_context() Method

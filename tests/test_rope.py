@@ -38,11 +38,11 @@ def test_rope_module():
         theta=10000.0,
     )
 
-    print(f"✓ RoPE module created with:")
+    print("✓ RoPE module created with:")
     print(f"  - Dimension: {dim}")
     print(f"  - Patch size: {patch_size}")
     print(f"  - Grid size: {num_patches_per_side}x{num_patches_per_side}")
-    print(f"  - Theta: 10000.0")
+    print("  - Theta: 10000.0")
 
     # Test forward pass
     batch_size = 2
@@ -54,7 +54,7 @@ def test_rope_module():
 
     q_rotated, k_rotated = rope(q, k)
 
-    print(f"\n✓ Forward pass successful:")
+    print("\n✓ Forward pass successful:")
     print(f"  - Input Q shape: {q.shape}")
     print(f"  - Output Q shape: {q_rotated.shape}")
     print(f"  - Input K shape: {k.shape}")
@@ -79,7 +79,7 @@ def test_rope_module():
         q_large, k_large, num_patches_h=new_grid_size, num_patches_w=new_grid_size
     )
 
-    print(f"\n✓ Dynamic resolution support:")
+    print("\n✓ Dynamic resolution support:")
     print(f"  - New grid size: {new_grid_size}x{new_grid_size}")
     print(f"  - Output Q shape: {q_rot_large.shape}")
     print(f"  - Output K shape: {k_rot_large.shape}")
@@ -113,7 +113,7 @@ def test_encoder_without_rope():
         context_out = context_encoder(x)
         target_out = target_encoder(x)
 
-    print(f"\n✓ Forward pass successful:")
+    print("\n✓ Forward pass successful:")
     print(f"  - Input shape: {x.shape}")
     print(f"  - Context output shape: {context_out.shape}")
     print(f"  - Target output shape: {target_out.shape}")
@@ -143,7 +143,7 @@ def test_encoder_with_rope():
     print("✓ Encoders created with RoPE")
     print(f"  - Context encoder use_rope: {context_encoder.use_rope}")
     print(f"  - Target encoder use_rope: {target_encoder.use_rope}")
-    print(f"  - RoPE theta: 10000.0")
+    print("  - RoPE theta: 10000.0")
 
     # Verify RoPE module exists
     assert hasattr(context_encoder, "rope"), "Context encoder should have rope module"
@@ -165,7 +165,7 @@ def test_encoder_with_rope():
         context_out = context_encoder(x)
         target_out = target_encoder(x)
 
-    print(f"\n✓ Forward pass successful:")
+    print("\n✓ Forward pass successful:")
     print(f"  - Input shape: {x.shape}")
     print(f"  - Context output shape: {context_out.shape}")
     print(f"  - Target output shape: {target_out.shape}")
@@ -177,7 +177,7 @@ def test_encoder_with_rope():
     with torch.no_grad():
         masked_out = context_encoder(x, mask=mask)
 
-    print(f"\n✓ Forward pass with masking successful:")
+    print("\n✓ Forward pass with masking successful:")
     print(f"  - Mask shape: {mask.shape}")
     print(f"  - Masked output shape: {masked_out.shape}")
 
@@ -211,7 +211,7 @@ def test_ema_update_with_rope():
     updated_weight = target_encoder.vit.blocks[0].attn.attn.qkv.weight
     assert not torch.allclose(initial_weight, updated_weight), "EMA should update weights"
 
-    print(f"✓ EMA update successful:")
+    print("✓ EMA update successful:")
     print(f"  - Momentum: {momentum:.4f}")
     print(f"  - Weight change: {(updated_weight - initial_weight).abs().max():.6f}")
 

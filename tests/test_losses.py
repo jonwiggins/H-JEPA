@@ -7,7 +7,6 @@ This module tests the core loss functions:
 
 import pytest
 import torch
-import torch.nn as nn
 
 from src.losses.hjepa_loss import HJEPALoss
 

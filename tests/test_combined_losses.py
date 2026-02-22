@@ -9,7 +9,6 @@ This module tests the combined loss functions:
 
 import pytest
 import torch
-import torch.nn as nn
 
 from src.losses.combined import CombinedLoss, HierarchicalCombinedLoss, create_loss_from_config
 from src.losses.hjepa_loss import HJEPALoss

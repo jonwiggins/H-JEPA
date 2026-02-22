@@ -508,8 +508,8 @@ class TestAdaptiveVICRegLoss:
 
         # Store original weights
         orig_inv = loss_fn.invariance_weight.data.clone()
-        orig_var = loss_fn.variance_weight.data.clone()
-        orig_cov = loss_fn.covariance_weight.data.clone()
+        loss_fn.variance_weight.data.clone()
+        loss_fn.covariance_weight.data.clone()
 
         # Update weights
         loss_fn.update_weights(loss_dict)

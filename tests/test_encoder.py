@@ -12,12 +12,11 @@ Tests cover:
 """
 
 import math
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from src.models.encoder import (
     FLASH_ATTENTION_AVAILABLE,
@@ -581,7 +580,7 @@ class TestTargetEncoder:
         target_encoder = TargetEncoder(encoder_type="vit_tiny_patch16_224")
 
         # Get initial target weight
-        initial_target_weight = target_encoder.vit.blocks[0].norm1.weight.clone()
+        target_encoder.vit.blocks[0].norm1.weight.clone()
 
         # Modify context encoder
         with torch.no_grad():

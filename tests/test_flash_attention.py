@@ -31,7 +31,7 @@ def test_flash_attention_availability():
         print("✗ Flash Attention is not available (expected on MPS)")
         print("  This is normal for Apple Silicon devices")
 
-    print(f"✓ Flash Attention availability test passed")
+    print("✓ Flash Attention availability test passed")
 
 
 def test_encoder_with_flash_attention():
@@ -48,7 +48,7 @@ def test_encoder_with_flash_attention():
         use_flash_attention=True,  # This parameter is accepted but may be ignored on MPS
     )
 
-    print(f"✓ Encoders created successfully")
+    print("✓ Encoders created successfully")
     print(f"  Context encoder type: {type(context_encoder).__name__}")
     print(f"  Target encoder type:  {type(target_encoder).__name__}")
 
@@ -71,7 +71,7 @@ def test_encoder_with_flash_attention():
 
     print(f"  Target encoder output shape: {target_output.shape}")
 
-    print(f"✓ Forward pass successful")
+    print("✓ Forward pass successful")
 
 
 def test_encoder_without_flash_attention():
@@ -88,7 +88,7 @@ def test_encoder_without_flash_attention():
         use_flash_attention=False,
     )
 
-    print(f"✓ Encoders created successfully")
+    print("✓ Encoders created successfully")
     print(f"  Context encoder type: {type(context_encoder).__name__}")
     print(f"  Target encoder type:  {type(target_encoder).__name__}")
 
@@ -111,7 +111,7 @@ def test_encoder_without_flash_attention():
 
     print(f"  Target encoder output shape: {target_output.shape}")
 
-    print(f"✓ Forward pass successful")
+    print("✓ Forward pass successful")
 
 
 def main():

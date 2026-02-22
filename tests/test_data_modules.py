@@ -16,13 +16,11 @@ Test Strategy:
 4. Test integration between modules
 """
 
-import math
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 import torch
 from PIL import Image
@@ -473,7 +471,7 @@ class TestBuildDataset:
         """Test building CIFAR-10 dataset."""
         mock_cifar10.return_value = MagicMock()
 
-        dataset = build_dataset(
+        build_dataset(
             dataset_name="cifar10",
             data_path=temp_data_dir,
             split="train",
@@ -487,7 +485,7 @@ class TestBuildDataset:
         """Test building CIFAR-100 dataset."""
         mock_cifar100.return_value = MagicMock()
 
-        dataset = build_dataset(
+        build_dataset(
             dataset_name="cifar100",
             data_path=temp_data_dir,
             split="train",
@@ -501,7 +499,7 @@ class TestBuildDataset:
         """Test building STL-10 dataset."""
         mock_stl10.return_value = MagicMock()
 
-        dataset = build_dataset(
+        build_dataset(
             dataset_name="stl10",
             data_path=temp_data_dir,
             split="train",
@@ -850,7 +848,7 @@ class TestDeiTIIIAugmentation:
         transform = aug.get_image_transform()
 
         assert transform is not None
-        assert hasattr(transform, "__call__")
+        assert callable(transform)
 
     def test_get_batch_transform(self):
         """Test getting batch transform."""
@@ -1318,7 +1316,7 @@ class TestBuildMulticropDataset:
         mock_dataset = MagicMock()
         mock_dataset_class.return_value = mock_dataset
 
-        dataset = build_multicrop_dataset(
+        build_multicrop_dataset(
             dataset_name="cifar10",
             data_path=temp_data_dir,
             split="train",
@@ -1333,7 +1331,7 @@ class TestBuildMulticropDataset:
         mock_dataset = MagicMock()
         mock_dataset_class.return_value = mock_dataset
 
-        dataset = build_multicrop_dataset(
+        build_multicrop_dataset(
             dataset_name="cifar10",
             data_path=temp_data_dir,
             split="train",

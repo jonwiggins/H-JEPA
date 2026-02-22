@@ -6,7 +6,7 @@ few-shot learning, and domain adaptation evaluation.
 """
 
 import copy
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -33,7 +33,7 @@ class TransferHead(nn.Module):
         self,
         input_dim: int,
         num_classes: int,
-        hidden_dims: List[int] = [],
+        hidden_dims: list[int] = [],
         dropout: float = 0.0,
         pooling: str = "mean",
     ):
@@ -41,7 +41,7 @@ class TransferHead(nn.Module):
         self.pooling = pooling
 
         # Build MLP
-        layers: List[nn.Module] = []
+        layers: list[nn.Module] = []
         prev_dim = input_dim
 
         for hidden_dim in hidden_dims:
@@ -95,7 +95,7 @@ class FineTuneEvaluator:
         num_classes: int,
         hierarchy_level: int = 0,
         freeze_encoder: bool = False,
-        hidden_dims: List[int] = [],
+        hidden_dims: list[int] = [],
         dropout: float = 0.0,
         device: str = "cuda",
     ):
@@ -153,7 +153,7 @@ class FineTuneEvaluator:
         criterion: nn.Module,
         epoch: int,
         verbose: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Train for one epoch."""
         self.model.train() if not self.freeze_encoder else self.model.eval()
         self.classifier.train()
@@ -162,7 +162,7 @@ class FineTuneEvaluator:
         correct = 0.0
         total = 0
 
-        pbar: Union[tqdm[Any], DataLoader[Any]] = (
+        pbar: tqdm[Any] | DataLoader[Any] = (
             tqdm(train_loader, desc=f"Epoch {epoch}") if verbose else train_loader
         )
 
@@ -202,7 +202,7 @@ class FineTuneEvaluator:
         test_loader: DataLoader[Any],
         criterion: nn.Module,
         verbose: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Evaluate on test set."""
         self.model.eval()
         self.classifier.eval()
@@ -242,13 +242,13 @@ class FineTuneEvaluator:
     def fine_tune(
         self,
         train_loader: DataLoader[Any],
-        val_loader: Optional[DataLoader[Any]] = None,
+        val_loader: DataLoader[Any] | None = None,
         epochs: int = 50,
         lr: float = 1e-3,
         weight_decay: float = 1e-4,
         scheduler_type: str = "cosine",
         verbose: bool = True,
-    ) -> Dict[str, List[float]]:
+    ) -> dict[str, list[float]]:
         """
         Fine-tune model on target dataset.
 
@@ -265,7 +265,7 @@ class FineTuneEvaluator:
             Training history
         """
         # Setup optimizer
-        params: Union[Any, List[Dict[str, Any]]]
+        params: Any | list[dict[str, Any]]
         if self.freeze_encoder:
             # Only optimize classifier
             params = self.classifier.parameters()
@@ -279,9 +279,9 @@ class FineTuneEvaluator:
         optimizer = torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
 
         # Setup scheduler
-        scheduler: Optional[
-            Union[torch.optim.lr_scheduler.CosineAnnealingLR, torch.optim.lr_scheduler.StepLR]
-        ] = None
+        scheduler: (
+            torch.optim.lr_scheduler.CosineAnnealingLR | torch.optim.lr_scheduler.StepLR | None
+        ) = None
         if scheduler_type == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
         elif scheduler_type == "step":
@@ -290,7 +290,7 @@ class FineTuneEvaluator:
         criterion = nn.CrossEntropyLoss()
 
         # Training history
-        history: Dict[str, List[float]] = {
+        history: dict[str, list[float]] = {
             "train_loss": [],
             "train_acc": [],
             "val_loss": [],
@@ -379,7 +379,7 @@ class FewShotEvaluator:
         k_shot: int,
         n_query: int,
         n_episodes: int,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Sample few-shot learning episodes.
 
@@ -394,18 +394,18 @@ class FewShotEvaluator:
             List of episode dictionaries
         """
         # Get all labels
-        all_labels_list: List[Any] = []
+        all_labels_list: list[Any] = []
         for i in range(len(dataset)):  # type: ignore[arg-type]
             _, label = dataset[i]
             all_labels_list.append(label)
         all_labels: npt.NDArray[np.int64] = np.array(all_labels_list)
 
         # Get indices for each class
-        class_indices: Dict[int, npt.NDArray[np.int64]] = {}
+        class_indices: dict[int, npt.NDArray[np.int64]] = {}
         for class_idx in range(self.num_classes):
             class_indices[class_idx] = np.where(all_labels == class_idx)[0]
 
-        episodes: List[Dict[str, Any]] = []
+        episodes: list[dict[str, Any]] = []
 
         for _ in range(n_episodes):
             # Sample n_way classes
@@ -413,8 +413,8 @@ class FewShotEvaluator:
                 self.num_classes, size=n_way, replace=False
             )
 
-            support_indices: List[Any] = []
-            query_indices: List[Any] = []
+            support_indices: list[Any] = []
+            query_indices: list[Any] = []
 
             for class_idx in selected_classes:
                 # Sample k_shot + n_query examples
@@ -438,7 +438,7 @@ class FewShotEvaluator:
     def evaluate_episode(
         self,
         dataset: Dataset[Any],
-        episode: Dict[str, Any],
+        episode: dict[str, Any],
         metric: str = "cosine",
     ) -> float:
         """
@@ -453,8 +453,8 @@ class FewShotEvaluator:
             Accuracy on this episode
         """
         # Extract support features
-        support_features_list: List[torch.Tensor] = []
-        support_labels_list: List[Any] = []
+        support_features_list: list[torch.Tensor] = []
+        support_labels_list: list[Any] = []
 
         for idx in episode["support_indices"]:
             image, label = dataset[idx]
@@ -473,7 +473,7 @@ class FewShotEvaluator:
         support_labels: torch.Tensor = torch.tensor(support_labels_list)
 
         # Compute class centroids
-        centroids_list: List[torch.Tensor] = []
+        centroids_list: list[torch.Tensor] = []
         for class_idx in episode["classes"]:
             mask = support_labels == class_idx
             centroid = support_features[mask].mean(dim=0)
@@ -522,7 +522,7 @@ class FewShotEvaluator:
         n_query: int = 15,
         n_episodes: int = 100,
         verbose: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Evaluate few-shot learning performance.
 
@@ -582,7 +582,7 @@ def fine_tune_eval(
     lr: float = 1e-3,
     device: str = "cuda",
     verbose: bool = True,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Convenience function for fine-tuning evaluation.
 
@@ -630,12 +630,12 @@ def few_shot_eval(
     dataset: Dataset[Any],
     num_classes: int,
     n_way: int = 5,
-    k_shot_list: List[int] = [1, 5, 10],
+    k_shot_list: list[int] = [1, 5, 10],
     n_episodes: int = 100,
     hierarchy_level: int = 0,
     device: str = "cuda",
     verbose: bool = True,
-) -> Dict[int, Dict[str, Any]]:
+) -> dict[int, dict[str, Any]]:
     """
     Convenience function for few-shot evaluation.
 

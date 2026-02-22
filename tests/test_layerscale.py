@@ -9,7 +9,6 @@ import os
 import sys
 
 import torch
-import torch.nn as nn
 
 # Add src to path relative to the test file location
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -138,7 +137,7 @@ def test_layerscale_module():
     x = torch.randn(batch_size, seq_len, dim)
     output = layer(x)
 
-    print(f"\n2. Forward pass test:")
+    print("\n2. Forward pass test:")
     print(f"   - Input shape: {x.shape}")
     print(f"   - Output shape: {output.shape}")
     assert output.shape == x.shape, "Output shape mismatch"
@@ -146,17 +145,17 @@ def test_layerscale_module():
     # Check scaling
     expected_scaled = x * init_value
     assert torch.allclose(output, expected_scaled, rtol=1e-5), "Scaling incorrect"
-    print(f"   ✓ Scaling applied correctly")
+    print("   ✓ Scaling applied correctly")
 
     # Test gradient flow
     loss = output.sum()
     loss.backward()
 
     assert layer.gamma.grad is not None, "No gradients computed"
-    print(f"\n3. Gradient flow test:")
+    print("\n3. Gradient flow test:")
     print(f"   - Gamma grad shape: {layer.gamma.grad.shape}")
     print(f"   - Gamma grad norm: {layer.gamma.grad.norm().item():.6f}")
-    print(f"   ✓ Gradients flow correctly")
+    print("   ✓ Gradients flow correctly")
 
     print("\n✓ LayerScale module test passed")
 

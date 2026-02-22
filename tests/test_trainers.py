@@ -18,8 +18,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
@@ -28,7 +27,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from src.trainers.trainer import HJEPATrainer, create_optimizer
-from src.utils.scheduler import CosineScheduler, EMAScheduler, LinearScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -593,7 +591,7 @@ class TestTrainingStep:
     def test_train_step_gradient_computation(self, trainer, device):
         """Test that gradients are computed during training step."""
         # Get initial parameters
-        initial_params = [p.clone() for p in trainer.model.parameters()]
+        [p.clone() for p in trainer.model.parameters()]
 
         batch = [torch.randn(4, 3, 224, 224, device=device)]
         loss, _ = trainer._train_step(batch, epoch=0, step=0)
@@ -602,10 +600,8 @@ class TestTrainingStep:
         loss.backward()
 
         # Check that gradients exist
-        has_gradients = False
         for param in trainer.model.parameters():
             if param.grad is not None and (param.grad != 0).any():
-                has_gradients = True
                 break
 
         # We expect gradients due to loss computation
@@ -616,7 +612,7 @@ class TestTrainingStep:
         batch = [torch.randn(4, 3, 224, 224, device=device)]
 
         # Get initial target encoder params
-        initial_target_params = [p.clone() for p in trainer.model.target_encoder.parameters()]
+        [p.clone() for p in trainer.model.target_encoder.parameters()]
 
         loss, _ = trainer._train_step(batch, epoch=0, step=0)
 
@@ -683,7 +679,7 @@ class TestValidation:
     def test_validate_epoch_no_gradients(self, trainer, device):
         """Test that validation doesn't compute gradients."""
         batch = next(iter(trainer.val_loader))
-        images = batch[0].to(device)
+        batch[0].to(device)
 
         # Verify no_grad context is used
         with torch.no_grad():
@@ -982,7 +978,6 @@ class TestTrainingLoopIntegration:
 
     def test_global_step_increment(self, trainer):
         """Test that global step increments correctly."""
-        initial_step = trainer.global_step
 
         # Simulate some training steps
         for _ in range(2):
@@ -1444,6 +1439,7 @@ class TestMixedPrecisionTraining:
             assert trainer.use_amp is False
             assert trainer.scaler is None
 
+    @pytest.mark.skipif(not torch.cuda.is_available(), reason="AMP requires CUDA")
     def test_amp_backward_pass(
         self,
         mock_hjepa_model,
@@ -1454,9 +1450,6 @@ class TestMixedPrecisionTraining:
         device,
     ):
         """Test backward pass with AMP enabled."""
-        if device.type == "mps":
-            pytest.skip("AMP not supported on MPS")
-
         base_training_config["training"]["use_amp"] = True
         base_training_config["training"]["epochs"] = 1
         optimizer = torch.optim.AdamW(mock_hjepa_model.parameters())
@@ -1477,6 +1470,7 @@ class TestMixedPrecisionTraining:
             metrics = trainer._train_epoch(epoch=0)
             assert "loss" in metrics
 
+    @pytest.mark.skipif(not torch.cuda.is_available(), reason="AMP requires CUDA")
     def test_gradient_clipping_with_amp(
         self,
         mock_hjepa_model,
@@ -1487,9 +1481,6 @@ class TestMixedPrecisionTraining:
         device,
     ):
         """Test gradient clipping works with AMP."""
-        if device.type == "mps":
-            pytest.skip("AMP not supported on MPS")
-
         base_training_config["training"]["use_amp"] = True
         base_training_config["training"]["clip_grad"] = 1.0
         base_training_config["training"]["epochs"] = 1
@@ -1534,7 +1525,7 @@ class TestModelWithoutEncoders:
         class SimpleModel(nn.Module):
             def __init__(self):
                 super().__init__()
-                self.linear = nn.Linear(196 * 3 * 224 * 224, 384)
+                self.linear = nn.Linear(384, 384)
 
             def __call__(self, images, mask):
                 batch_size = images.shape[0]

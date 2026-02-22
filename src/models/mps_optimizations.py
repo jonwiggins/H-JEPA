@@ -11,7 +11,7 @@ Key Optimizations:
 4. Chunked attention for large sequences
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -56,7 +56,7 @@ class MPSEfficientAttention(nn.Module):
         q: torch.Tensor,  # [B, H, N, D]
         k: torch.Tensor,  # [B, H, N, D]
         v: torch.Tensor,  # [B, H, N, D]
-        attn_mask: Optional[torch.Tensor] = None,
+        attn_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Compute attention with memory-efficient chunking for MPS.
@@ -80,7 +80,7 @@ class MPSEfficientAttention(nn.Module):
         q: torch.Tensor,
         k: torch.Tensor,
         v: torch.Tensor,
-        attn_mask: Optional[torch.Tensor] = None,
+        attn_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Standard attention implementation."""
         B, H, N, D = q.shape
@@ -109,7 +109,7 @@ class MPSEfficientAttention(nn.Module):
         q: torch.Tensor,
         k: torch.Tensor,
         v: torch.Tensor,
-        attn_mask: Optional[torch.Tensor] = None,
+        attn_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Chunked attention for memory efficiency on MPS.
@@ -186,7 +186,7 @@ class MPSOptimizedAttention(nn.Module):
         q: torch.Tensor,
         k: torch.Tensor,
         v: torch.Tensor,
-        attn_mask: Optional[torch.Tensor] = None,
+        attn_mask: torch.Tensor | None = None,
         is_causal: bool = False,
     ) -> torch.Tensor:
         """
@@ -334,7 +334,7 @@ def benchmark_attention_mps(
     seq_len: int = 196,
     head_dim: int = 64,
     num_iterations: int = 100,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Benchmark different attention implementations on MPS.
     """

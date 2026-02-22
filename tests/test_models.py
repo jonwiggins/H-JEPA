@@ -4,14 +4,10 @@ Tests cover model creation, forward pass, hierarchical feature extraction,
 EMA updates, FPN functionality, and edge cases.
 """
 
-import os
-import tempfile
-
 import pytest
 import torch
-import yaml
 
-from src.models import HJEPA, create_hjepa, create_hjepa_from_config
+from src.models import create_hjepa, create_hjepa_from_config
 
 
 @pytest.fixture
@@ -349,7 +345,7 @@ def test_empty_mask_edge_case(small_model):
     # cannot handle empty tensors
     with pytest.raises(RuntimeError):
         with torch.no_grad():
-            outputs = small_model(images, mask, return_all_levels=True)
+            small_model(images, mask, return_all_levels=True)
 
 
 def test_full_mask_edge_case(small_model):

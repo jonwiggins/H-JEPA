@@ -5,8 +5,6 @@ This module implements a lightweight Vision Transformer that predicts target
 representations from context features and masked token positions.
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
@@ -187,7 +185,7 @@ class Predictor(nn.Module):
         self,
         context_features: torch.Tensor,
         mask_indices: torch.Tensor,
-        pos_embed: Optional[torch.Tensor] = None,
+        pos_embed: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Forward pass through the predictor.
@@ -246,7 +244,7 @@ class Predictor(nn.Module):
         self,
         features: torch.Tensor,
         mask: torch.Tensor,
-        pos_embed: Optional[torch.Tensor] = None,
+        pos_embed: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Alternative forward pass that takes full sequence with mask.

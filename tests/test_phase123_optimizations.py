@@ -17,10 +17,8 @@ Run with: pytest tests/test_phase123_optimizations.py -v
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
-import torch.nn as nn
 from PIL import Image
 
 # Add src to path
@@ -30,7 +28,6 @@ from data.transforms import (
     CutMix,
     DeiTIIIAugmentation,
     Mixup,
-    MixupCutmix,
     RandAugment,
     RandomErasing,
     build_deit3_transform,
@@ -38,8 +35,8 @@ from data.transforms import (
 from losses.contrastive import ContrastiveJEPALoss, NTXentLoss
 from losses.hjepa_loss import HJEPALoss
 from masks.multicrop_masking import MultiCropMaskGenerator
-from models.encoder import ContextEncoder, RoPEAttentionWrapper, VisionRoPE2D, create_encoder
-from models.hjepa import HJEPA, create_hjepa
+from models.encoder import ContextEncoder, VisionRoPE2D
+from models.hjepa import HJEPA
 
 # ============================================================================
 # Fixtures
@@ -821,7 +818,6 @@ class TestPerformance:
 
     def test_fpn_computational_overhead(self, device):
         """Test FPN adds acceptable computational overhead."""
-        import time
 
         model_no_fpn = HJEPA(
             encoder_type="vit_tiny_patch16_224",

@@ -191,13 +191,13 @@ def create_config(
 
     # Print summary
     print(f"\n{'='*70}")
-    print(f"Foundation Model Configuration Created")
+    print("Foundation Model Configuration Created")
     print(f"{'='*70}\n")
 
     print(f"Name: {name}")
     print(f"Config: {output_path}\n")
 
-    print(f"Datasets:")
+    print("Datasets:")
     for i, (ds_name, weight) in enumerate(zip(datasets, weights)):
         if ds_name in DATASET_INFO:
             info = DATASET_INFO[ds_name]
@@ -207,7 +207,7 @@ def create_config(
             print(f"     - Sampling weight: {weight*100:.1f}%")
             print(f"     - Download size: ~{info['size_gb']}GB")
 
-    print(f"\nTotal:")
+    print("\nTotal:")
     print(f"  - Images: ~{total_images:,}")
     print(f"  - Download size: ~{total_size_gb:.1f}GB")
     print(f"  - Epochs: {epochs}")
@@ -220,38 +220,38 @@ def create_config(
     hours = total_steps / (3.2 * 3600)
     days = hours / 24
 
-    print(f"\nEstimated training time (M1 Max):")
+    print("\nEstimated training time (M1 Max):")
     if days < 1:
         print(f"  ~{hours:.1f} hours")
     else:
         print(f"  ~{days:.1f} days ({hours:.0f} hours)")
 
-    print(f"\nExpected results:")
+    print("\nExpected results:")
     if total_images < 100000:
-        print(f"  Linear probe: 50-65%")
+        print("  Linear probe: 50-65%")
     elif total_images < 300000:
-        print(f"  Linear probe: 65-75%")
+        print("  Linear probe: 65-75%")
     elif total_images < 1000000:
-        print(f"  Linear probe: 70-78%")
+        print("  Linear probe: 70-78%")
     else:
-        print(f"  Linear probe: 70-80%")
+        print("  Linear probe: 70-80%")
 
     print(f"\n{'='*70}")
-    print(f"Next steps:")
+    print("Next steps:")
     print(f"{'='*70}\n")
 
-    print(f"1. Download datasets:")
+    print("1. Download datasets:")
     for ds_name in datasets:
         if ds_name == "imagenet100":
-            print(f"   ./scripts/download_imagenet100.sh")
+            print("   ./scripts/download_imagenet100.sh")
         else:
             print(f"   python3.11 scripts/download_data.py --dataset {ds_name}")
 
-    print(f"\n2. Start training:")
+    print("\n2. Start training:")
     print(f"   python3.11 scripts/train.py --config {output_path}")
 
-    print(f"\n3. Monitor progress:")
-    print(f"   tensorboard --logdir results/logs/tensorboard")
+    print("\n3. Monitor progress:")
+    print("   tensorboard --logdir results/logs/tensorboard")
 
     print(f"\n{'='*70}\n")
 

@@ -13,13 +13,13 @@ Tests for:
 9. Edge cases (single sample, empty data, different batch sizes)
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 
 from src.evaluation.linear_probe import LinearProbe, LinearProbeEvaluator, linear_probe_eval
 
@@ -292,7 +292,7 @@ def test_evaluator_freezes_model(mock_model):
     param.requires_grad = True
     mock_model.parameters = MagicMock(return_value=[param])
 
-    evaluator = LinearProbeEvaluator(
+    LinearProbeEvaluator(
         model=mock_model,
         num_classes=10,
         input_dim=384,
@@ -832,7 +832,7 @@ def test_binary_classification(mock_model, random_seed):
         device="cpu",
     )
 
-    history = evaluator.train_probe(
+    evaluator.train_probe(
         train_loader=dataloader,
         epochs=1,
         lr=0.1,
@@ -888,7 +888,7 @@ def test_unbalanced_classes(mock_model, random_seed):
     )
 
     # Should handle unbalanced data
-    history = evaluator.train_probe(
+    evaluator.train_probe(
         train_loader=dataloader,
         epochs=1,
         lr=0.1,
@@ -905,9 +905,9 @@ def test_different_input_dimensions(mock_model, tiny_dataloader, random_seed):
         # Update mock model to return correct dimension
         original_extract = mock_model.extract_features
 
-        def mock_extract_custom_dim(images, level=0, use_target_encoder=True):
+        def mock_extract_custom_dim(images, level=0, use_target_encoder=True, _dim=dim):
             batch_size = images.shape[0]
-            return torch.randn(batch_size, 196, dim)
+            return torch.randn(batch_size, 196, _dim)
 
         mock_model.extract_features = mock_extract_custom_dim
 

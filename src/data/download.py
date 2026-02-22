@@ -9,7 +9,7 @@ provides clear instructions for manual downloads when required.
 import shutil
 import warnings
 from pathlib import Path
-from typing import Dict, Tuple, TypedDict
+from typing import TypedDict
 from urllib.error import URLError
 
 from torchvision import datasets
@@ -29,7 +29,7 @@ class DatasetInfo(TypedDict):
 
 
 # Dataset information and requirements
-DATASET_INFO: Dict[str, DatasetInfo] = {
+DATASET_INFO: dict[str, DatasetInfo] = {
     "cifar10": {
         "name": "CIFAR-10",
         "size_gb": 0.17,
@@ -83,7 +83,7 @@ DATASET_INFO: Dict[str, DatasetInfo] = {
 }
 
 
-def get_disk_usage(path: Path) -> Tuple[float, float, float]:
+def get_disk_usage(path: Path) -> tuple[float, float, float]:
     """
     Get disk usage statistics for a path.
 

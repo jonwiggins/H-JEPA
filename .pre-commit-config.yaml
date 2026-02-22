@@ -12,12 +12,12 @@ repos:
         args: [--line-length=100]
         language_version: python3.11
 
-  # isort - Import sorting
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+  # Ruff - Fast Python linter (replaces flake8, isort, and more)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.12
     hooks:
-      - id: isort
-        args: [--profile=black, --line-length=100]
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
 
   # Trailing whitespace and other basic checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -33,36 +33,6 @@ repos:
       - id: mixed-line-ending
         args: [--fix=lf]
 
-  # Pytest - run quick tests before commit (skip long-running tests)
-  # Full test suite can be run manually with: pytest tests/
-  - repo: local
-    hooks:
-      - id: pytest-check
-        name: pytest-check
-        entry: pytest
-        args: [
-          tests/test_ijepa_compliance.py,
-          "tests/test_phase123_optimizations.py::TestFPN",
-          -v, --tb=short, -x, --maxfail=3,
-          -m, "not slow"  # Skip tests marked as slow
-        ]
-        language: system
-        pass_filenames: false
-        always_run: false  # Changed to false - only run when test files change
-        files: ^(src/|tests/).*\.py$
-        stages: [commit]
-
-  # Mypy - Static type checking (run manually with: mypy --config-file=mypy.ini src/)
-  # Disabled in pre-commit due to environment dependency differences
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.8.0
-  #   hooks:
-  #     - id: mypy
-  #       args: [--config-file=mypy.ini]
-  #       files: ^src/
-  #       exclude: ^(examples|scripts|tests|test_|monitor_|plot_|run_|verify_)/
-  #       additional_dependencies:
-  #         - numpy
-  #         - torch
-  #         - types-PyYAML
-  #         - types-requests
+  # Mypy - run locally with: mypy --config-file=mypy.ini src/
+  # Not included in pre-commit because the isolated environment installs
+  # different torch/numpy stubs than the project, causing false positives.

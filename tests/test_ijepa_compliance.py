@@ -11,13 +11,10 @@ have been properly implemented:
 5. VICReg validation warnings work
 """
 
-import math
-import os
 import sys
 import warnings
 from pathlib import Path
 
-import torch
 import yaml
 
 # Add src to path
@@ -39,7 +36,7 @@ def test_ema_schedule_is_linear():
     # Create a mock context encoder (just need the structure)
     import timm
 
-    vit = timm.create_model("vit_base_patch16_224", pretrained=False)
+    timm.create_model("vit_base_patch16_224", pretrained=False)
 
     target_encoder = TargetEncoder(
         encoder_type="vit_base_patch16_224",
@@ -129,7 +126,7 @@ def test_config_loss_types():
     all_passed = True
 
     for yaml_file in sorted(yaml_files):
-        with open(yaml_file, "r") as f:
+        with open(yaml_file) as f:
             config = yaml.safe_load(f)
 
         loss_type = config.get("loss", {}).get("type", "NOT FOUND")
@@ -165,7 +162,7 @@ def test_config_normalization():
     all_passed = True
 
     for yaml_file in sorted(yaml_files):
-        with open(yaml_file, "r") as f:
+        with open(yaml_file) as f:
             config = yaml.safe_load(f)
 
         normalize = config.get("loss", {}).get("normalize_embeddings", "NOT FOUND")
@@ -201,7 +198,7 @@ def test_config_masking_scales():
     all_passed = True
 
     for yaml_file in sorted(yaml_files):
-        with open(yaml_file, "r") as f:
+        with open(yaml_file) as f:
             config = yaml.safe_load(f)
 
         mask_scale = config.get("masking", {}).get("mask_scale", "NOT FOUND")
@@ -248,7 +245,7 @@ def test_vicreg_validation_warning():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        loss = create_loss_from_config(test_config)
+        create_loss_from_config(test_config)
 
         if len(w) > 0 and "VICReg" in str(w[0].message):
             print("✓ Warning correctly triggered for smoothl1 + vicreg_weight")
@@ -272,7 +269,7 @@ def test_vicreg_validation_warning():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        loss = create_loss_from_config(test_config)
+        create_loss_from_config(test_config)
 
         if len(w) > 0 and "VICReg" in str(w[0].message):
             print("✓ Warning correctly triggered for mse + use_vicreg")
@@ -295,7 +292,7 @@ def test_vicreg_validation_warning():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        loss = create_loss_from_config(test_config)
+        create_loss_from_config(test_config)
 
         vicreg_warnings = [warning for warning in w if "VICReg" in str(warning.message)]
 
@@ -328,7 +325,7 @@ def test_pure_ijepa_config():
         print("✗ pure_ijepa.yaml not found")
         return False
 
-    with open(config_file, "r") as f:
+    with open(config_file) as f:
         config = yaml.safe_load(f)
 
     checks = []

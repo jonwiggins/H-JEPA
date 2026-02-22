@@ -25,7 +25,7 @@ References:
     - VICReg: https://arxiv.org/abs/2105.04906
 """
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import torch
 import torch.nn as nn
@@ -79,12 +79,12 @@ class CombinedLoss(nn.Module):
         self,
         # H-JEPA parameters
         jepa_loss_type: Literal["mse", "smoothl1", "huber"] = "smoothl1",
-        jepa_hierarchy_weights: Union[float, List[float]] = 1.0,
+        jepa_hierarchy_weights: float | list[float] = 1.0,
         num_hierarchies: int = 3,
         normalize_embeddings: bool = True,
         huber_delta: float = 1.0,
         # VICReg parameters
-        vicreg_weight: Union[float, List[float]] = 0.1,
+        vicreg_weight: float | list[float] = 0.1,
         vicreg_invariance_weight: float = 25.0,
         vicreg_variance_weight: float = 25.0,
         vicreg_covariance_weight: float = 1.0,
@@ -141,11 +141,11 @@ class CombinedLoss(nn.Module):
 
     def forward(
         self,
-        predictions: Union[List[torch.Tensor], torch.Tensor],
-        targets: Union[List[torch.Tensor], torch.Tensor],
-        masks: Optional[List[torch.Tensor]] = None,
-        context_features: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        predictions: list[torch.Tensor] | torch.Tensor,
+        targets: list[torch.Tensor] | torch.Tensor,
+        masks: list[torch.Tensor] | None = None,
+        context_features: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """
         Compute combined H-JEPA + VICReg loss.
 
@@ -280,7 +280,7 @@ class CombinedLoss(nn.Module):
 
     def get_loss_summary(
         self,
-        loss_dict: Dict[str, torch.Tensor],
+        loss_dict: dict[str, torch.Tensor],
     ) -> str:
         """
         Generate a formatted summary of all loss components.
@@ -338,11 +338,11 @@ class HierarchicalCombinedLoss(CombinedLoss):
     def __init__(
         self,
         jepa_loss_type: Literal["mse", "smoothl1", "huber"] = "smoothl1",
-        jepa_hierarchy_weights: Union[float, List[float]] = 1.0,
+        jepa_hierarchy_weights: float | list[float] = 1.0,
         num_hierarchies: int = 3,
         normalize_embeddings: bool = True,
-        vicreg_weight: Union[float, List[float]] = 0.1,
-        vicreg_configs: Optional[List[Dict[str, Any]]] = None,
+        vicreg_weight: float | list[float] = 0.1,
+        vicreg_configs: list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
         # Initialize base class with default VICReg parameters
@@ -367,12 +367,12 @@ class HierarchicalCombinedLoss(CombinedLoss):
             # Use same VICReg loss for all levels
             self.vicreg_losses = nn.ModuleList([self.vicreg_loss for _ in range(num_hierarchies)])
 
-    def forward(
+    def forward(  # type: ignore[override]
         self,
-        predictions: Union[List[torch.Tensor], torch.Tensor],
-        targets: Union[List[torch.Tensor], torch.Tensor],
-        masks: Optional[List[torch.Tensor]] = None,
-    ) -> Dict[str, torch.Tensor]:
+        predictions: list[torch.Tensor] | torch.Tensor,
+        targets: list[torch.Tensor] | torch.Tensor,
+        masks: list[torch.Tensor] | None = None,
+    ) -> dict[str, torch.Tensor]:
         """Compute loss with hierarchy-specific VICReg."""
         if isinstance(predictions, torch.Tensor):
             predictions = [predictions]
@@ -426,7 +426,7 @@ class HierarchicalCombinedLoss(CombinedLoss):
         return loss_dict
 
 
-def create_loss_from_config(config: Dict[str, Any]) -> nn.Module:
+def create_loss_from_config(config: dict[str, Any]) -> nn.Module:
     """
     Factory function to create loss from configuration dictionary.
 

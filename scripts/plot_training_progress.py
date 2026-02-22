@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 matplotlib.use("Agg")  # Non-interactive backend
 
 # Read log file
-with open("foundation_model_training.log", "r") as f:
+with open("foundation_model_training.log") as f:
     log_content = f.read()
 
 # Extract loss values from progress bars
@@ -59,7 +59,7 @@ if losses:
 plt.legend()
 plt.tight_layout()
 plt.savefig("training_progress.png", dpi=150, bbox_inches="tight")
-print(f"Plot saved to training_progress.png")
+print("Plot saved to training_progress.png")
 print(f"Data points: {len(losses)}")
 print(f"Steps: {steps[0]} to {steps[-1]}")
 print(f"Loss range: {min(losses):.4f} to {max(losses):.4f}")

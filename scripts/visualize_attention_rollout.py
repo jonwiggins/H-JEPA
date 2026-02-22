@@ -11,12 +11,10 @@ Reference: "Quantifying Attention Flow in Transformers" (Abnar & Zuidema, 2020)
 
 import argparse
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn.functional as F
 import torchvision.transforms as transforms
 from PIL import Image
 
@@ -24,7 +22,7 @@ from src.data.datasets import get_dataset
 from src.models.hjepa import create_hjepa
 
 
-def load_model(checkpoint_path: str, device: str) -> Tuple:
+def load_model(checkpoint_path: str, device: str) -> tuple:
     """Load model from checkpoint"""
     print(f"Loading checkpoint from {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -48,12 +46,12 @@ def load_model(checkpoint_path: str, device: str) -> Tuple:
     model = model.to(device)
     model.eval()
 
-    print(f"✓ Model loaded successfully")
+    print("✓ Model loaded successfully")
 
     return model, config
 
 
-def extract_attention_maps(model, image: torch.Tensor, device: str) -> List[torch.Tensor]:
+def extract_attention_maps(model, image: torch.Tensor, device: str) -> list[torch.Tensor]:
     """Extract attention maps from all layers"""
 
     image = image.unsqueeze(0).to(device)
@@ -81,7 +79,7 @@ def extract_attention_maps(model, image: torch.Tensor, device: str) -> List[torc
             qkv = attn_module.qkv(block.norm1(x))
             qkv = qkv.reshape(B, N, 3, attn_module.num_heads, C // attn_module.num_heads)
             qkv = qkv.permute(2, 0, 3, 1, 4)
-            q, k, v = qkv[0], qkv[1], qkv[2]
+            q, k, _v = qkv[0], qkv[1], qkv[2]
 
             # Compute attention weights
             attn = (q @ k.transpose(-2, -1)) * attn_module.scale
@@ -98,7 +96,7 @@ def extract_attention_maps(model, image: torch.Tensor, device: str) -> List[torc
 
 
 def compute_attention_rollout(
-    attention_maps: List[torch.Tensor], discard_ratio: float = 0.1
+    attention_maps: list[torch.Tensor], discard_ratio: float = 0.1
 ) -> torch.Tensor:
     """
     Compute attention rollout by recursively multiplying attention matrices.
@@ -138,7 +136,7 @@ def compute_attention_rollout(
 
 
 def visualize_attention_rollout(
-    image: torch.Tensor, rollout: torch.Tensor, save_path: Optional[str] = None
+    image: torch.Tensor, rollout: torch.Tensor, save_path: str | None = None
 ):
     """Visualize attention rollout overlaid on the image"""
 
@@ -190,9 +188,9 @@ def visualize_attention_rollout(
 
 def compare_layers_attention(
     image: torch.Tensor,
-    attention_maps: List[torch.Tensor],
-    layers_to_show: List[int],
-    save_path: Optional[str] = None,
+    attention_maps: list[torch.Tensor],
+    layers_to_show: list[int],
+    save_path: str | None = None,
 ):
     """Compare attention patterns at different layers"""
 
@@ -309,7 +307,7 @@ def main():
         # Compute attention rollout
         print("Computing attention rollout...")
         rollout = compute_attention_rollout(attention_maps, discard_ratio=args.discard_ratio)
-        print(f"✓ Rollout computed")
+        print("✓ Rollout computed")
 
         # Visualize rollout
         visualize_attention_rollout(

@@ -22,8 +22,6 @@ References:
     https://arxiv.org/abs/2105.04906
 """
 
-from typing import Dict, Optional, Union
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -71,9 +69,9 @@ class VICRegLoss(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.invariance_weight: Union[float, nn.Parameter] = invariance_weight
-        self.variance_weight: Union[float, nn.Parameter] = variance_weight
-        self.covariance_weight: Union[float, nn.Parameter] = covariance_weight
+        self.invariance_weight: float | nn.Parameter = invariance_weight
+        self.variance_weight: float | nn.Parameter = variance_weight
+        self.covariance_weight: float | nn.Parameter = covariance_weight
         self.variance_threshold = variance_threshold
         self.eps = eps
         self.flatten_patches = flatten_patches
@@ -163,8 +161,8 @@ class VICRegLoss(nn.Module):
     def forward(
         self,
         z_a: torch.Tensor,
-        z_b: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        z_b: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """
         Compute VICReg loss.
 
@@ -307,7 +305,7 @@ class AdaptiveVICRegLoss(VICRegLoss):
 
     def update_weights(
         self,
-        loss_dict: Dict[str, torch.Tensor],
+        loss_dict: dict[str, torch.Tensor],
     ) -> None:
         """
         Update weights based on loss magnitudes (EMA).

@@ -10,8 +10,7 @@ Tests cover:
 """
 
 import random
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -413,7 +412,7 @@ class TestBuildMultiDataset:
                 {"name": "cifar100", "path": "/custom/path2"},
             ]
 
-            dataset = build_multi_dataset(
+            build_multi_dataset(
                 dataset_configs=configs, data_path=temp_data_path, sampling_strategy="weighted"
             )
 
@@ -429,7 +428,7 @@ class TestBuildMultiDataset:
 
             configs = [{"name": "cifar10"}]
 
-            dataset = build_multi_dataset(
+            build_multi_dataset(
                 dataset_configs=configs,
                 data_path=temp_data_path,
                 sampling_strategy="weighted",
@@ -457,9 +456,7 @@ class TestCreateFoundationModelDataset:
         with patch("src.data.multi_dataset.build_multi_dataset") as mock_build:
             mock_build.return_value = MockDataset(250000)
 
-            dataset = create_foundation_model_dataset(
-                scale="mini", data_path=temp_data_path, split="train"
-            )
+            create_foundation_model_dataset(scale="mini", data_path=temp_data_path, split="train")
 
             # Check that build_multi_dataset was called
             mock_build.assert_called_once()
@@ -479,9 +476,7 @@ class TestCreateFoundationModelDataset:
         with patch("src.data.multi_dataset.build_multi_dataset") as mock_build:
             mock_build.return_value = MockDataset(1400000)
 
-            dataset = create_foundation_model_dataset(
-                scale="medium", data_path=temp_data_path, split="train"
-            )
+            create_foundation_model_dataset(scale="medium", data_path=temp_data_path, split="train")
 
             mock_build.assert_called_once()
 
@@ -543,7 +538,7 @@ class TestEdgeCases:
 
     def test_empty_dataset_list(self):
         """Test with empty dataset list."""
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, IndexError)):
             WeightedMultiDataset(datasets=[])
 
     def test_mismatched_weights_length(self):
@@ -552,7 +547,7 @@ class TestEdgeCases:
         dataset2 = MockDataset(200)
 
         # This should work - weights will be used as-is or normalized
-        multi_dataset = WeightedMultiDataset(
+        WeightedMultiDataset(
             datasets=[dataset1, dataset2], weights=[0.5, 0.3, 0.2]  # Too many weights
         )
         # Implementation may handle this differently
@@ -601,7 +596,7 @@ class TestEdgeCases:
         # Negative temperature might cause issues
         # But implementation may handle it
         try:
-            multi_dataset = WeightedMultiDataset(datasets=[dataset1, dataset2], temperature=-1.0)
+            WeightedMultiDataset(datasets=[dataset1, dataset2], temperature=-1.0)
             # If it works, that's fine
         except Exception:
             # If it raises error, that's also acceptable

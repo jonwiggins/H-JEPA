@@ -11,7 +11,6 @@ This is the gold standard for evaluating self-supervised learning models.
 import argparse
 import json
 from pathlib import Path
-from typing import Dict, Tuple
 
 import torch
 import torch.nn as nn
@@ -35,7 +34,7 @@ class LinearClassifier(nn.Module):
         return self.fc(x)
 
 
-def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple[nn.Module, dict]:
+def load_pretrained_encoder(checkpoint_path: str, device: str) -> tuple[nn.Module, dict]:
     """Load pretrained H-JEPA encoder"""
     print(f"Loading checkpoint: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -65,7 +64,7 @@ def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple[nn.Modul
 
     encoder = encoder.to(device)
 
-    print(f"✓ Encoder loaded and frozen")
+    print("✓ Encoder loaded and frozen")
     print(f"  Parameters: {sum(p.numel() for p in encoder.parameters()):,}")
 
     return encoder, config
@@ -73,7 +72,7 @@ def load_pretrained_encoder(checkpoint_path: str, device: str) -> Tuple[nn.Modul
 
 def extract_features(
     encoder: nn.Module, dataloader: DataLoader, device: str, hierarchy_level: int = -1
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Extract features from the encoder"""
     all_features = []
     all_labels = []
@@ -114,7 +113,7 @@ def train_linear_classifier(
     epochs: int = 100,
     lr: float = 0.001,
     batch_size: int = 256,
-) -> Dict:
+) -> dict:
     """Train linear classifier on frozen features"""
 
     # Create classifier
@@ -135,7 +134,7 @@ def train_linear_classifier(
     best_acc = 0.0
     results = {"train_acc": [], "val_acc": [], "train_loss": [], "val_loss": []}
 
-    print(f"\nTraining linear classifier...")
+    print("\nTraining linear classifier...")
     print(f"  Input dim: {input_dim}")
     print(f"  Num classes: {num_classes}")
     print(f"  Epochs: {epochs}")
@@ -209,7 +208,7 @@ def train_linear_classifier(
     results["best_val_acc"] = best_acc
     results["final_val_acc"] = val_acc
 
-    print(f"\n✓ Training complete!")
+    print("\n✓ Training complete!")
     print(f"  Best validation accuracy: {best_acc:.2f}%")
     print(f"  Final validation accuracy: {val_acc:.2f}%")
 

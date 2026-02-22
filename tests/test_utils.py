@@ -8,13 +8,11 @@ Tests coverage for:
 """
 
 import logging
-import math
 import os
 import shutil
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -68,7 +66,7 @@ class TestSetupLogging:
 
             # Check file was created and contains message
             assert os.path.exists(log_file)
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 content = f.read()
                 assert "Test message" in content
 
@@ -86,7 +84,7 @@ class TestSetupLogging:
 
             logger.info("Formatted log message")
 
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 content = f.read()
                 # Check that formatter includes timestamp and level
                 assert "Formatted log message" in content
@@ -681,7 +679,7 @@ class TestCheckpointManager:
         checkpoint_pattern = str(checkpoint_manager.checkpoint_dir / "checkpoint_epoch_*.pth")
         import glob
 
-        initial_count = len(glob.glob(checkpoint_pattern))
+        len(glob.glob(checkpoint_pattern))
 
         # Cleanup
         checkpoint_manager.cleanup_old_checkpoints(keep_last_n=3)
@@ -1288,7 +1286,7 @@ class TestUtilsIntegration:
     def test_full_training_pipeline_metrics(self, temp_dir):
         """Test full training pipeline with metrics logging."""
         # Setup logging
-        logger = setup_logging(log_file=os.path.join(temp_dir, "training.log"))
+        setup_logging(log_file=os.path.join(temp_dir, "training.log"))
 
         # Create metrics logger
         metrics_logger = MetricsLogger(

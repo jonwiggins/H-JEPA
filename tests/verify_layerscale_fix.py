@@ -7,7 +7,6 @@ It checks the code structure without requiring torch to be installed.
 """
 
 import ast
-import inspect
 
 
 def check_create_encoder_signature():
@@ -15,7 +14,7 @@ def check_create_encoder_signature():
     print("Checking create_encoder() signature...")
 
     # Read the encoder.py file
-    with open("src/models/encoder.py", "r") as f:
+    with open("src/models/encoder.py") as f:
         content = f.read()
 
     # Parse the file
@@ -45,7 +44,7 @@ def check_hjepa_calls_create_encoder():
     print("\nChecking HJEPA calls to create_encoder()...")
 
     # Read the hjepa.py file
-    with open("src/models/hjepa.py", "r") as f:
+    with open("src/models/hjepa.py") as f:
         content = f.read()
 
     # Look for the create_encoder call
@@ -78,7 +77,7 @@ def check_todo_comments():
     """Check that TODO comments exist for pending implementation."""
     print("\nChecking TODO comments...")
 
-    with open("src/models/encoder.py", "r") as f:
+    with open("src/models/encoder.py") as f:
         content = f.read()
 
     # Look for TODO comments related to LayerScale

@@ -13,7 +13,6 @@ Tests cover:
 import random
 
 import numpy as np
-import pytest
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -731,8 +730,8 @@ class TestEdgeCases:
 
     def test_grayscale_image(self):
         """Test with grayscale image (should be converted to RGB)."""
-        transform = DeiTIIIAugmentation(image_size=224)
-        img = Image.new("L", (256, 256), color=128)
+        DeiTIIIAugmentation(image_size=224)
+        Image.new("L", (256, 256), color=128)
         # Note: Some transforms may fail with grayscale
         # This is expected behavior
 

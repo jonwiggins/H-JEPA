@@ -13,7 +13,7 @@ import logging
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -68,12 +68,12 @@ class MetricsLogger:
         self,
         experiment_name: str,
         log_dir: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         use_wandb: bool = True,
         use_tensorboard: bool = True,
         wandb_project: str = "h-jepa",
-        wandb_entity: Optional[str] = None,
-        wandb_tags: Optional[List[str]] = None,
+        wandb_entity: str | None = None,
+        wandb_tags: list[str] | None = None,
     ):
         self.experiment_name = experiment_name
         self.log_dir = Path(log_dir)
@@ -110,13 +110,13 @@ class MetricsLogger:
                 self.use_tensorboard = False
 
         # Metrics aggregation
-        self.metrics_buffer: Dict[str, List[Union[float, int, torch.Tensor]]] = defaultdict(list)
+        self.metrics_buffer: dict[str, list[float | int | torch.Tensor]] = defaultdict(list)
         self.step = 0
 
     def log_metrics(
         self,
-        metrics: Dict[str, Union[float, int]],
-        step: Optional[int] = None,
+        metrics: dict[str, float | int],
+        step: int | None = None,
         prefix: str = "",
         commit: bool = True,
     ) -> None:
@@ -160,9 +160,9 @@ class MetricsLogger:
     def log_image(
         self,
         name: str,
-        image: Union[npt.NDArray[np.float32], torch.Tensor],
-        step: Optional[int] = None,
-        caption: Optional[str] = None,
+        image: npt.NDArray[np.float32] | torch.Tensor,
+        step: int | None = None,
+        caption: str | None = None,
     ) -> None:
         """
         Log an image to W&B and TensorBoard.
@@ -197,9 +197,9 @@ class MetricsLogger:
     def log_images(
         self,
         name: str,
-        images: List[Union[npt.NDArray[np.float32], torch.Tensor]],
-        step: Optional[int] = None,
-        captions: Optional[List[str]] = None,
+        images: list[npt.NDArray[np.float32] | torch.Tensor],
+        step: int | None = None,
+        captions: list[str] | None = None,
     ) -> None:
         """
         Log multiple images to W&B and TensorBoard.
@@ -251,8 +251,8 @@ class MetricsLogger:
     def log_histogram(
         self,
         name: str,
-        values: Union[npt.NDArray[np.float32], torch.Tensor],
-        step: Optional[int] = None,
+        values: npt.NDArray[np.float32] | torch.Tensor,
+        step: int | None = None,
     ) -> None:
         """
         Log a histogram of values.
@@ -293,7 +293,7 @@ class MetricsLogger:
     def log_model_gradients(
         self,
         model: nn.Module,
-        step: Optional[int] = None,
+        step: int | None = None,
     ) -> None:
         """
         Log gradient histograms for model parameters.
@@ -316,7 +316,7 @@ class MetricsLogger:
     def log_model_weights(
         self,
         model: nn.Module,
-        step: Optional[int] = None,
+        step: int | None = None,
     ) -> None:
         """
         Log weight histograms for model parameters.
@@ -337,8 +337,8 @@ class MetricsLogger:
 
     def log_hierarchical_losses(
         self,
-        loss_dict: Dict[str, float],
-        step: Optional[int] = None,
+        loss_dict: dict[str, float],
+        step: int | None = None,
         prefix: str = "train/hierarchy/",
     ) -> None:
         """
@@ -350,7 +350,7 @@ class MetricsLogger:
             prefix: Prefix for metric names
         """
         # Extract level losses
-        level_losses: Dict[str, float] = {}
+        level_losses: dict[str, float] = {}
         total_loss: float = 0.0
         for key, value in loss_dict.items():
             if key.startswith("loss_level_"):
@@ -384,10 +384,10 @@ class MetricsLogger:
     def log_prediction_comparison(
         self,
         images: torch.Tensor,
-        predictions: List[torch.Tensor],
-        targets: List[torch.Tensor],
+        predictions: list[torch.Tensor],
+        targets: list[torch.Tensor],
         masks: torch.Tensor,
-        step: Optional[int] = None,
+        step: int | None = None,
         max_images: int = 4,
     ) -> None:
         """
@@ -442,9 +442,9 @@ class MetricsLogger:
     def log_embeddings(
         self,
         embeddings: torch.Tensor,
-        labels: Optional[torch.Tensor] = None,
+        labels: torch.Tensor | None = None,
         tag: str = "embeddings",
-        step: Optional[int] = None,
+        step: int | None = None,
     ) -> None:
         """
         Log embeddings for t-SNE/UMAP visualization in TensorBoard.
@@ -481,7 +481,7 @@ class MetricsLogger:
 
     def accumulate_metrics(
         self,
-        metrics: Dict[str, float],
+        metrics: dict[str, float],
     ) -> None:
         """
         Accumulate metrics for later averaging.
@@ -496,7 +496,7 @@ class MetricsLogger:
 
     def log_accumulated_metrics(
         self,
-        step: Optional[int] = None,
+        step: int | None = None,
         prefix: str = "",
         reset: bool = True,
     ) -> None:
@@ -512,7 +512,7 @@ class MetricsLogger:
             return
 
         # Compute averages
-        averaged_metrics: Dict[str, Union[float, int]] = {}
+        averaged_metrics: dict[str, float | int] = {}
         for name, values in self.metrics_buffer.items():
             # Convert to CPU if tensors, then to numpy array
             import torch
@@ -529,7 +529,7 @@ class MetricsLogger:
 
     def log_system_metrics(
         self,
-        step: Optional[int] = None,
+        step: int | None = None,
     ) -> None:
         """
         Log system metrics (GPU usage, memory, etc.).
@@ -626,8 +626,8 @@ class ProgressTracker:
         self.total_steps = total_epochs * steps_per_epoch
 
         self.start_time = time.time()
-        self.epoch_start_time: Optional[float] = None
-        self.step_times: List[float] = []
+        self.epoch_start_time: float | None = None
+        self.step_times: list[float] = []
 
     def start_epoch(self) -> None:
         """Mark the start of an epoch."""
@@ -684,7 +684,7 @@ class ProgressTracker:
         return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
-def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
+def setup_logging(log_file: str | None = None, level: int = logging.INFO) -> logging.Logger:
     """
     Setup Python logging configuration.
 

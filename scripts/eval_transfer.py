@@ -13,10 +13,8 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, List
 
 import pandas as pd
-import torch
 
 DATASETS = ["cifar10", "cifar100", "stl10"]
 
@@ -27,7 +25,7 @@ def run_linear_probe(
     device: str,
     epochs: int,
     output_dir: Path,
-) -> Dict:
+) -> dict:
     """Run linear probing evaluation"""
     print(f"\n{'='*80}")
     print(f"Running Linear Probing on {dataset.upper()}")
@@ -59,7 +57,7 @@ def run_linear_probe(
     checkpoint_name = Path(checkpoint).stem
     results_file = output_dir / "linear_probe" / f"{checkpoint_name}_{dataset}_results.json"
 
-    with open(results_file, "r") as f:
+    with open(results_file) as f:
         results = json.load(f)
 
     print(f"✓ Linear Probe Accuracy: {results['best_val_acc']:.2f}%")
@@ -71,15 +69,15 @@ def run_knn(
     checkpoint: str,
     dataset: str,
     device: str,
-    k_values: List[int],
+    k_values: list[int],
     output_dir: Path,
-) -> Dict:
+) -> dict:
     """Run k-NN evaluation"""
     print(f"\n{'='*80}")
     print(f"Running k-NN on {dataset.upper()}")
     print(f"{'='*80}")
 
-    k_str = " ".join(str(k) for k in k_values)
+    " ".join(str(k) for k in k_values)
 
     cmd = [
         "python3.11",
@@ -107,11 +105,11 @@ def run_knn(
     checkpoint_name = Path(checkpoint).stem
     results_file = output_dir / "knn" / f"{checkpoint_name}_{dataset}_knn_results.json"
 
-    with open(results_file, "r") as f:
+    with open(results_file) as f:
         results = json.load(f)
 
     # Print k-NN results
-    print(f"✓ k-NN Results:")
+    print("✓ k-NN Results:")
     for k in k_values:
         acc = results["results"][f"k={k}"]["accuracy"]
         print(f"  k={k:2d}: {acc:6.2f}%")
@@ -120,8 +118,8 @@ def run_knn(
 
 
 def create_summary_report(
-    linear_results: Dict[str, Dict],
-    knn_results: Dict[str, Dict],
+    linear_results: dict[str, dict],
+    knn_results: dict[str, dict],
     output_dir: Path,
 ) -> None:
     """Create a summary report of all results"""
@@ -214,7 +212,7 @@ def main():
     print(f"Checkpoint: {args.checkpoint}")
     print(f"Datasets: {', '.join(args.datasets)}")
     print(f"Device: {args.device}")
-    print(f"Evaluations: ", end="")
+    print("Evaluations: ", end="")
     if args.linear_probe:
         print("Linear Probe ", end="")
     if args.knn:

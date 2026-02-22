@@ -14,13 +14,10 @@ Test Coverage:
 - Edge cases and error handling
 """
 
-import math
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 import torch
 from PIL import Image
@@ -48,11 +45,9 @@ from src.data import (
     build_dataloader,
     build_dataset,
     build_deit3_transform,
-    build_multi_dataset,
     build_multicrop_dataloader,
     build_multicrop_dataset,
     build_multicrop_transform,
-    create_foundation_model_dataset,
     multicrop_collate_fn,
     verify_dataset,
 )
@@ -666,7 +661,7 @@ class TestMultiDatasets:
         assert len(multi_dataset) > 0
 
         # Get a sample
-        item = multi_dataset[0]
+        multi_dataset[0]
         # Should return (image, label, dataset_idx) or similar
 
     def test_balanced_multi_dataset(self, temp_data_dir):

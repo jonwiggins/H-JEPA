@@ -5,7 +5,7 @@ This module implements various metrics to assess the quality of learned
 representations, including rank analysis, variance measures, and isotropy.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -55,11 +55,11 @@ class FeatureQualityAnalyzer:
     def extract_features(
         self,
         dataloader: DataLoader[Any],
-        max_samples: Optional[int] = None,
+        max_samples: int | None = None,
         pool: bool = True,
         normalize: bool = False,
         desc: str = "Extracting features",
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
         """
         Extract features from dataset.
 
@@ -151,7 +151,7 @@ class FeatureQualityAnalyzer:
 
     def compute_rank_analysis(
         self, features: npt.NDArray[np.float64], variance_threshold: float = 0.99
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute comprehensive rank analysis.
 
@@ -199,7 +199,7 @@ class FeatureQualityAnalyzer:
 
         return metrics
 
-    def compute_feature_statistics(self, features: npt.NDArray[np.float64]) -> Dict[str, float]:
+    def compute_feature_statistics(self, features: npt.NDArray[np.float64]) -> dict[str, float]:
         """
         Compute feature statistics (variance, covariance, etc.).
 
@@ -236,7 +236,7 @@ class FeatureQualityAnalyzer:
 
         return metrics
 
-    def compute_isotropy(self, features: npt.NDArray[np.float64]) -> Dict[str, float]:
+    def compute_isotropy(self, features: npt.NDArray[np.float64]) -> dict[str, float]:
         """
         Compute isotropy metrics.
 
@@ -284,7 +284,7 @@ class FeatureQualityAnalyzer:
         features: npt.NDArray[np.float64],
         threshold_rank_ratio: float = 0.1,
         threshold_variance: float = 0.01,
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """
         Detect representation collapse.
 
@@ -321,7 +321,7 @@ class FeatureQualityAnalyzer:
         self,
         dataloader: DataLoader[Any],
         max_samples: int = 10000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compute all feature quality metrics.
 
@@ -440,7 +440,7 @@ class FeatureQualityAnalyzer:
         self,
         features: npt.NDArray[np.float64],
         n_components: int = 50,
-    ) -> Tuple[npt.NDArray[np.float64], PCA]:
+    ) -> tuple[npt.NDArray[np.float64], PCA]:
         """
         Compute PCA of features.
 
@@ -468,7 +468,7 @@ def analyze_feature_quality(
     hierarchy_level: int = 0,
     max_samples: int = 10000,
     device: str = "cuda",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function for feature quality analysis.
 
@@ -496,7 +496,7 @@ def analyze_feature_quality(
     return results
 
 
-def print_quality_report(metrics: Dict[str, Any], verbose: bool = True) -> None:
+def print_quality_report(metrics: dict[str, Any], verbose: bool = True) -> None:
     """
     Print a formatted report of feature quality metrics.
 
@@ -559,10 +559,10 @@ def print_quality_report(metrics: Dict[str, Any], verbose: bool = True) -> None:
 def compare_hierarchy_levels(
     model: nn.Module,
     dataloader: DataLoader[Any],
-    num_levels: Optional[int] = None,
+    num_levels: int | None = None,
     max_samples: int = 10000,
     device: str = "cuda",
-) -> Dict[int, Any]:
+) -> dict[int, Any]:
     """
     Compare feature quality across hierarchy levels.
 
@@ -584,7 +584,7 @@ def compare_hierarchy_levels(
             )
         num_levels = int(num_levels_attr)
 
-    results: Dict[int, Any] = {}
+    results: dict[int, Any] = {}
 
     for level in range(num_levels):
         print(f"\n{'='*60}")

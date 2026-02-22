@@ -26,9 +26,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import numpy as np
 import torch
-import torch.nn as nn
 
 from src.data import build_dataloader, build_dataset
 from src.evaluation.feature_quality import analyze_feature_quality, print_quality_report
@@ -171,7 +169,7 @@ def load_checkpoint(checkpoint_path, device):
     model = model.to(device)
     model.eval()
 
-    print(f"  Model loaded successfully")
+    print("  Model loaded successfully")
     print(f"  Embedding dimension: {model.embed_dim}")
     print(f"  Number of hierarchies: {model.num_hierarchies}")
 
@@ -214,7 +212,7 @@ def run_knn_eval(model, train_loader, test_loader, num_classes, level, device):
     print("k-NN Results")
     print(f"{'='*80}")
     print(f"  Hierarchy Level: {level}")
-    print(f"  k: 20")
+    print("  k: 20")
     print(f"  Accuracy: {metrics['accuracy']:.2f}%")
     print(f"  Evaluation Time: {elapsed:.1f} seconds")
     print(f"{'='*80}")
@@ -329,7 +327,7 @@ def main():
         print(
             f"\nWarning: Requested level {args.level} but model only has {model.num_hierarchies} levels"
         )
-        print(f"Using level 0 instead")
+        print("Using level 0 instead")
         args.level = 0
 
     # Get number of classes

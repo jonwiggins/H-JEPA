@@ -9,10 +9,8 @@ Tests the quality of learned representations through:
 
 import argparse
 import json
-import os
 from pathlib import Path
 
-import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.neighbors import KNeighborsClassifier
@@ -21,7 +19,6 @@ from tqdm import tqdm
 
 from src.data.datasets import build_dataset
 from src.models.hjepa import HJEPA
-from src.utils.checkpoint import load_checkpoint
 
 
 class LinearProbe(nn.Module):
@@ -210,7 +207,7 @@ def main():
     # Load config
     import yaml
 
-    with open(args.config, "r") as f:
+    with open(args.config) as f:
         config = yaml.safe_load(f)
 
     # Update data path if provided

@@ -10,14 +10,11 @@ Tests cover:
 - Command-line interface
 """
 
-import shutil
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 from urllib.error import URLError
 
 import pytest
-from PIL import Image
 from torchvision import datasets
 
 from src.data.download import (
@@ -339,6 +336,7 @@ class TestDownloadDataset:
         with (
             patch.object(datasets, "STL10") as mock_stl,
             patch("src.data.download.verify_dataset") as mock_verify,
+            patch("src.data.download.check_disk_space", return_value=True),
         ):
 
             mock_dataset = MagicMock()
@@ -380,7 +378,7 @@ class TestDownloadDataset:
             mock_dataset = MagicMock()
             mock_cifar.return_value = mock_dataset
 
-            result = download_dataset("cifar10", temp_data_path, verify=False)
+            download_dataset("cifar10", temp_data_path, verify=False)
 
             # verify_dataset should not be called
             mock_verify.assert_not_called()
@@ -556,7 +554,7 @@ class TestEdgeCases:
 
         result = verify_dataset("imagenet100", temp_data_path)
 
-        captured = capsys.readouterr()
+        capsys.readouterr()
 
         # Should mention filtering
         # (The actual verification might pass or show a note)

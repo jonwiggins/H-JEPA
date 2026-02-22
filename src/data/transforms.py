@@ -14,7 +14,7 @@ References:
 
 import math
 import random
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import numpy as np
 import torch
@@ -53,7 +53,7 @@ class RandAugment:
         magnitude: int = 9,
         num_magnitude_bins: int = 31,
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BILINEAR,
-        fill: Optional[List[float]] = None,
+        fill: list[float] | None = None,
     ):
         self.num_ops = num_ops
         self.magnitude = magnitude
@@ -90,7 +90,7 @@ class RandAugment:
             ("TranslateY", self._translate_y, (-0.3, 0.3)),
         ]
 
-    def _get_magnitude(self, magnitude_range: Optional[Tuple[float, float]]) -> Optional[float]:
+    def _get_magnitude(self, magnitude_range: tuple[float, float] | None) -> float | None:
         """Get the magnitude value for an operation."""
         if magnitude_range is None:
             return None
@@ -99,15 +99,15 @@ class RandAugment:
         # Interpolate between low and high based on magnitude setting
         return low + (high - low) * self.magnitude / self.num_magnitude_bins
 
-    def _identity(self, img: Image.Image, magnitude: Optional[float]) -> Image.Image:
+    def _identity(self, img: Image.Image, magnitude: float | None) -> Image.Image:
         """Identity operation (no change)."""
         return img
 
-    def _auto_contrast(self, img: Image.Image, magnitude: Optional[float]) -> Image.Image:
+    def _auto_contrast(self, img: Image.Image, magnitude: float | None) -> Image.Image:
         """Auto contrast operation."""
         return ImageOps.autocontrast(img)
 
-    def _equalize(self, img: Image.Image, magnitude: Optional[float]) -> Image.Image:
+    def _equalize(self, img: Image.Image, magnitude: float | None) -> Image.Image:
         """Histogram equalization."""
         return ImageOps.equalize(img)
 
@@ -229,7 +229,7 @@ class Mixup:
         self.num_classes = num_classes
         self.prob = prob
 
-    def __call__(self, images: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
+    def __call__(self, images: Tensor, targets: Tensor) -> tuple[Tensor, Tensor]:
         """
         Apply mixup to a batch of images and targets.
 
@@ -290,7 +290,7 @@ class CutMix:
         self.num_classes = num_classes
         self.prob = prob
 
-    def _rand_bbox(self, height: int, width: int, lam: float) -> Tuple[int, int, int, int]:
+    def _rand_bbox(self, height: int, width: int, lam: float) -> tuple[int, int, int, int]:
         """
         Generate random bounding box.
 
@@ -314,7 +314,7 @@ class CutMix:
 
         return x1, y1, x2, y2
 
-    def __call__(self, images: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
+    def __call__(self, images: Tensor, targets: Tensor) -> tuple[Tensor, Tensor]:
         """
         Apply CutMix to a batch of images and targets.
 
@@ -389,7 +389,7 @@ class MixupCutmix:
         self.prob = prob
         self.switch_prob = switch_prob
 
-    def __call__(self, images: Tensor, targets: Tensor) -> Tuple[Tensor, Tensor]:
+    def __call__(self, images: Tensor, targets: Tensor) -> tuple[Tensor, Tensor]:
         """Apply either Mixup or CutMix randomly."""
         if random.random() > self.prob:
             # Convert to one-hot but don't mix
@@ -429,9 +429,9 @@ class RandomErasing:
     def __init__(
         self,
         prob: float = 0.25,
-        scale: Tuple[float, float] = (0.02, 0.33),
-        ratio: Tuple[float, float] = (0.3, 3.3),
-        value: Union[float, str] = 0,
+        scale: tuple[float, float] = (0.02, 0.33),
+        ratio: tuple[float, float] = (0.3, 3.3),
+        value: float | str = 0,
         inplace: bool = False,
     ):
         self.prob = prob
@@ -551,12 +551,12 @@ class DeiTIIIAugmentation:
         rand_aug_num_ops: int = 2,
         rand_aug_magnitude: int = 9,
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BICUBIC,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
         # Random erasing
         random_erasing_prob: float = 0.25,
-        random_erasing_scale: Tuple[float, float] = (0.02, 0.33),
-        random_erasing_ratio: Tuple[float, float] = (0.3, 3.3),
+        random_erasing_scale: tuple[float, float] = (0.02, 0.33),
+        random_erasing_ratio: tuple[float, float] = (0.3, 3.3),
         # Mixup/CutMix
         mixup_alpha: float = 0.8,
         cutmix_alpha: float = 1.0,
@@ -682,8 +682,8 @@ class DeiTIIIEvalTransform:
         self,
         image_size: int = 224,
         interpolation: transforms.InterpolationMode = transforms.InterpolationMode.BICUBIC,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
     ):
         self.transform = transforms.Compose(
             [
@@ -706,8 +706,8 @@ class DeiTIIIEvalTransform:
 
 def build_deit3_transform(
     is_training: bool = True,
-    config: Optional[Dict[str, Any]] = None,
-) -> Union[DeiTIIIAugmentation, DeiTIIIEvalTransform]:
+    config: dict[str, Any] | None = None,
+) -> DeiTIIIAugmentation | DeiTIIIEvalTransform:
     """
     Build DeiT III transform from configuration.
 

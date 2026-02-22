@@ -11,10 +11,9 @@ This script compares different attention implementations on Apple Silicon:
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import torch
-import torch.nn as nn
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -32,7 +31,7 @@ def benchmark_attention(
     head_dim: int = 64,
     num_iterations: int = 100,
     warmup_iterations: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Benchmark different attention implementations.
     """
@@ -174,7 +173,7 @@ def main():
     print("\n" + "=" * 60)
     print("Configuration 1: Small model (ViT-Base like)")
     print("=" * 60)
-    results_small = benchmark_attention(
+    benchmark_attention(
         batch_size=8,
         num_heads=12,
         seq_lengths=[196, 384],  # 14x14 and ~20x20 patches
@@ -185,7 +184,7 @@ def main():
     print("\n" + "=" * 60)
     print("Configuration 2: Large model (ViT-Large like)")
     print("=" * 60)
-    results_large = benchmark_attention(
+    benchmark_attention(
         batch_size=4,
         num_heads=16,
         seq_lengths=[196, 384, 768],  # Various patch counts

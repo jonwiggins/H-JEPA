@@ -32,19 +32,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 import torch
-import torch.nn as nn
-import yaml
-from torch.utils.data import DataLoader
 
 from src.data import build_dataloader, build_dataset
 from src.evaluation.feature_quality import (
-    FeatureQualityAnalyzer,
     analyze_feature_quality,
-    compare_hierarchy_levels,
     print_quality_report,
 )
-from src.evaluation.knn_eval import KNNEvaluator, knn_eval
-from src.evaluation.linear_probe import LinearProbeEvaluator, linear_probe_eval
+from src.evaluation.knn_eval import knn_eval
+from src.evaluation.linear_probe import linear_probe_eval
 from src.evaluation.transfer import few_shot_eval, fine_tune_eval
 from src.models.hjepa import create_hjepa
 
@@ -259,7 +254,7 @@ def load_model(checkpoint_path: str, device: torch.device):
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # Print checkpoint info
-    print(f"Checkpoint info:")
+    print("Checkpoint info:")
     if "epoch" in checkpoint:
         print(f"  Epoch: {checkpoint['epoch']}")
     if "best_loss" in checkpoint:
@@ -290,7 +285,7 @@ def load_model(checkpoint_path: str, device: torch.device):
     model = model.to(device)
     model.eval()
 
-    print(f"Model loaded successfully")
+    print("Model loaded successfully")
     print(f"  Embedding dimension: {model.embed_dim}")
     print(f"  Number of hierarchies: {model.num_hierarchies}")
 

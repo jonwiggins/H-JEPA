@@ -5,7 +5,7 @@ This module implements the main H-JEPA model that combines context encoder,
 target encoder, and predictor for hierarchical self-supervised learning.
 """
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import torch
 import torch.nn as nn
@@ -72,7 +72,7 @@ class HJEPA(nn.Module):
         pretrained: bool = False,
         drop_path_rate: float = 0.0,
         use_fpn: bool = False,
-        fpn_feature_dim: Optional[int] = None,
+        fpn_feature_dim: int | None = None,
         fpn_fusion_method: str = "add",
         use_gradient_checkpointing: bool = False,
         use_layerscale: bool = False,
@@ -240,7 +240,7 @@ class HJEPA(nn.Module):
         self,
         features: torch.Tensor,
         is_prediction: bool = False,
-    ) -> List[torch.Tensor]:
+    ) -> list[torch.Tensor]:
         """
         Apply Feature Pyramid Network to hierarchical features.
 
@@ -335,7 +335,7 @@ class HJEPA(nn.Module):
         images: torch.Tensor,
         mask: torch.Tensor,
         return_all_levels: bool = True,
-    ) -> Dict[str, torch.Tensor]:
+    ) -> dict[str, torch.Tensor]:
         """
         Forward pass through H-JEPA.
 
@@ -487,7 +487,7 @@ class HJEPA(nn.Module):
     def encode_context(
         self,
         images: torch.Tensor,
-        mask: Optional[torch.Tensor] = None,
+        mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Encode context (visible) patches using the context encoder.
@@ -589,7 +589,7 @@ def create_hjepa(
     pretrained: bool = False,
     drop_path_rate: float = 0.0,
     use_fpn: bool = False,
-    fpn_feature_dim: Optional[int] = None,
+    fpn_feature_dim: int | None = None,
     fpn_fusion_method: str = "add",
     use_gradient_checkpointing: bool = False,
     use_layerscale: bool = False,
@@ -646,7 +646,7 @@ def create_hjepa(
     )
 
 
-def create_hjepa_from_config(config: Dict[str, Any]) -> HJEPA:
+def create_hjepa_from_config(config: dict[str, Any]) -> HJEPA:
     """
     Create H-JEPA model from configuration dictionary.
 

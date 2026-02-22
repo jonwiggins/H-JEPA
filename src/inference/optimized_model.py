@@ -10,7 +10,6 @@ Provides:
 """
 
 import logging
-from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -83,9 +82,9 @@ class OptimizedHJEPA(nn.Module):
 
 
 def export_to_torchscript(
-    model: Union[HJEPA, OptimizedHJEPA],
+    model: HJEPA | OptimizedHJEPA,
     output_path: str,
-    example_input: Optional[torch.Tensor] = None,
+    example_input: torch.Tensor | None = None,
     hierarchy_level: int = 0,
     optimize: bool = True,
 ) -> torch.jit.ScriptModule:
@@ -139,9 +138,9 @@ def export_to_torchscript(
 
 
 def export_to_onnx(
-    model: Union[HJEPA, OptimizedHJEPA],
+    model: HJEPA | OptimizedHJEPA,
     output_path: str,
-    example_input: Optional[torch.Tensor] = None,
+    example_input: torch.Tensor | None = None,
     hierarchy_level: int = 0,
     opset_version: int = 14,
     dynamic_axes: bool = True,
@@ -204,11 +203,11 @@ def export_to_onnx(
 
 
 def quantize_model(
-    model: Union[HJEPA, OptimizedHJEPA],
+    model: HJEPA | OptimizedHJEPA,
     output_path: str,
     hierarchy_level: int = 0,
     quantization_type: str = "dynamic",
-    calibration_data: Optional[torch.Tensor] = None,
+    calibration_data: torch.Tensor | None = None,
 ) -> nn.Module:
     """
     Quantize model to INT8 for faster inference.
@@ -278,7 +277,7 @@ class BatchInference:
 
     def __init__(
         self,
-        model: Union[HJEPA, OptimizedHJEPA, torch.jit.ScriptModule],
+        model: HJEPA | OptimizedHJEPA | torch.jit.ScriptModule,
         device: str = "cuda",
         batch_size: int = 32,
         hierarchy_level: int = 0,
@@ -305,9 +304,9 @@ class BatchInference:
     @torch.no_grad()
     def extract_features(
         self,
-        images: Union[torch.Tensor, np.ndarray, List[torch.Tensor]],
+        images: torch.Tensor | np.ndarray | list[torch.Tensor],
         return_numpy: bool = True,
-    ) -> Union[torch.Tensor, np.ndarray]:
+    ) -> torch.Tensor | np.ndarray:
         """
         Extract features from images in batches.
 
@@ -347,7 +346,7 @@ class BatchInference:
         num_images: int = 100,
         num_runs: int = 10,
         warmup_runs: int = 5,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Benchmark inference performance.
 
@@ -403,11 +402,11 @@ class BatchInference:
 
 def create_inference_config(
     checkpoint_path: str,
-    export_formats: List[str] = ["torchscript", "onnx"],
+    export_formats: list[str] = ["torchscript", "onnx"],
     quantize: bool = True,
     hierarchy_level: int = 0,
     output_dir: str = "./exported_models",
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Create optimized inference models from checkpoint.
 

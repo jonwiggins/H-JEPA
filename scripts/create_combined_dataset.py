@@ -32,7 +32,7 @@ def create_combined_config(datasets, output_path, base_config=None):
     # Calculate total images
     total_images = sum(dataset_info[d]["images"] for d in datasets if d in dataset_info)
 
-    print(f"Creating combined dataset configuration:")
+    print("Creating combined dataset configuration:")
     print(f"  Datasets: {', '.join(datasets)}")
     print(f"  Total images: {total_images:,}")
 
@@ -45,7 +45,7 @@ def create_combined_config(datasets, output_path, base_config=None):
 
     # Load base config or create new one
     if base_config and Path(base_config).exists():
-        with open(base_config, "r") as f:
+        with open(base_config) as f:
             config = yaml.safe_load(f)
     else:
         # Create default config
@@ -147,14 +147,14 @@ def create_combined_config(datasets, output_path, base_config=None):
         yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     print(f"\n✅ Created combined dataset config: {output_path}")
-    print(f"\nEstimated training time (M1 Max, 100 epochs):")
+    print("\nEstimated training time (M1 Max, 100 epochs):")
 
     # Estimate time (rough calculation)
     # M1 Max does ~3.2 it/s for ViT-Small
     hours = (steps_per_epoch * 100) / (3.2 * 3600)
     print(f"  ~{hours:.1f} hours ({hours/24:.1f} days)")
 
-    print(f"\nTo start training:")
+    print("\nTo start training:")
     print(f"  python3.11 scripts/train.py --config {output_path}")
 
     return config

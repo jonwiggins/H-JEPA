@@ -13,10 +13,8 @@ Tests for:
 9. Edge cases
 """
 
-import copy
 from unittest.mock import MagicMock
 
-import numpy as np
 import pytest
 import torch
 import torch.nn as nn
@@ -227,7 +225,6 @@ def test_finetune_evaluator_initialization(mock_model):
 def test_finetune_evaluator_freeze_encoder(mock_model):
     """Test that encoder is frozen when requested."""
     # Use deepcopy to create a real model with parameters
-    import copy
 
     real_model = nn.Linear(10, 10)
     mock_with_real_params = MagicMock()
@@ -254,7 +251,6 @@ def test_finetune_evaluator_freeze_encoder(mock_model):
 def test_finetune_evaluator_unfreeze_encoder(mock_model):
     """Test that encoder is trainable when not frozen."""
     # Use a real model with parameters
-    import copy
 
     real_model = nn.Linear(10, 10)
     # Freeze it first

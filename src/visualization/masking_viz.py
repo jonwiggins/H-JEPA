@@ -5,7 +5,7 @@ Provides functions to visualize multi-block masking strategies,
 context/target regions, and compare different masking approaches.
 """
 
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib.animation as animation
 import matplotlib.figure as mfigure
@@ -20,7 +20,7 @@ try:
 except ImportError:
 
     def rearrange(  # type: ignore[misc]
-        tensor: Union[torch.Tensor, List[torch.Tensor]], pattern: str, **axes_lengths: Any
+        tensor: torch.Tensor | list[torch.Tensor], pattern: str, **axes_lengths: Any
     ) -> torch.Tensor:
         """Fallback rearrange for basic patterns."""
         if not isinstance(tensor, torch.Tensor):
@@ -35,11 +35,11 @@ except ImportError:
 
 def visualize_masking_strategy(
     mask: torch.Tensor,
-    image: Optional[npt.NDArray[np.float64]] = None,
+    image: npt.NDArray[np.float64] | None = None,
     patch_size: int = 16,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 5),
-    title: Optional[str] = None,
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (12, 5),
+    title: str | None = None,
 ) -> mfigure.Figure:
     """
     Visualize a single masking instance.
@@ -135,9 +135,9 @@ def visualize_masked_image(
     image: torch.Tensor,
     mask: torch.Tensor,
     patch_size: int = 16,
-    mask_color: Tuple[float, float, float] = (0.5, 0.5, 0.5),
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 4),
+    mask_color: tuple[float, float, float] = (0.5, 0.5, 0.5),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (12, 4),
 ) -> mfigure.Figure:
     """
     Visualize original image, mask, and masked image side by side.
@@ -208,11 +208,11 @@ def visualize_masked_image(
 
 def visualize_context_target_regions(
     mask: torch.Tensor,
-    target_blocks: Optional[List[Tuple[int, int, int, int]]] = None,
-    image: Optional[npt.NDArray[np.float64]] = None,
+    target_blocks: list[tuple[int, int, int, int]] | None = None,
+    image: npt.NDArray[np.float64] | None = None,
     patch_size: int = 16,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (14, 6),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (14, 6),
 ) -> mfigure.Figure:
     """
     Visualize context (visible) and target (masked) regions separately.
@@ -280,11 +280,11 @@ def visualize_context_target_regions(
 
 
 def compare_masking_strategies(
-    masks: List[torch.Tensor],
-    labels: List[str],
-    image: Optional[npt.NDArray[np.float64]] = None,
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (16, 10),
+    masks: list[torch.Tensor],
+    labels: list[str],
+    image: npt.NDArray[np.float64] | None = None,
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (16, 10),
 ) -> mfigure.Figure:
     """
     Compare different masking strategies side by side.
@@ -345,12 +345,12 @@ def compare_masking_strategies(
 
 
 def animate_masking_process(
-    masks: List[torch.Tensor],
-    image: Optional[npt.NDArray[np.float64]] = None,
+    masks: list[torch.Tensor],
+    image: npt.NDArray[np.float64] | None = None,
     patch_size: int = 16,
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
     interval: int = 500,
-    figsize: Tuple[int, int] = (10, 5),
+    figsize: tuple[int, int] = (10, 5),
 ) -> animation.FuncAnimation:
     """
     Create an animation showing the masking process over time.
@@ -382,7 +382,7 @@ def animate_masking_process(
         axes[1].set_title("Masked Image")
         axes[1].axis("off")
 
-    def update(frame: int) -> List[Any]:
+    def update(frame: int) -> list[Any]:
         mask = masks[frame].cpu().numpy()
         mask_2d = mask.reshape(grid_size, grid_size)
 
@@ -418,10 +418,10 @@ def visualize_multi_block_masking(
     num_samples: int = 6,
     grid_size: int = 14,
     num_blocks: int = 4,
-    block_aspect_ratio: Tuple[float, float] = (0.75, 1.5),
-    mask_scale: Tuple[float, float] = (0.15, 0.2),
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (15, 10),
+    block_aspect_ratio: tuple[float, float] = (0.75, 1.5),
+    mask_scale: tuple[float, float] = (0.15, 0.2),
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (15, 10),
 ) -> mfigure.Figure:
     """
     Visualize multiple samples of multi-block masking strategy.
@@ -497,9 +497,9 @@ def visualize_multi_block_masking(
 
 
 def plot_masking_statistics(
-    masks: List[torch.Tensor],
-    save_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 4),
+    masks: list[torch.Tensor],
+    save_path: str | None = None,
+    figsize: tuple[int, int] = (12, 4),
 ) -> mfigure.Figure:
     """
     Plot statistics about masking patterns.
