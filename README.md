@@ -1,6 +1,6 @@
 # H-JEPA: Hierarchical Joint-Embedding Predictive Architecture
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20|%203.12-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -10,22 +10,23 @@
 
 ## Overview
 
-H-JEPA (Hierarchical Joint-Embedding Predictive Architecture) extends the [I-JEPA](https://github.com/facebookresearch/ijepa) framework with hierarchical processing capabilities for multi-scale feature learning.
+H-JEPA extends Meta's [I-JEPA](https://github.com/facebookresearch/ijepa) with hierarchical, multi-scale representation learning. Where I-JEPA predicts latent targets at a single scale, H-JEPA introduces a Feature Pyramid Network (FPN) that fuses representations across multiple hierarchy levels — learning both fine-grained and coarse semantic features simultaneously.
 
-### Key Features
+The architecture uses Rotary Position Embeddings (RoPE) for spatial awareness, multi-crop augmentation for scale invariance, and a combined VICReg + prediction loss to prevent representation collapse. It supports CUDA, Apple Silicon (MPS), and CPU backends.
 
-- **Multi-Scale Hierarchical Learning** - Learns representations at multiple levels (fine to coarse)
-- **Advanced Components**:
-  - Feature Pyramid Networks (FPN) for multi-scale fusion
-  - RoPE (Rotary Position Embeddings) for positional encoding
-  - LayerScale for training stability
-  - Flash Attention support (CUDA only)
-  - SigReg loss for training stability
-  - Multi-crop data augmentation
-  - Combined loss functions (VICReg + H-JEPA)
-- **Vision Transformer Backbone** - Built on ViT architectures from `timm`
-- **Efficient Training** - Mixed precision support, gradient checkpointing
-- **Apple Silicon Support** - Optimized for MPS devices
+The implementation is validated end-to-end with 1400+ tests. No pretrained weights are published yet — this is a research codebase for training from scratch.
+
+## Key Features
+
+- **Multi-scale hierarchy** — learn representations at multiple levels with configurable depth
+- **Feature Pyramid Network** — fuse features across hierarchy levels
+- **Rotary Position Embeddings** — 2D spatial encoding without learned position parameters
+- **Flash Attention** — fused attention kernels on CUDA
+- **SigReg loss** — sigmoid-based regularization for training stability
+- **Multi-crop augmentation** — multiple views at different scales per image
+- **VICReg + prediction loss** — combined objective to prevent collapse
+- **Apple Silicon support** — runs on MPS with automatic fallbacks
+- **Mixed precision & gradient checkpointing** — efficient training on limited hardware
 
 ## Installation
 
@@ -56,6 +57,8 @@ pip install -e .
 python -c "import torch; print('PyTorch:', torch.__version__); print('Device:', 'CUDA' if torch.cuda.is_available() else 'MPS' if torch.backends.mps.is_available() else 'CPU')"
 ```
 
+> **Note (MPS):** Flash Attention and mixed precision (AMP) are unavailable on Apple Silicon — the code falls back to standard attention and full precision automatically. SVD operations also fall back to CPU due to PyTorch MPS limitations.
+
 ## Quick Start
 
 ### Training
@@ -67,11 +70,11 @@ python scripts/train.py --config configs/default.yaml
 # Train on ImageNet-100
 python scripts/train.py --config configs/imagenet100.yaml
 
-# Debug/test configuration (minimal)
-python scripts/train.py --config configs/debug_minimal.yaml
-
 # Apple Silicon optimized
 python scripts/train.py --config configs/mps_optimized.yaml
+
+# Debug/test configuration (minimal)
+python scripts/train.py --config configs/debug_minimal.yaml
 ```
 
 ### Evaluation
@@ -84,15 +87,7 @@ python scripts/eval_linear_probe.py --checkpoint path/to/checkpoint.pth
 python scripts/eval_knn.py --checkpoint path/to/checkpoint.pth
 ```
 
-### Visualization
-
-```bash
-# Visualize attention maps
-python scripts/visualize_attention.py --checkpoint path/to/checkpoint.pth
-
-# Visualize features
-python scripts/visualize_features.py --checkpoint path/to/checkpoint.pth
-```
+See [docs/TRAINING.md](docs/TRAINING.md) for the full training guide and [docs/EVALUATION.md](docs/EVALUATION.md) for evaluation details.
 
 ## Project Structure
 
@@ -105,6 +100,9 @@ H-JEPA/
 │   ├── data/           # Datasets and transforms
 │   ├── trainers/       # Training loops
 │   ├── evaluation/     # Evaluation protocols
+│   ├── visualization/  # Attention and feature visualization
+│   ├── serving/        # Model serving utilities
+│   ├── inference/      # Inference pipelines
 │   └── utils/          # Utilities (logging, checkpointing)
 ├── configs/            # YAML configuration files
 ├── scripts/            # Training and evaluation scripts
@@ -127,10 +125,10 @@ training:
   epochs: 100
   batch_size: 256
   learning_rate: 1.5e-4
-  use_amp: true          # Mixed precision (not on MPS)
+  use_amp: true           # Mixed precision (CUDA only)
 
 loss:
-  type: "combined"       # or "vicreg", "sigreg", "mse"
+  type: "combined"        # or "vicreg", "sigreg", "mse"
   hierarchy_weights: [1.0, 0.7, 0.5]
 ```
 
@@ -161,50 +159,19 @@ Tests cover all core modules — models, losses, masks, data, trainers, evaluati
 
 See [docs/testing.md](docs/testing.md) for the full testing guide.
 
-## Model Performance
+## Architecture
 
-### Current Status
+| Component | Details |
+|-----------|---------|
+| **Encoder** | ViT-Tiny (5.5M params context + 5.5M target EMA) |
+| **Predictor** | 4-layer transformer (2.8M params) |
+| **Total** | ~13.8M parameters (8.3M trainable) |
+| **Hierarchies** | 3 levels with FPN fusion (128-ch) |
+| **Embed dim** | 192 |
 
-The H-JEPA architecture has been validated end-to-end (encoder, predictor, FPN, masking, losses). No pretrained weights have been published yet — the targets below are based on self-supervised learning benchmarks for CIFAR-10.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a detailed architecture description.
 
-### Expected Performance Targets (CIFAR-10)
-
-| Stage | Linear Probe | KNN (k=20) | Training |
-|-------|-------------|------------|----------|
-| Early (10 epochs) | 45–55% | 35–45% | Representations forming |
-| Mid (50 epochs) | 65–75% | 55–65% | Features maturing |
-| Converged (200+ epochs) | 80–85% | 70–75% | Optimal representations |
-
-### Comparison with SOTA
-
-| Method | CIFAR-10 Linear Probe | Notes |
-|--------|----------------------|-------|
-| SimCLR | 83.6% | Contrastive learning |
-| BYOL | 85.3% | Momentum-based |
-| MAE | 82.5% | Masked autoencoder |
-| I-JEPA | 81.9% | Joint-embedding |
-| **H-JEPA (target)** | **82–85%** | Hierarchical joint-embedding |
-
-### Architecture Specs
-
-- **Encoder**: ViT-Tiny (5.5M params context + 5.5M target EMA)
-- **Predictor**: 4-layer transformer (2.8M params)
-- **Total**: ~13.8M parameters (8.3M trainable)
-- **Hierarchies**: 3 levels with FPN fusion (128-ch)
-- **Embed dim**: 192
-
-## Limitations
-
-- **Flash Attention** is disabled on Apple Silicon (MPS) — falls back to standard attention
-- **Mixed precision (AMP)** only works on CUDA; disabled on MPS
-- **SVD operations** fall back to CPU on MPS (PyTorch MPS limitation)
-- **No pretrained weights** published yet — you must train from scratch
-
-## Training
-
-See [docs/training.md](docs/training.md) for the full training guide, including Apple Silicon optimization, configuration reference, and troubleshooting.
-
-## Docker Support
+## Docker
 
 ```bash
 # Build Docker image
@@ -219,34 +186,24 @@ docker-compose up
 
 ## Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Run tests and ensure they pass
-4. Submit a pull request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Citation
 
-If you use this code, please cite:
-
 ```bibtex
-@software{hjepa2024,
+@software{hjepa2025,
   title={H-JEPA: Hierarchical Joint-Embedding Predictive Architecture},
   author={Wiggins, Jon and Contributors},
-  year={2024},
+  year={2025},
   url={https://github.com/jonwiggins/H-JEPA}
 }
 ```
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
 - Based on [I-JEPA](https://github.com/facebookresearch/ijepa) by Meta AI
 - Vision Transformers from [timm](https://github.com/rwightman/pytorch-image-models)
-- Thanks to all contributors
