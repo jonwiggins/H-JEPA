@@ -135,16 +135,73 @@ loss:
 
 ## Testing
 
+The test suite contains **1400+ tests** across 30+ test modules, using pytest.
+
 ```bash
-# Run all tests
-pytest tests/
+# Quick subset (skip slow tests)
+pytest tests/ -m "not slow" -v
 
-# Run specific test suite
-pytest tests/test_ijepa_compliance.py -v
+# Full suite
+pytest tests/ -v
 
-# Run with coverage
-pytest tests/ --cov=src --cov-report=html
+# With coverage report
+pytest tests/ --cov=src --cov-report=term-missing
 ```
+
+Tests cover all core modules — models, losses, masks, data, trainers, evaluation, and utilities — with mocked hardware backends so the full suite runs on CPU, CUDA, or MPS.
+
+**CI pipeline** (GitHub Actions, every push/PR):
+1. **black** — code formatting
+2. **ruff** — linting
+3. **mypy** — static type checking
+4. **pytest** — full test suite with coverage
+
+**Pre-commit hooks** (install with `pre-commit install`): black, ruff, mypy.
+
+See [docs/testing.md](docs/testing.md) for the full testing guide.
+
+## Model Performance
+
+### Current Status
+
+The H-JEPA architecture has been validated end-to-end (encoder, predictor, FPN, masking, losses). No pretrained weights have been published yet — the targets below are based on self-supervised learning benchmarks for CIFAR-10.
+
+### Expected Performance Targets (CIFAR-10)
+
+| Stage | Linear Probe | KNN (k=20) | Training |
+|-------|-------------|------------|----------|
+| Early (10 epochs) | 45–55% | 35–45% | Representations forming |
+| Mid (50 epochs) | 65–75% | 55–65% | Features maturing |
+| Converged (200+ epochs) | 80–85% | 70–75% | Optimal representations |
+
+### Comparison with SOTA
+
+| Method | CIFAR-10 Linear Probe | Notes |
+|--------|----------------------|-------|
+| SimCLR | 83.6% | Contrastive learning |
+| BYOL | 85.3% | Momentum-based |
+| MAE | 82.5% | Masked autoencoder |
+| I-JEPA | 81.9% | Joint-embedding |
+| **H-JEPA (target)** | **82–85%** | Hierarchical joint-embedding |
+
+### Architecture Specs
+
+- **Encoder**: ViT-Tiny (5.5M params context + 5.5M target EMA)
+- **Predictor**: 4-layer transformer (2.8M params)
+- **Total**: ~13.8M parameters (8.3M trainable)
+- **Hierarchies**: 3 levels with FPN fusion (128-ch)
+- **Embed dim**: 192
+
+## Limitations
+
+- **Flash Attention** is disabled on Apple Silicon (MPS) — falls back to standard attention
+- **Mixed precision (AMP)** only works on CUDA; disabled on MPS
+- **SVD operations** fall back to CPU on MPS (PyTorch MPS limitation)
+- **No pretrained weights** published yet — you must train from scratch
+
+## Training
+
+See [docs/training.md](docs/training.md) for the full training guide, including Apple Silicon optimization, configuration reference, and troubleshooting.
 
 ## Docker Support
 
@@ -158,12 +215,6 @@ docker run --gpus all -v $(pwd)/data:/app/data hjepa python scripts/train.py
 # Run with Docker Compose
 docker-compose up
 ```
-
-## Known Issues
-
-- Flash Attention is disabled on Apple Silicon (MPS) due to performance issues
-- Mixed precision training not supported on MPS
-- SVD operations fall back to CPU on MPS
 
 ## Contributing
 
