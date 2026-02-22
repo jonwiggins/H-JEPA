@@ -19,6 +19,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
@@ -48,9 +49,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/H-JEPA"
-Documentation = "https://github.com/yourusername/H-JEPA#readme"
-Repository = "https://github.com/yourusername/H-JEPA"
+Homepage = "https://github.com/jonwiggins/H-JEPA"
+Documentation = "https://github.com/jonwiggins/H-JEPA#readme"
+Repository = "https://github.com/jonwiggins/H-JEPA"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -127,14 +128,6 @@ module = [
     "tensorboard.*",
 ]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "src.inference.optimized_model"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "src.serving.model_server"
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "src.models.hjepa"

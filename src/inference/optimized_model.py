@@ -9,9 +9,13 @@ Provides:
 - Optimized feature extraction
 """
 
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torch.nn as nn
 
@@ -63,7 +67,7 @@ class OptimizedHJEPA(nn.Module):
             Features [B, N, D] or [B, N', D] depending on hierarchy level
         """
         # Encode image
-        features = self.encoder(images)
+        features: torch.Tensor = self.encoder(images)
 
         # Exclude CLS token
         features = features[:, 1:, :]
@@ -120,19 +124,21 @@ def export_to_torchscript(
     try:
         # Trace model
         with torch.no_grad():
-            traced_model = torch.jit.trace(model, example_input)
+            traced_model: torch.jit.ScriptModule = torch.jit.trace(  # type: ignore[no-untyped-call]
+                model, example_input
+            )
 
         # Optimize for inference
         if optimize:
             traced_model = torch.jit.optimize_for_inference(traced_model)
 
         # Save
-        torch.jit.save(traced_model, output_path)
+        torch.jit.save(traced_model, output_path)  # type: ignore[no-untyped-call]
         logger.info(f"TorchScript model saved to: {output_path}")
 
         return traced_model
 
-    except Exception as e:
+    except RuntimeError as e:
         logger.error(f"Failed to export to TorchScript: {e}")
         raise
 
@@ -184,7 +190,7 @@ def export_to_onnx(
         # Export to ONNX
         torch.onnx.export(
             model,
-            example_input,
+            (example_input,),
             output_path,
             input_names=["images"],
             output_names=["features"],
@@ -196,7 +202,7 @@ def export_to_onnx(
 
         logger.info(f"ONNX model saved to: {output_path}")
 
-    except Exception as e:
+    except RuntimeError as e:
         logger.error(f"Failed to export to ONNX: {e}")
         logger.warning("ONNX export may not be fully supported for all operations")
         raise
@@ -232,9 +238,10 @@ def quantize_model(
     model.cpu()  # Quantization requires CPU
 
     try:
+        quantized_model: nn.Module
         if quantization_type == "dynamic":
             # Dynamic quantization (weights only)
-            quantized_model = torch.quantization.quantize_dynamic(
+            quantized_model = torch.quantization.quantize_dynamic(  # type: ignore[no-untyped-call]
                 model, {nn.Linear}, dtype=torch.qint8
             )
 
@@ -244,15 +251,19 @@ def quantize_model(
                 raise ValueError("Static quantization requires calibration data")
 
             # Prepare model for quantization
-            model.qconfig = torch.quantization.get_default_qconfig("fbgemm")
-            torch.quantization.prepare(model, inplace=True)
+            model.qconfig = torch.quantization.get_default_qconfig(  # type: ignore[no-untyped-call]
+                "fbgemm"
+            )
+            torch.quantization.prepare(model, inplace=True)  # type: ignore[no-untyped-call]
 
             # Calibrate
             with torch.no_grad():
                 model(calibration_data)
 
             # Convert
-            quantized_model = torch.quantization.convert(model, inplace=False)
+            quantized_model = torch.quantization.convert(  # type: ignore[no-untyped-call]
+                model, inplace=False
+            )
 
         else:
             raise ValueError(f"Unknown quantization type: {quantization_type}")
@@ -263,7 +274,7 @@ def quantize_model(
 
         return quantized_model
 
-    except Exception as e:
+    except RuntimeError as e:
         logger.error(f"Failed to quantize model: {e}")
         raise
 
@@ -304,9 +315,9 @@ class BatchInference:
     @torch.no_grad()
     def extract_features(
         self,
-        images: torch.Tensor | np.ndarray | list[torch.Tensor],
+        images: torch.Tensor | npt.NDArray[np.floating[Any]] | list[torch.Tensor],
         return_numpy: bool = True,
-    ) -> torch.Tensor | np.ndarray:
+    ) -> torch.Tensor | npt.NDArray[np.floating[Any]]:
         """
         Extract features from images in batches.
 
@@ -326,19 +337,20 @@ class BatchInference:
         images = images.to(self.device)
 
         # Process in batches
-        all_features = []
+        feature_list: list[torch.Tensor] = []
         num_images = images.shape[0]
 
         for i in range(0, num_images, self.batch_size):
             batch = images[i : i + self.batch_size]
-            features = self.model(batch)
-            all_features.append(features)
+            features: torch.Tensor = self.model(batch)
+            feature_list.append(features)
 
         # Concatenate
-        all_features = torch.cat(all_features, dim=0)
+        all_features = torch.cat(feature_list, dim=0)
 
         if return_numpy:
-            return all_features.cpu().numpy()
+            result: npt.NDArray[np.floating[Any]] = all_features.cpu().numpy()
+            return result
         return all_features
 
     def benchmark(
@@ -374,7 +386,7 @@ class BatchInference:
 
         # Benchmark
         logger.info(f"Running {num_runs} benchmark iterations...")
-        times = []
+        times: list[float] = []
 
         for _ in range(num_runs):
             start_time = time.time()
@@ -386,14 +398,14 @@ class BatchInference:
             times.append(time.time() - start_time)
 
         # Calculate statistics
-        times = np.array(times)
-        results = {
-            "mean_time": float(np.mean(times)),
-            "std_time": float(np.std(times)),
-            "min_time": float(np.min(times)),
-            "max_time": float(np.max(times)),
-            "throughput_images_per_sec": num_images / np.mean(times),
-            "latency_per_image_ms": (np.mean(times) / num_images) * 1000,
+        times_arr = np.array(times)
+        results: dict[str, float] = {
+            "mean_time": float(np.mean(times_arr)),
+            "std_time": float(np.std(times_arr)),
+            "min_time": float(np.min(times_arr)),
+            "max_time": float(np.max(times_arr)),
+            "throughput_images_per_sec": float(num_images / np.mean(times_arr)),
+            "latency_per_image_ms": float((np.mean(times_arr) / num_images) * 1000),
         }
 
         logger.info(f"Benchmark results: {results}")
@@ -437,7 +449,7 @@ def create_inference_config(
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
 
-    exported_paths = {}
+    exported_paths: dict[str, str] = {}
 
     # Export to TorchScript
     if "torchscript" in export_formats:
@@ -451,7 +463,7 @@ def create_inference_config(
         try:
             export_to_onnx(model, onnx_path, hierarchy_level=hierarchy_level)
             exported_paths["onnx"] = onnx_path
-        except Exception as e:
+        except RuntimeError as e:
             logger.warning(f"ONNX export failed: {e}")
 
     # Quantize model

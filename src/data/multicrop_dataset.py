@@ -5,6 +5,7 @@ This module provides a dataset wrapper that applies multi-crop transforms
 to existing datasets, enabling multi-crop training with minimal code changes.
 """
 
+import logging
 from pathlib import Path
 from typing import Any, cast
 
@@ -17,6 +18,8 @@ from .multicrop_transforms import (
     MultiCropTransform,
     build_multicrop_transform,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MultiCropDataset(Dataset[list[torch.Tensor] | tuple[list[torch.Tensor], int]]):
@@ -424,11 +427,11 @@ def build_multicrop_dataloader(
 
 if __name__ == "__main__":
     # Demo of multi-crop dataset
-    print("Multi-Crop Dataset Demo")
-    print("=" * 70)
+    logger.info("Multi-Crop Dataset Demo")
+    logger.info("=" * 70)
 
     # Build dataset
-    print("\nBuilding CIFAR-10 multi-crop dataset...")
+    logger.info("Building CIFAR-10 multi-crop dataset...")
     dataset = build_multicrop_dataset(
         dataset_name="cifar10",
         data_path="/tmp/data",
@@ -440,20 +443,20 @@ if __name__ == "__main__":
         download=True,
     )
 
-    print(f"Dataset size: {len(dataset)}")
-    print(f"Number of global crops: {dataset.num_global_crops}")
-    print(f"Number of local crops: {dataset.num_local_crops}")
+    logger.info("Dataset size: %d", len(dataset))
+    logger.info("Number of global crops: %d", dataset.num_global_crops)
+    logger.info("Number of local crops: %d", dataset.num_local_crops)
 
     # Get a sample
-    print("\nSample item:")
+    logger.info("Sample item:")
     crops, label = dataset[0]
-    print(f"  Number of crops: {len(crops)}")
-    print(f"  Global crop shapes: {[crops[i].shape for i in range(2)]}")
-    print(f"  Local crop shapes: {[crops[i].shape for i in range(2, 8)]}")
-    print(f"  Label: {label}")
+    logger.info("  Number of crops: %d", len(crops))
+    logger.info("  Global crop shapes: %s", [crops[i].shape for i in range(2)])
+    logger.info("  Local crop shapes: %s", [crops[i].shape for i in range(2, 8)])
+    logger.info("  Label: %s", label)
 
     # Build dataloader
-    print("\nBuilding dataloader...")
+    logger.info("Building dataloader...")
     dataloader = build_multicrop_dataloader(
         dataset,
         batch_size=4,
@@ -461,16 +464,16 @@ if __name__ == "__main__":
         shuffle=True,
     )
 
-    print(f"Batches per epoch: {len(dataloader)}")
+    logger.info("Batches per epoch: %d", len(dataloader))
 
     # Get a batch
-    print("\nSample batch:")
+    logger.info("Sample batch:")
     batch_crops, batch_labels = next(iter(dataloader))
-    print(f"  Number of crop types: {len(batch_crops)}")
-    print(f"  Global crop 0 shape: {batch_crops[0].shape}")
-    print(f"  Global crop 1 shape: {batch_crops[1].shape}")
-    print(f"  Local crop 0 shape: {batch_crops[2].shape}")
-    print(f"  Labels shape: {batch_labels.shape}")
+    logger.info("  Number of crop types: %d", len(batch_crops))
+    logger.info("  Global crop 0 shape: %s", batch_crops[0].shape)
+    logger.info("  Global crop 1 shape: %s", batch_crops[1].shape)
+    logger.info("  Local crop 0 shape: %s", batch_crops[2].shape)
+    logger.info("  Labels shape: %s", batch_labels.shape)
 
-    print("\n" + "=" * 70)
-    print("Demo complete!")
+    logger.info("=" * 70)
+    logger.info("Demo complete!")

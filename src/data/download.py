@@ -6,6 +6,7 @@ for H-JEPA training. It handles automatic downloads where possible and
 provides clear instructions for manual downloads when required.
 """
 
+import logging
 import shutil
 import warnings
 from pathlib import Path
@@ -13,6 +14,8 @@ from typing import TypedDict
 from urllib.error import URLError
 
 from torchvision import datasets
+
+logger = logging.getLogger(__name__)
 
 
 class DatasetInfo(TypedDict):
@@ -99,7 +102,7 @@ def get_disk_usage(path: Path) -> tuple[float, float, float]:
         used_gb = stat.used / (1024**3)
         free_gb = stat.free / (1024**3)
         return total_gb, used_gb, free_gb
-    except Exception as e:
+    except OSError as e:
         warnings.warn(f"Could not get disk usage: {e}")
         return 0.0, 0.0, 0.0
 
@@ -119,13 +122,13 @@ def check_disk_space(data_path: Path, required_gb: float, buffer_gb: float = 5.0
     total_gb, used_gb, free_gb = get_disk_usage(data_path)
 
     if free_gb < required_gb + buffer_gb:
-        print("\n⚠️  WARNING: Insufficient disk space!")
-        print(f"  Required: {required_gb:.1f} GB + {buffer_gb:.1f} GB buffer")
-        print(f"  Available: {free_gb:.1f} GB")
-        print(f"  Total: {total_gb:.1f} GB, Used: {used_gb:.1f} GB")
+        logger.warning("Insufficient disk space!")
+        logger.warning("  Required: %.1f GB + %.1f GB buffer", required_gb, buffer_gb)
+        logger.warning("  Available: %.1f GB", free_gb)
+        logger.warning("  Total: %.1f GB, Used: %.1f GB", total_gb, used_gb)
         return False
 
-    print(f"✓ Disk space check passed: {free_gb:.1f} GB available")
+    logger.info("Disk space check passed: %.1f GB available", free_gb)
     return True
 
 
@@ -142,7 +145,7 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
     """
     dataset_name = dataset_name.lower()
 
-    print(f"\nVerifying {dataset_name}...")
+    logger.info("Verifying %s...", dataset_name)
 
     try:
         if dataset_name == "cifar10":
@@ -151,7 +154,9 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             test_data = datasets.CIFAR10(root=data_path, train=False, download=False)
             assert len(train_data) == 50000, f"Expected 50000 train images, got {len(train_data)}"
             assert len(test_data) == 10000, f"Expected 10000 test images, got {len(test_data)}"
-            print(f"✓ CIFAR-10 verified: {len(train_data)} train + {len(test_data)} test images")
+            logger.info(
+                "CIFAR-10 verified: %d train + %d test images", len(train_data), len(test_data)
+            )
             return True
 
         elif dataset_name == "cifar100":
@@ -160,7 +165,9 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             test_data = datasets.CIFAR100(root=data_path, train=False, download=False)
             assert len(train_data) == 50000, f"Expected 50000 train images, got {len(train_data)}"
             assert len(test_data) == 10000, f"Expected 10000 test images, got {len(test_data)}"
-            print(f"✓ CIFAR-100 verified: {len(train_data)} train + {len(test_data)} test images")
+            logger.info(
+                "CIFAR-100 verified: %d train + %d test images", len(train_data), len(test_data)
+            )
             return True
 
         elif dataset_name == "stl10":
@@ -168,9 +175,11 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             train_data = datasets.STL10(root=data_path, split="train", download=False)
             test_data = datasets.STL10(root=data_path, split="test", download=False)
             unlabeled_data = datasets.STL10(root=data_path, split="unlabeled", download=False)
-            print(
-                f"✓ STL-10 verified: {len(train_data)} train + {len(test_data)} test + "
-                f"{len(unlabeled_data)} unlabeled images"
+            logger.info(
+                "STL-10 verified: %d train + %d test + %d unlabeled images",
+                len(train_data),
+                len(test_data),
+                len(unlabeled_data),
             )
             return True
 
@@ -180,8 +189,8 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             val_dir = data_path / "val"
 
             if not train_dir.exists() or not val_dir.exists():
-                print(f"✗ ImageNet not found at {data_path}")
-                print(f"  Expected directories: {train_dir} and {val_dir}")
+                logger.error("ImageNet not found at %s", data_path)
+                logger.error("  Expected directories: %s and %s", train_dir, val_dir)
                 return False
 
             # Count number of class directories
@@ -189,29 +198,31 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             val_classes = [d for d in val_dir.iterdir() if d.is_dir()]
 
             if len(train_classes) == 0 or len(val_classes) == 0:
-                print("✗ ImageNet directories exist but appear empty")
+                logger.error("ImageNet directories exist but appear empty")
                 return False
 
-            print(
-                f"✓ ImageNet found: {len(train_classes)} train classes, "
-                f"{len(val_classes)} val classes"
+            logger.info(
+                "ImageNet found: %d train classes, %d val classes",
+                len(train_classes),
+                len(val_classes),
             )
 
             if dataset_name == "imagenet100":
                 if len(train_classes) < 100:
-                    print(
-                        f"  Note: Found {len(train_classes)} classes, expected >= 100 for ImageNet-100"
+                    logger.info(
+                        "  Note: Found %d classes, expected >= 100 for ImageNet-100",
+                        len(train_classes),
                     )
-                    print("  Will filter to 100 classes at runtime")
+                    logger.info("  Will filter to 100 classes at runtime")
 
             return True
 
         else:
-            print(f"✗ Unknown dataset: {dataset_name}")
+            logger.error("Unknown dataset: %s", dataset_name)
             return False
 
-    except Exception as e:
-        print(f"✗ Verification failed: {e}")
+    except (OSError, ValueError, RuntimeError, AssertionError) as e:
+        logger.error("Verification failed: %s", e)
         return False
 
 
@@ -236,22 +247,22 @@ def download_dataset(
     dataset_name = dataset_name.lower()
 
     if dataset_name not in DATASET_INFO:
-        print(f"✗ Unknown dataset: {dataset_name}")
+        logger.error("Unknown dataset: %s", dataset_name)
         return False
 
     info = DATASET_INFO[dataset_name]
 
-    print(f"\n{'='*70}")
-    print(f"Dataset: {info['name']}")
-    print(f"Size: {info['size_gb']:.2f} GB")
-    print(f"Images: {info['num_images']:,}")
-    print(f"Classes: {info['num_classes']}")
-    print(f"Resolution: {info['resolution']}")
-    print(f"{'='*70}\n")
+    logger.info("=" * 70)
+    logger.info("Dataset: %s", info["name"])
+    logger.info("Size: %.2f GB", info["size_gb"])
+    logger.info("Images: %s", f"{info['num_images']:,}")
+    logger.info("Classes: %d", info["num_classes"])
+    logger.info("Resolution: %s", info["resolution"])
+    logger.info("=" * 70)
 
     # Check if auto-download is supported
     if not info["auto_download"]:
-        print(f"⚠️  {info['name']} requires manual download")
+        logger.warning("%s requires manual download", info["name"])
         print_manual_download_instructions(dataset_name)
         return False
 
@@ -259,57 +270,57 @@ def download_dataset(
     if not check_disk_space(data_path, info["size_gb"]):
         response = input("\nContinue anyway? (y/n): ")
         if response.lower() != "y":
-            print("Download cancelled")
+            logger.info("Download cancelled")
             return False
 
     # Create data directory
     data_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        print(f"Downloading {info['name']}...")
+        logger.info("Downloading %s...", info["name"])
 
         if dataset_name == "cifar10":
             # Download CIFAR-10
-            print("Downloading training set...")
+            logger.info("Downloading training set...")
             datasets.CIFAR10(root=data_path, train=True, download=True)
-            print("Downloading test set...")
+            logger.info("Downloading test set...")
             datasets.CIFAR10(root=data_path, train=False, download=True)
 
         elif dataset_name == "cifar100":
             # Download CIFAR-100
-            print("Downloading training set...")
+            logger.info("Downloading training set...")
             datasets.CIFAR100(root=data_path, train=True, download=True)
-            print("Downloading test set...")
+            logger.info("Downloading test set...")
             datasets.CIFAR100(root=data_path, train=False, download=True)
 
         elif dataset_name == "stl10":
             # Download STL-10
-            print("Downloading training set...")
+            logger.info("Downloading training set...")
             datasets.STL10(root=data_path, split="train", download=True)
-            print("Downloading test set...")
+            logger.info("Downloading test set...")
             datasets.STL10(root=data_path, split="test", download=True)
-            print("Downloading unlabeled set...")
+            logger.info("Downloading unlabeled set...")
             datasets.STL10(root=data_path, split="unlabeled", download=True)
 
-        print(f"\n✓ {info['name']} downloaded successfully!")
+        logger.info("%s downloaded successfully!", info["name"])
 
         # Verify if requested
         if verify:
             if verify_dataset(dataset_name, data_path):
-                print(f"✓ {info['name']} verified successfully!")
+                logger.info("%s verified successfully!", info["name"])
             else:
-                print(f"⚠️  {info['name']} verification failed")
+                logger.warning("%s verification failed", info["name"])
                 return False
 
         return True
 
     except URLError as e:
-        print(f"\n✗ Download failed due to network error: {e}")
-        print("Please check your internet connection and try again.")
+        logger.error("Download failed due to network error: %s", e)
+        logger.error("Please check your internet connection and try again.")
         return False
 
-    except Exception as e:
-        print(f"\n✗ Download failed: {e}")
+    except OSError as e:
+        logger.error("Download failed: %s", e)
         return False
 
 
@@ -322,12 +333,12 @@ def print_manual_download_instructions(dataset_name: str) -> None:
     """
     dataset_name = dataset_name.lower()
 
-    print("\n" + "=" * 70)
-    print(f"MANUAL DOWNLOAD INSTRUCTIONS: {DATASET_INFO[dataset_name]['name']}")
-    print("=" * 70 + "\n")
+    logger.info("=" * 70)
+    logger.info("MANUAL DOWNLOAD INSTRUCTIONS: %s", DATASET_INFO[dataset_name]["name"])
+    logger.info("=" * 70)
 
     if dataset_name == "imagenet":
-        print(
+        logger.info(
             """
 1. Register and Download:
    - Go to: https://image-net.org/download.php
@@ -377,7 +388,7 @@ Make sure you have sufficient disk space!
         )
 
     elif dataset_name == "imagenet100":
-        print(
+        logger.info(
             """
 ImageNet-100 is a 100-class subset of ImageNet.
 
@@ -395,32 +406,36 @@ They will be automatically selected from the full ImageNet if you download it.
         """
         )
 
-    print("=" * 70 + "\n")
+    logger.info("=" * 70)
 
 
 def print_dataset_summary() -> None:
     """Print a summary of all supported datasets."""
-    print("\n" + "=" * 70)
-    print("SUPPORTED DATASETS FOR H-JEPA")
-    print("=" * 70 + "\n")
+    logger.info("=" * 70)
+    logger.info("SUPPORTED DATASETS FOR H-JEPA")
+    logger.info("=" * 70)
 
     total_size = 0.0
 
     for name, info in DATASET_INFO.items():
-        auto = "✓ Auto" if info["auto_download"] else "✗ Manual"
-        print(
-            f"{info['name']:25} {auto:12} {info['size_gb']:6.1f} GB  "
-            f"{info['num_images']:>9,} images  {info['num_classes']:>4} classes"
+        auto = "Auto" if info["auto_download"] else "Manual"
+        logger.info(
+            "%s %s %6.1f GB  %9s images  %4d classes",
+            f"{info['name']:25}",
+            f"{auto:12}",
+            info["size_gb"],
+            f"{info['num_images']:,}",
+            info["num_classes"],
         )
         total_size += info["size_gb"]
 
-    print("\n" + "-" * 70)
-    print(f"{'Total (all datasets)':25} {total_size:19.1f} GB")
-    print("=" * 70 + "\n")
+    logger.info("-" * 70)
+    logger.info("%-25s %19.1f GB", "Total (all datasets)", total_size)
+    logger.info("=" * 70)
 
-    print("Recommended for quick start: CIFAR-10 or CIFAR-100 (auto-download)")
-    print("Recommended for research: ImageNet or ImageNet-100 (manual download)")
-    print("\nUse download_data.sh script or this module to download datasets.\n")
+    logger.info("Recommended for quick start: CIFAR-10 or CIFAR-100 (auto-download)")
+    logger.info("Recommended for research: ImageNet or ImageNet-100 (manual download)")
+    logger.info("Use download_data.sh script or this module to download datasets.")
 
 
 def main() -> None:
@@ -453,9 +468,9 @@ def main() -> None:
     # Show summary if no datasets specified
     if not args.datasets:
         print_dataset_summary()
-        print(f"Current data path: {data_path}")
+        logger.info("Current data path: %s", data_path)
         total_gb, used_gb, free_gb = get_disk_usage(data_path)
-        print(f"Disk space: {free_gb:.1f} GB available ({total_gb:.1f} GB total)\n")
+        logger.info("Disk space: %.1f GB available (%.1f GB total)", free_gb, total_gb)
         return
 
     # Process each dataset
@@ -463,8 +478,8 @@ def main() -> None:
         dataset_name = dataset_name.lower()
 
         if dataset_name not in DATASET_INFO:
-            print(f"\n✗ Unknown dataset: {dataset_name}")
-            print(f"Supported datasets: {', '.join(DATASET_INFO.keys())}")
+            logger.error("Unknown dataset: %s", dataset_name)
+            logger.error("Supported datasets: %s", ", ".join(DATASET_INFO.keys()))
             continue
 
         dataset_path = data_path / dataset_name
@@ -482,9 +497,9 @@ def main() -> None:
             )
 
             if not success and DATASET_INFO[dataset_name]["auto_download"]:
-                print(f"\n✗ Failed to download {dataset_name}")
+                logger.error("Failed to download %s", dataset_name)
 
-    print("\nDone!")
+    logger.info("Done!")
 
 
 if __name__ == "__main__":

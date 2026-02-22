@@ -602,17 +602,17 @@ def test_analyze_feature_quality(mock_model, simple_dataloader, random_seed):
     assert "collapse" in metrics
 
 
-def test_print_quality_report(mock_model, simple_dataloader, random_seed, capsys):
+def test_print_quality_report(mock_model, simple_dataloader, random_seed, caplog):
     """Test quality report printing."""
     analyzer = FeatureQualityAnalyzer(model=mock_model, device="cpu")
     metrics = analyzer.compute_all_metrics(simple_dataloader, max_samples=50)
 
-    print_quality_report(metrics, verbose=False)
+    with caplog.at_level("INFO", logger="src.evaluation.feature_quality"):
+        print_quality_report(metrics, verbose=False)
 
-    captured = capsys.readouterr()
-    assert "FEATURE QUALITY REPORT" in captured.out
-    assert "Effective Rank" in captured.out
-    assert "Rank Ratio" in captured.out
+    assert "FEATURE QUALITY REPORT" in caplog.text
+    assert "Effective Rank" in caplog.text
+    assert "Rank Ratio" in caplog.text
 
 
 def test_compare_hierarchy_levels(mock_model, simple_dataloader, random_seed):

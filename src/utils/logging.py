@@ -94,7 +94,7 @@ class MetricsLogger:
                     dir=str(self.log_dir),
                 )
                 logger.info(f"W&B initialized: {wandb_project}/{experiment_name}")
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Failed to initialize W&B: {e}")
                 self.use_wandb = False
 
@@ -105,7 +105,7 @@ class MetricsLogger:
                 tb_dir.mkdir(parents=True, exist_ok=True)
                 self.tb_writer = SummaryWriter(log_dir=str(tb_dir))  # type: ignore[no-untyped-call]
                 logger.info(f"TensorBoard initialized: {tb_dir}")
-            except Exception as e:
+            except (OSError, RuntimeError) as e:
                 logger.warning(f"Failed to initialize TensorBoard: {e}")
                 self.use_tensorboard = False
 
@@ -140,7 +140,7 @@ class MetricsLogger:
         if self.use_wandb:
             try:
                 wandb.log(metrics, step=log_step, commit=commit)
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Failed to log to W&B: {e}")
 
         # Log to TensorBoard
@@ -148,7 +148,7 @@ class MetricsLogger:
             try:
                 for name, value in metrics.items():
                     self.tb_writer.add_scalar(name, value, log_step)  # type: ignore[no-untyped-call]
-            except Exception as e:
+            except (RuntimeError, TypeError, ValueError) as e:
                 logger.warning(f"Failed to log to TensorBoard: {e}")
 
         # Update internal step counter
@@ -184,14 +184,14 @@ class MetricsLogger:
         if self.use_wandb:
             try:
                 wandb.log({name: wandb.Image(image, caption=caption)}, step=step)
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Failed to log image to W&B: {e}")
 
         # Log to TensorBoard
         if self.use_tensorboard:
             try:
                 self.tb_writer.add_image(name, image, step)  # type: ignore[no-untyped-call]
-            except Exception as e:
+            except (RuntimeError, TypeError, ValueError) as e:
                 logger.warning(f"Failed to log image to TensorBoard: {e}")
 
     def log_images(
@@ -228,7 +228,7 @@ class MetricsLogger:
                     for i, img in enumerate(images_np)
                 ]
                 wandb.log({name: wandb_images}, step=step)
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Failed to log images to W&B: {e}")
 
         # Log to TensorBoard (as grid)
@@ -245,7 +245,7 @@ class MetricsLogger:
 
                 grid = make_grid(images_tensor, nrow=4)
                 self.tb_writer.add_image(name, grid, step)  # type: ignore[no-untyped-call]
-            except Exception as e:
+            except (RuntimeError, TypeError, ValueError) as e:
                 logger.warning(f"Failed to log images to TensorBoard: {e}")
 
     def log_histogram(
@@ -280,14 +280,14 @@ class MetricsLogger:
                     },
                     step=step,
                 )
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Failed to log histogram to W&B: {e}")
 
         # Log to TensorBoard
         if self.use_tensorboard:
             try:
                 self.tb_writer.add_histogram(name, values, step)  # type: ignore[no-untyped-call]
-            except Exception as e:
+            except (RuntimeError, TypeError, ValueError) as e:
                 logger.warning(f"Failed to log histogram to TensorBoard: {e}")
 
     def log_model_gradients(
@@ -423,7 +423,7 @@ class MetricsLogger:
                 step=step,
                 commit=False,
             )
-        except Exception as e:
+        except (RuntimeError, AttributeError) as e:
             logger.warning(f"Failed to log mask visualization: {e}")
 
         # Log predictions vs targets for each hierarchy level
@@ -476,7 +476,7 @@ class MetricsLogger:
                     global_step=step,
                 )
                 logger.info(f"Logged embeddings: {tag} at step {step}")
-            except Exception as e:
+            except (RuntimeError, TypeError, ValueError) as e:
                 logger.warning(f"Failed to log embeddings: {e}")
 
     def accumulate_metrics(
@@ -555,7 +555,7 @@ class MetricsLogger:
                     util = pynvml.nvmlDeviceGetUtilizationRates(handle)
                     metrics[f"system/gpu{i}_utilization"] = util.gpu
                     metrics[f"system/gpu{i}_memory_utilization"] = util.memory
-                except Exception:
+                except (ImportError, RuntimeError, OSError):
                     # GPU monitoring may fail for various reasons (drivers, permissions, etc)
                     # Continue silently as this is optional telemetry
                     pass
@@ -579,7 +579,7 @@ class MetricsLogger:
             try:
                 wandb.watch(model, log="all", log_freq=log_freq)
                 logger.info("Model watching enabled in W&B")
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Failed to watch model in W&B: {e}")
 
     def finish(self) -> None:
@@ -588,14 +588,14 @@ class MetricsLogger:
             try:
                 wandb.finish()
                 logger.info("W&B run finished")
-            except Exception as e:
+            except (RuntimeError, ConnectionError) as e:
                 logger.warning(f"Error finishing W&B: {e}")
 
         if self.use_tensorboard:
             try:
                 self.tb_writer.close()  # type: ignore[no-untyped-call]
                 logger.info("TensorBoard writer closed")
-            except Exception as e:
+            except (RuntimeError, OSError) as e:
                 logger.warning(f"Error closing TensorBoard: {e}")
 
     def __enter__(self) -> "MetricsLogger":

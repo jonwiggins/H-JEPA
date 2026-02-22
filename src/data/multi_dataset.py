@@ -5,11 +5,14 @@ This module enables training on multiple datasets simultaneously,
 which is essential for building foundation models with broad capabilities.
 """
 
+import logging
 import random
 from pathlib import Path
 from typing import Any
 
 from torch.utils.data import ConcatDataset, Dataset
+
+logger = logging.getLogger(__name__)
 
 
 class WeightedMultiDataset(Dataset[Any]):
@@ -88,13 +91,15 @@ class WeightedMultiDataset(Dataset[Any]):
         # We oversample smaller datasets to match weights
         self.effective_size = self._compute_effective_size()
 
-        print("Created WeightedMultiDataset:")
+        logger.info("Created WeightedMultiDataset:")
         for i, (name, size, weight) in enumerate(
             zip(self.dataset_names, self.dataset_sizes, self.weights)
         ):
-            print(f"  {name}: {size:,} images ({weight*100:.1f}% sampling probability)")
-        print(f"Total images: {self.total_size:,}")
-        print(f"Effective size (one epoch): {self.effective_size:,}")
+            logger.info(
+                "  %s: %s images (%.1f%% sampling probability)", name, f"{size:,}", weight * 100
+            )
+        logger.info("Total images: %s", f"{self.total_size:,}")
+        logger.info("Effective size (one epoch): %s", f"{self.effective_size:,}")
 
     def _compute_effective_size(self) -> int:
         """
@@ -190,10 +195,15 @@ class BalancedMultiDataset(Dataset[Any]):
         # Pre-generate sampling indices for reproducibility
         self.resample_indices()
 
-        print("Created BalancedMultiDataset:")
+        logger.info("Created BalancedMultiDataset:")
         for name, size in zip(self.dataset_names, self.dataset_sizes):
-            print(f"  {name}: {size:,} images -> {self.samples_per_dataset:,} samples/epoch")
-        print(f"Total samples per epoch: {self._length:,}")
+            logger.info(
+                "  %s: %s images -> %s samples/epoch",
+                name,
+                f"{size:,}",
+                f"{self.samples_per_dataset:,}",
+            )
+        logger.info("Total samples per epoch: %s", f"{self._length:,}")
 
     def resample_indices(self) -> None:
         """Generate new random sampling indices."""

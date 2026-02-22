@@ -6,6 +6,7 @@ custom transforms optimized for JEPA (Joint-Embedding Predictive Architecture).
 Unlike traditional contrastive learning, JEPA does not require heavy augmentations.
 """
 
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
@@ -14,6 +15,8 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
+
+logger = logging.getLogger(__name__)
 
 
 class JEPATransform:
@@ -184,9 +187,11 @@ class ImageNetDataset(Dataset[tuple[torch.Tensor, int]]):
         # Use torchvision's ImageFolder
         self.dataset = datasets.ImageFolder(split_dir, transform=self.transform)
 
-        print(
-            f"Loaded ImageNet {split} split: {len(self.dataset)} images, "
-            f"{len(self.dataset.classes)} classes"
+        logger.info(
+            "Loaded ImageNet %s split: %d images, %d classes",
+            split,
+            len(self.dataset),
+            len(self.dataset.classes),
         )
 
     def __len__(self) -> int:
@@ -346,9 +351,10 @@ class ImageNet100Dataset(ImageNetDataset):
         # Filter to only include ImageNet-100 classes
         self._filter_classes()
 
-        print(
-            f"Filtered to ImageNet-100: {len(self)} images, "
-            f"{len(self.IMAGENET100_CLASSES)} classes"
+        logger.info(
+            "Filtered to ImageNet-100: %d images, %d classes",
+            len(self),
+            len(self.IMAGENET100_CLASSES),
         )
 
     def _filter_classes(self) -> None:
@@ -424,7 +430,7 @@ class CIFAR10Dataset(Dataset[tuple[torch.Tensor, int]]):
             download=download,
         )
 
-        print(f"Loaded CIFAR-10 {split} split: {len(self.dataset)} images")
+        logger.info("Loaded CIFAR-10 %s split: %d images", split, len(self.dataset))
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -488,7 +494,7 @@ class CIFAR100Dataset(Dataset[tuple[torch.Tensor, int]]):
             download=download,
         )
 
-        print(f"Loaded CIFAR-100 {split} split: {len(self.dataset)} images")
+        logger.info("Loaded CIFAR-100 %s split: %d images", split, len(self.dataset))
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -562,7 +568,7 @@ class STL10Dataset(Dataset[tuple[torch.Tensor, int]]):
         # If training and use_unlabeled, we might want to combine labeled + unlabeled
         # For now, we keep them separate
 
-        print(f"Loaded STL-10 {split} split: {len(self.dataset)} images")
+        logger.info("Loaded STL-10 %s split: %d images", split, len(self.dataset))
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -692,14 +698,14 @@ def build_dataloader(
 
 if __name__ == "__main__":
     # Quick test of datasets
-    print("Testing CIFAR-10...")
+    logger.info("Testing CIFAR-10...")
     cifar10_dataset = build_dataset("cifar10", "/tmp/data", split="train", download=True)
-    print(f"Dataset size: {len(cifar10_dataset)}")  # type: ignore[arg-type]
+    logger.info("Dataset size: %d", len(cifar10_dataset))  # type: ignore[arg-type]
     img, label = cifar10_dataset[0]
-    print(f"Image shape: {img.shape}, Label: {label}")
+    logger.info("Image shape: %s, Label: %s", img.shape, label)
 
-    print("\nTesting CIFAR-100...")
+    logger.info("Testing CIFAR-100...")
     cifar100_dataset = build_dataset("cifar100", "/tmp/data", split="train", download=True)
-    print(f"Dataset size: {len(cifar100_dataset)}")  # type: ignore[arg-type]
+    logger.info("Dataset size: %d", len(cifar100_dataset))  # type: ignore[arg-type]
 
-    print("\nDataset tests completed!")
+    logger.info("Dataset tests completed!")

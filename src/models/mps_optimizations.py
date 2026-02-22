@@ -11,11 +11,14 @@ Key Optimizations:
 4. Chunked attention for large sequences
 """
 
+import logging
 from typing import Any
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+logger = logging.getLogger(__name__)
 
 
 def is_mps_available() -> bool:
@@ -247,12 +250,12 @@ def compile_for_mps(model: nn.Module, mode: str = "default") -> nn.Module:
         Compiled model optimized for MPS (or original model if compilation fails)
     """
     if not is_mps_available():
-        print("MPS not available, returning uncompiled model")
+        logger.info("MPS not available, returning uncompiled model")
         return model
 
     # Check if torch.compile is available (PyTorch 2.0+)
     if not hasattr(torch, "compile"):
-        print("torch.compile not available, returning uncompiled model")
+        logger.info("torch.compile not available, returning uncompiled model")
         return model
 
     try:
@@ -268,10 +271,10 @@ def compile_for_mps(model: nn.Module, mode: str = "default") -> nn.Module:
                 "max_autotune": mode == "max-autotune",
             },
         )
-        print(f"Model compiled successfully for MPS with mode='{mode}'")
+        logger.info("Model compiled successfully for MPS with mode='%s'", mode)
         return compiled_model
-    except Exception as e:
-        print(f"Failed to compile model for MPS: {e}")
+    except RuntimeError as e:
+        logger.warning("Failed to compile model for MPS: %s", e)
         return model
 
 

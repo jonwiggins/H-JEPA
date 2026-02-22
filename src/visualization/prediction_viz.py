@@ -5,6 +5,7 @@ Provides functions to visualize predictions vs ground truth,
 feature space embeddings, nearest neighbors, and reconstruction quality.
 """
 
+import logging
 from typing import Any
 
 import matplotlib.figure as mfigure
@@ -30,6 +31,8 @@ except ImportError:
     SKLEARN_AVAILABLE = False
     PCA = None
     TSNE = None
+
+logger = logging.getLogger(__name__)
 
 
 def visualize_predictions(
@@ -279,7 +282,7 @@ def visualize_feature_space(
             features_2d = reducer.fit_transform(features_np)
             method_name = "UMAP"
         except ImportError:
-            print("UMAP not installed, falling back to t-SNE")
+            logger.warning("UMAP not installed, falling back to t-SNE")
             reducer = TSNE(n_components=2, **kwargs)
             features_2d = reducer.fit_transform(features_np)
             method_name = "t-SNE"

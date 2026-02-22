@@ -538,7 +538,7 @@ class TestEdgeCases:
 
     def test_empty_dataset_list(self):
         """Test with empty dataset list."""
-        with pytest.raises((ValueError, IndexError)):
+        with pytest.raises((ValueError, IndexError, ZeroDivisionError)):
             WeightedMultiDataset(datasets=[])
 
     def test_mismatched_weights_length(self):

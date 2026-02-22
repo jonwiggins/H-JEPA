@@ -129,17 +129,17 @@ class TestCheckDiskSpace:
         # Should return True (assuming system has > 0.002 GB free)
         assert result is True
 
-    def test_insufficient_space(self, tmp_path, capsys):
+    def test_insufficient_space(self, tmp_path, caplog):
         """Test when there's insufficient disk space."""
         # Request an impossibly large amount of space
-        result = check_disk_space(tmp_path, required_gb=999999, buffer_gb=0)
+        with caplog.at_level("WARNING", logger="src.data.download"):
+            result = check_disk_space(tmp_path, required_gb=999999, buffer_gb=0)
 
         # Should return False
         assert result is False
 
-        # Should print warning
-        captured = capsys.readouterr()
-        assert "WARNING" in captured.out or "Insufficient" in captured.out
+        # Should log warning
+        assert "Insufficient" in caplog.text
 
     def test_check_disk_space_with_buffer(self, tmp_path):
         """Test disk space check with buffer."""
@@ -157,7 +157,7 @@ class TestVerifyDataset:
         """Create temporary directory for data."""
         return tmp_path
 
-    def test_verify_cifar10_success(self, temp_data_path, capsys):
+    def test_verify_cifar10_success(self, temp_data_path, caplog):
         """Test successful CIFAR-10 verification."""
         with patch.object(datasets, "CIFAR10") as mock_cifar:
             # Mock train dataset
@@ -170,15 +170,15 @@ class TestVerifyDataset:
 
             mock_cifar.side_effect = [mock_train, mock_test]
 
-            result = verify_dataset("cifar10", temp_data_path)
+            with caplog.at_level("INFO", logger="src.data.download"):
+                result = verify_dataset("cifar10", temp_data_path)
 
             assert result is True
 
             # Check output
-            captured = capsys.readouterr()
-            assert "verified" in captured.out.lower()
+            assert "verified" in caplog.text.lower()
 
-    def test_verify_cifar100_success(self, temp_data_path, capsys):
+    def test_verify_cifar100_success(self, temp_data_path):
         """Test successful CIFAR-100 verification."""
         with patch.object(datasets, "CIFAR100") as mock_cifar:
             mock_train = MagicMock()
@@ -193,7 +193,7 @@ class TestVerifyDataset:
 
             assert result is True
 
-    def test_verify_stl10_success(self, temp_data_path, capsys):
+    def test_verify_stl10_success(self, temp_data_path):
         """Test successful STL-10 verification."""
         with patch.object(datasets, "STL10") as mock_stl:
             mock_train = MagicMock()
@@ -211,7 +211,7 @@ class TestVerifyDataset:
 
             assert result is True
 
-    def test_verify_imagenet_success(self, temp_data_path, capsys):
+    def test_verify_imagenet_success(self, temp_data_path):
         """Test successful ImageNet verification."""
         # Create ImageNet directory structure
         train_dir = temp_data_path / "train"
@@ -229,16 +229,16 @@ class TestVerifyDataset:
 
         assert result is True
 
-    def test_verify_imagenet_missing(self, temp_data_path, capsys):
+    def test_verify_imagenet_missing(self, temp_data_path, caplog):
         """Test ImageNet verification when directories missing."""
-        result = verify_dataset("imagenet", temp_data_path)
+        with caplog.at_level("ERROR", logger="src.data.download"):
+            result = verify_dataset("imagenet", temp_data_path)
 
         assert result is False
 
-        captured = capsys.readouterr()
-        assert "not found" in captured.out.lower()
+        assert "not found" in caplog.text.lower()
 
-    def test_verify_imagenet_empty(self, temp_data_path, capsys):
+    def test_verify_imagenet_empty(self, temp_data_path):
         """Test ImageNet verification with empty directories."""
         # Create directories but no class folders
         train_dir = temp_data_path / "train"
@@ -251,16 +251,16 @@ class TestVerifyDataset:
 
         assert result is False
 
-    def test_verify_unknown_dataset(self, temp_data_path, capsys):
+    def test_verify_unknown_dataset(self, temp_data_path, caplog):
         """Test verification of unknown dataset."""
-        result = verify_dataset("unknown_dataset", temp_data_path)
+        with caplog.at_level("ERROR", logger="src.data.download"):
+            result = verify_dataset("unknown_dataset", temp_data_path)
 
         assert result is False
 
-        captured = capsys.readouterr()
-        assert "Unknown dataset" in captured.out
+        assert "Unknown dataset" in caplog.text
 
-    def test_verify_cifar10_wrong_size(self, temp_data_path, capsys):
+    def test_verify_cifar10_wrong_size(self, temp_data_path):
         """Test CIFAR-10 verification with wrong dataset size."""
         with patch.object(datasets, "CIFAR10") as mock_cifar:
             # Wrong size
@@ -276,17 +276,17 @@ class TestVerifyDataset:
 
             assert result is False
 
-    def test_verify_exception_handling(self, temp_data_path, capsys):
+    def test_verify_exception_handling(self, temp_data_path, caplog):
         """Test that verification handles exceptions gracefully."""
         with patch.object(datasets, "CIFAR10") as mock_cifar:
-            mock_cifar.side_effect = Exception("Test error")
+            mock_cifar.side_effect = RuntimeError("Test error")
 
-            result = verify_dataset("cifar10", temp_data_path)
+            with caplog.at_level("ERROR", logger="src.data.download"):
+                result = verify_dataset("cifar10", temp_data_path)
 
             assert result is False
 
-            captured = capsys.readouterr()
-            assert "failed" in captured.out.lower()
+            assert "failed" in caplog.text.lower()
 
 
 class TestDownloadDataset:
@@ -297,7 +297,7 @@ class TestDownloadDataset:
         """Create temporary directory for data."""
         return tmp_path
 
-    def test_download_cifar10_success(self, temp_data_path, capsys):
+    def test_download_cifar10_success(self, temp_data_path):
         """Test successful CIFAR-10 download."""
         with (
             patch.object(datasets, "CIFAR10") as mock_cifar,
@@ -316,7 +316,7 @@ class TestDownloadDataset:
             # Should be called for train and test splits
             assert mock_cifar.call_count == 2
 
-    def test_download_cifar100_success(self, temp_data_path, capsys):
+    def test_download_cifar100_success(self, temp_data_path):
         """Test successful CIFAR-100 download."""
         with (
             patch.object(datasets, "CIFAR100") as mock_cifar,
@@ -331,7 +331,7 @@ class TestDownloadDataset:
 
             assert result is True
 
-    def test_download_stl10_success(self, temp_data_path, capsys):
+    def test_download_stl10_success(self, temp_data_path):
         """Test successful STL-10 download."""
         with (
             patch.object(datasets, "STL10") as mock_stl,
@@ -350,23 +350,23 @@ class TestDownloadDataset:
             # Should be called for train, test, and unlabeled
             assert mock_stl.call_count == 3
 
-    def test_download_manual_dataset(self, temp_data_path, capsys):
+    def test_download_manual_dataset(self, temp_data_path, caplog):
         """Test that manual download datasets return False."""
-        result = download_dataset("imagenet", temp_data_path)
+        with caplog.at_level("WARNING", logger="src.data.download"):
+            result = download_dataset("imagenet", temp_data_path)
 
         assert result is False
 
-        captured = capsys.readouterr()
-        assert "manual download" in captured.out.lower()
+        assert "manual download" in caplog.text.lower()
 
-    def test_download_unknown_dataset(self, temp_data_path, capsys):
+    def test_download_unknown_dataset(self, temp_data_path, caplog):
         """Test downloading unknown dataset."""
-        result = download_dataset("unknown_dataset", temp_data_path)
+        with caplog.at_level("ERROR", logger="src.data.download"):
+            result = download_dataset("unknown_dataset", temp_data_path)
 
         assert result is False
 
-        captured = capsys.readouterr()
-        assert "Unknown dataset" in captured.out
+        assert "Unknown dataset" in caplog.text
 
     def test_download_without_verification(self, temp_data_path):
         """Test download without verification."""
@@ -383,31 +383,31 @@ class TestDownloadDataset:
             # verify_dataset should not be called
             mock_verify.assert_not_called()
 
-    def test_download_network_error(self, temp_data_path, capsys):
+    def test_download_network_error(self, temp_data_path, caplog):
         """Test handling of network errors."""
         with patch.object(datasets, "CIFAR10") as mock_cifar:
             mock_cifar.side_effect = URLError("Network error")
 
-            result = download_dataset("cifar10", temp_data_path)
+            with caplog.at_level("ERROR", logger="src.data.download"):
+                result = download_dataset("cifar10", temp_data_path)
 
             assert result is False
 
-            captured = capsys.readouterr()
-            assert "network error" in captured.out.lower()
+            assert "network error" in caplog.text.lower()
 
-    def test_download_general_error(self, temp_data_path, capsys):
+    def test_download_general_error(self, temp_data_path, caplog):
         """Test handling of general errors."""
         with patch.object(datasets, "CIFAR10") as mock_cifar:
-            mock_cifar.side_effect = Exception("Test error")
+            mock_cifar.side_effect = OSError("Test error")
 
-            result = download_dataset("cifar10", temp_data_path)
+            with caplog.at_level("ERROR", logger="src.data.download"):
+                result = download_dataset("cifar10", temp_data_path)
 
             assert result is False
 
-            captured = capsys.readouterr()
-            assert "failed" in captured.out.lower()
+            assert "failed" in caplog.text.lower()
 
-    def test_download_verification_failure(self, temp_data_path, capsys):
+    def test_download_verification_failure(self, temp_data_path):
         """Test when download succeeds but verification fails."""
         with (
             patch.object(datasets, "CIFAR10") as mock_cifar,
@@ -426,52 +426,51 @@ class TestDownloadDataset:
 class TestPrintManualDownloadInstructions:
     """Test printing manual download instructions."""
 
-    def test_print_imagenet_instructions(self, capsys):
+    def test_print_imagenet_instructions(self, caplog):
         """Test printing ImageNet instructions."""
-        print_manual_download_instructions("imagenet")
+        with caplog.at_level("INFO", logger="src.data.download"):
+            print_manual_download_instructions("imagenet")
 
-        captured = capsys.readouterr()
-        assert "ImageNet" in captured.out or "ILSVRC2012" in captured.out
-        assert "image-net.org" in captured.out
-        assert "train" in captured.out
-        assert "val" in captured.out
+        assert "ImageNet" in caplog.text or "ILSVRC2012" in caplog.text
+        assert "image-net.org" in caplog.text
+        assert "train" in caplog.text
+        assert "val" in caplog.text
 
-    def test_print_imagenet100_instructions(self, capsys):
+    def test_print_imagenet100_instructions(self, caplog):
         """Test printing ImageNet-100 instructions."""
-        print_manual_download_instructions("imagenet100")
+        with caplog.at_level("INFO", logger="src.data.download"):
+            print_manual_download_instructions("imagenet100")
 
-        captured = capsys.readouterr()
-        assert "ImageNet-100" in captured.out
-        assert "100" in captured.out
+        assert "ImageNet-100" in caplog.text
+        assert "100" in caplog.text
 
-    def test_case_insensitive(self, capsys):
+    def test_case_insensitive(self, caplog):
         """Test that dataset name is case-insensitive."""
-        print_manual_download_instructions("IMAGENET")
+        with caplog.at_level("INFO", logger="src.data.download"):
+            print_manual_download_instructions("IMAGENET")
 
-        captured = capsys.readouterr()
-        assert len(captured.out) > 0
+        assert len(caplog.text) > 0
 
 
 class TestPrintDatasetSummary:
     """Test printing dataset summary."""
 
-    def test_print_summary(self, capsys):
+    def test_print_summary(self, caplog):
         """Test printing dataset summary."""
-        print_dataset_summary()
-
-        captured = capsys.readouterr()
+        with caplog.at_level("INFO", logger="src.data.download"):
+            print_dataset_summary()
 
         # Should mention all datasets
-        assert "CIFAR-10" in captured.out
-        assert "CIFAR-100" in captured.out
-        assert "STL-10" in captured.out
-        assert "ImageNet" in captured.out
+        assert "CIFAR-10" in caplog.text
+        assert "CIFAR-100" in caplog.text
+        assert "STL-10" in caplog.text
+        assert "ImageNet" in caplog.text
 
         # Should show auto-download info
-        assert "Auto" in captured.out or "Manual" in captured.out
+        assert "Auto" in caplog.text or "Manual" in caplog.text
 
         # Should show total size
-        assert "Total" in captured.out
+        assert "Total" in caplog.text
 
 
 class TestEdgeCases:
@@ -539,7 +538,7 @@ class TestEdgeCases:
         # Should still pass (just has fewer classes)
         assert result is True
 
-    def test_imagenet100_filtering_note(self, temp_data_path, capsys):
+    def test_imagenet100_filtering_note(self, temp_data_path):
         """Test ImageNet-100 with full ImageNet present."""
         train_dir = temp_data_path / "train"
         val_dir = temp_data_path / "val"
@@ -553,8 +552,6 @@ class TestEdgeCases:
             (val_dir / f"n{i:05d}").mkdir()
 
         result = verify_dataset("imagenet100", temp_data_path)
-
-        capsys.readouterr()
 
         # Should mention filtering
         # (The actual verification might pass or show a note)
@@ -581,16 +578,18 @@ class TestEdgeCases:
 class TestCommandLineInterface:
     """Test command-line interface functionality."""
 
-    def test_main_no_args(self, capsys):
+    def test_main_no_args(self, caplog):
         """Test main function with no arguments (should show summary)."""
         from src.data.download import main
 
-        with patch("sys.argv", ["download.py"]):
+        with (
+            patch("sys.argv", ["download.py"]),
+            caplog.at_level("INFO", logger="src.data.download"),
+        ):
             main()
 
-        captured = capsys.readouterr()
-        # Should print summary
-        assert "CIFAR" in captured.out or "SUPPORTED" in captured.out
+        # Should log summary
+        assert "CIFAR" in caplog.text or "SUPPORTED" in caplog.text
 
     def test_main_with_dataset(self, tmp_path):
         """Test main function with dataset argument."""

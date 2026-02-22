@@ -155,7 +155,7 @@ class ModelServer:
 
             logger.info("Model loaded successfully")
 
-        except Exception as e:
+        except (FileNotFoundError, KeyError, RuntimeError) as e:
             logger.error(f"Error loading model: {e}")
             raise
 
@@ -174,7 +174,7 @@ class ModelServer:
             image = image.convert("RGB")
 
         # Apply transform
-        image_tensor = self.transform(image)
+        image_tensor: torch.Tensor = self.transform(image)
         return image_tensor.unsqueeze(0)  # Add batch dimension
 
     @torch.no_grad()
@@ -182,7 +182,7 @@ class ModelServer:
         self,
         image: torch.Tensor,
         hierarchy_level: int = 0,
-    ) -> tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray[Any, np.dtype[Any]], float]:
         """
         Extract features from image.
 
@@ -218,7 +218,7 @@ class ModelServer:
         self,
         images: torch.Tensor,
         hierarchy_level: int = 0,
-    ) -> tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray[Any, np.dtype[Any]], float]:
         """
         Extract features from batch of images.
 
@@ -272,7 +272,7 @@ def get_model_server() -> ModelServer:
     return model_server
 
 
-@app.on_event("startup")
+@app.on_event("startup")  # type: ignore[misc]
 async def startup_event() -> None:
     """Initialize model server on startup."""
     logger.info("Starting H-JEPA Model Server...")
@@ -281,12 +281,12 @@ async def startup_event() -> None:
     try:
         get_model_server()
         logger.info("Model server ready")
-    except Exception as e:
+    except (RuntimeError, OSError) as e:
         logger.error(f"Failed to initialize model server: {e}")
         raise
 
 
-@app.get("/", response_model=dict[str, str])
+@app.get("/", response_model=dict[str, str])  # type: ignore[misc]
 async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
@@ -296,7 +296,7 @@ async def root() -> dict[str, str]:
     }
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health", response_model=HealthResponse)  # type: ignore[misc]
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
     start_time = time.time()
@@ -322,7 +322,7 @@ async def health_check() -> HealthResponse:
         raise HTTPException(status_code=503, detail=str(e)) from e
 
 
-@app.post("/extract", response_model=FeatureResponse)
+@app.post("/extract", response_model=FeatureResponse)  # type: ignore[misc]
 async def extract_features(
     file: UploadFile = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
@@ -376,7 +376,7 @@ async def extract_features(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/extract_batch", response_model=BatchFeatureResponse)
+@app.post("/extract_batch", response_model=BatchFeatureResponse)  # type: ignore[misc]
 async def extract_features_batch(
     files: list[UploadFile] = File(...),
     hierarchy_level: int = Query(default=0, ge=0, le=3),
@@ -438,13 +438,13 @@ async def extract_features_batch(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/metrics")
+@app.get("/metrics")  # type: ignore[misc]
 async def metrics() -> Response:
     """Prometheus metrics endpoint."""
     return Response(content=generate_latest(), media_type="text/plain")
 
 
-@app.get("/info")
+@app.get("/info")  # type: ignore[misc]
 async def model_info() -> dict[str, Any]:
     """Get model information."""
     try:

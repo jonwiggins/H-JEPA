@@ -11,6 +11,7 @@ This combines the benefits of multi-crop augmentation with H-JEPA's
 hierarchical predictive learning.
 """
 
+import logging
 from typing import Any, Literal
 
 import matplotlib.pyplot as plt
@@ -18,6 +19,8 @@ import numpy as np
 import torch
 
 from .hierarchical import HierarchicalMaskGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class MultiCropMaskGenerator:
@@ -426,16 +429,16 @@ class MultiCropMaskGenerator:
 
 def demo() -> None:
     """Demonstration of MultiCropMaskGenerator."""
-    print("Multi-Crop Mask Generator Demo")
-    print("=" * 70)
+    logger.info("Multi-Crop Mask Generator Demo")
+    logger.info("=" * 70)
 
     strategies: list[
         Literal["global_only", "global_with_local_context", "cross_crop_prediction"]
     ] = ["global_only", "global_with_local_context", "cross_crop_prediction"]
 
     for strategy in strategies:
-        print(f"\nStrategy: {strategy}")
-        print("-" * 70)
+        logger.info("Strategy: %s", strategy)
+        logger.info("-" * 70)
 
         mask_gen = MultiCropMaskGenerator(
             global_crop_size=224,
@@ -448,33 +451,33 @@ def demo() -> None:
         )
 
         crop_info = mask_gen.get_crop_info()
-        print("Crop configuration:")
+        logger.info("Crop configuration:")
         for key, value in crop_info.items():
-            print(f"  {key}: {value}")
+            logger.info("  %s: %s", key, value)
 
         # Generate masks
         batch_size = 4
         masks = mask_gen(batch_size=batch_size, device="cpu")
 
-        print(f"\nGenerated masks for batch_size={batch_size}:")
-        print(f"  Strategy: {masks['strategy']}")
-        print(f"  Global crops: {masks['num_global_crops']}")
-        print(f"  Local crops: {masks['num_local_crops']}")
+        logger.info("Generated masks for batch_size=%d:", batch_size)
+        logger.info("  Strategy: %s", masks["strategy"])
+        logger.info("  Global crops: %s", masks["num_global_crops"])
+        logger.info("  Local crops: %s", masks["num_local_crops"])
 
         if masks["global_masks"]:
-            print(f"  Global mask structure: {list(masks['global_masks'].keys())}")
+            logger.info("  Global mask structure: %s", list(masks["global_masks"].keys()))
 
         if masks["local_masks"]:
-            print(f"  Local mask structure: {list(masks['local_masks'].keys())}")
+            logger.info("  Local mask structure: %s", list(masks["local_masks"].keys()))
 
         # Visualize
         save_path = f"/tmp/multicrop_masks_{strategy}.png"
         fig = mask_gen.visualize_multicrop_masks(masks, sample_idx=0, save_path=save_path)
         plt.close(fig)
-        print(f"  Visualization saved to {save_path}")
+        logger.info("  Visualization saved to %s", save_path)
 
-    print("\n" + "=" * 70)
-    print("Demo complete!")
+    logger.info("=" * 70)
+    logger.info("Demo complete!")
 
 
 if __name__ == "__main__":

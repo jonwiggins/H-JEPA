@@ -619,7 +619,7 @@ class HJEPATrainer:
 
                 metrics["context_eff_rank"] = torch.exp(context_entropy).item()
                 metrics["target_eff_rank"] = torch.exp(target_entropy).item()
-        except Exception:
+        except RuntimeError:
             # SVD can fail, just skip rank computation
             pass
 
@@ -697,7 +697,7 @@ class HJEPATrainer:
             logger.info(f"Logged visualizations for epoch {epoch}")
             self.model.train()
 
-        except Exception as e:
+        except (RuntimeError, OSError) as e:
             logger.warning(f"Failed to log epoch visualizations: {e}")
             self.model.train()
 

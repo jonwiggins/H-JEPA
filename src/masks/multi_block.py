@@ -5,11 +5,15 @@ This module implements the multi-block masking strategy used in H-JEPA training,
 which samples multiple target blocks and a large context block for predictive learning.
 """
 
+import logging
+
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import torch
+
+logger = logging.getLogger(__name__)
 
 
 class MultiBlockMaskGenerator:
@@ -343,8 +347,8 @@ class MultiBlockMaskGenerator:
 
 def demo() -> None:
     """Demonstration of MultiBlockMaskGenerator."""
-    print("Multi-Block Mask Generator Demo")
-    print("=" * 50)
+    logger.info("Multi-Block Mask Generator Demo")
+    logger.info("=" * 50)
 
     # Create mask generator
     mask_gen = MultiBlockMaskGenerator(
@@ -356,38 +360,38 @@ def demo() -> None:
         aspect_ratio_range=(0.75, 1.5),
     )
 
-    print(f"Input size: {mask_gen.input_size}")
-    print(f"Patch size: {mask_gen.patch_size}")
-    print(
-        f"Number of patches: {mask_gen.num_patches} ({mask_gen.num_patches_h}x{mask_gen.num_patches_w})"
+    logger.info("Input size: %s", mask_gen.input_size)
+    logger.info("Patch size: %s", mask_gen.patch_size)
+    logger.info(
+        "Number of patches: %d (%dx%d)",
+        mask_gen.num_patches,
+        mask_gen.num_patches_h,
+        mask_gen.num_patches_w,
     )
-    print(f"Number of target masks: {mask_gen.num_target_masks}")
-    print()
+    logger.info("Number of target masks: %d", mask_gen.num_target_masks)
 
     # Generate masks
     batch_size = 4
     context_mask, target_masks = mask_gen(batch_size=batch_size, device="cpu")
 
-    print(f"Generated masks for batch_size={batch_size}")
-    print(f"Context mask shape: {context_mask.shape}")
-    print(f"Target masks shape: {target_masks.shape}")
-    print()
+    logger.info("Generated masks for batch_size=%d", batch_size)
+    logger.info("Context mask shape: %s", context_mask.shape)
+    logger.info("Target masks shape: %s", target_masks.shape)
 
     # Compute statistics
     stats = mask_gen.get_mask_statistics(context_mask, target_masks)
-    print("Mask Statistics:")
+    logger.info("Mask Statistics:")
     for key, value in stats.items():
-        print(f"  {key}: {value:.4f}")
-    print()
+        logger.info("  %s: %.4f", key, value)
 
     # Visualize
-    print("Generating visualization...")
+    logger.info("Generating visualization...")
     mask_gen.visualize_masks(context_mask, target_masks, sample_idx=0)
     plt.savefig("/tmp/multi_block_masks_demo.png", dpi=150, bbox_inches="tight")
-    print("Visualization saved to /tmp/multi_block_masks_demo.png")
+    logger.info("Visualization saved to /tmp/multi_block_masks_demo.png")
     plt.close()
 
-    print("\nDemo complete!")
+    logger.info("Demo complete!")
 
 
 if __name__ == "__main__":

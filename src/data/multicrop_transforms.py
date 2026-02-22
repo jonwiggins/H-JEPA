@@ -13,6 +13,7 @@ This provides the model with different scales and contexts to learn from,
 improving robustness and scale invariance.
 """
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -20,6 +21,8 @@ import numpy.typing as npt
 import torch
 from PIL import Image
 from torchvision import transforms
+
+logger = logging.getLogger(__name__)
 
 
 class MultiCropTransform:
@@ -352,8 +355,8 @@ def build_multicrop_transform(
 
 if __name__ == "__main__":
     # Demo of multi-crop transform
-    print("Multi-Crop Transform Demo")
-    print("=" * 60)
+    logger.info("Multi-Crop Transform Demo")
+    logger.info("=" * 60)
 
     # Create a dummy image
     from PIL import Image
@@ -368,21 +371,18 @@ if __name__ == "__main__":
         local_crop_size=96,
     )
 
-    print(f"Transform: {transform}")
-    print()
+    logger.info("Transform: %s", transform)
 
     # Apply transform
     crops = transform(dummy_image)
 
-    print(f"Generated {len(crops)} crops:")
-    print(f"  Global crops (0-1): {crops[0].shape}, {crops[1].shape}")
-    print("  Local crops (2-7): ", end="")
-    print(", ".join([str(crop.shape) for crop in crops[2:]]))
-    print()
+    logger.info("Generated %d crops:", len(crops))
+    logger.info("  Global crops (0-1): %s, %s", crops[0].shape, crops[1].shape)
+    logger.info("  Local crops (2-7): %s", ", ".join([str(crop.shape) for crop in crops[2:]]))
 
     # Demo adaptive transform
-    print("\nAdaptive Multi-Crop Demo")
-    print("=" * 60)
+    logger.info("Adaptive Multi-Crop Demo")
+    logger.info("=" * 60)
 
     adaptive_transform = AdaptiveMultiCropTransform(
         num_global_crops=2,
@@ -391,14 +391,16 @@ if __name__ == "__main__":
         warmup_epochs=10,
     )
 
-    print("Epoch progression:")
+    logger.info("Epoch progression:")
     for epoch in [0, 5, 10, 15]:
         adaptive_transform.set_epoch(epoch)
         crops = adaptive_transform(dummy_image)
-        print(
-            f"  Epoch {epoch:2d}: {len(crops)} total crops "
-            f"({adaptive_transform.num_global_crops} global + "
-            f"{adaptive_transform.num_local_crops} local)"
+        logger.info(
+            "  Epoch %2d: %d total crops (%d global + %d local)",
+            epoch,
+            len(crops),
+            adaptive_transform.num_global_crops,
+            adaptive_transform.num_local_crops,
         )
 
-    print("\nDemo complete!")
+    logger.info("Demo complete!")

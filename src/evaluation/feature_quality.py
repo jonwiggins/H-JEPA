@@ -5,6 +5,7 @@ This module implements various metrics to assess the quality of learned
 representations, including rank analysis, variance measures, and isotropy.
 """
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -24,6 +25,8 @@ try:
     UMAP_AVAILABLE = True
 except ImportError:
     UMAP_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureQualityAnalyzer:
@@ -341,7 +344,7 @@ class FeatureQualityAnalyzer:
             desc="Extracting features for analysis",
         )
 
-        print(f"Analyzing {len(features)} samples with {features.shape[1]} dimensions")
+        logger.info("Analyzing %d samples with %d dimensions", len(features), features.shape[1])
 
         # Compute all metrics
         rank_metrics = self.compute_rank_analysis(features)
@@ -381,7 +384,7 @@ class FeatureQualityAnalyzer:
         Returns:
             t-SNE embeddings [N, n_components]
         """
-        print(f"Computing t-SNE with perplexity={perplexity}...")
+        logger.info("Computing t-SNE with perplexity=%s...", perplexity)
 
         tsne = TSNE(
             n_components=n_components,
@@ -421,7 +424,7 @@ class FeatureQualityAnalyzer:
         if not UMAP_AVAILABLE:
             raise ImportError("UMAP not available. Install with: pip install umap-learn")
 
-        print(f"Computing UMAP with n_neighbors={n_neighbors}...")
+        logger.info("Computing UMAP with n_neighbors=%d...", n_neighbors)
 
         reducer = umap.UMAP(
             n_components=n_components,
@@ -451,13 +454,13 @@ class FeatureQualityAnalyzer:
         Returns:
             Tuple of (PCA embeddings, PCA object)
         """
-        print(f"Computing PCA with {n_components} components...")
+        logger.info("Computing PCA with %d components...", n_components)
 
         pca = PCA(n_components=n_components)
         embeddings = pca.fit_transform(features)
 
-        print(f"Explained variance ratio: {pca.explained_variance_ratio_[:10]}")
-        print(f"Cumulative variance: {pca.explained_variance_ratio_.cumsum()[-1]:.4f}")
+        logger.info("Explained variance ratio: %s", pca.explained_variance_ratio_[:10])
+        logger.info("Cumulative variance: %.4f", pca.explained_variance_ratio_.cumsum()[-1])
 
         return embeddings, pca
 
@@ -504,56 +507,58 @@ def print_quality_report(metrics: dict[str, Any], verbose: bool = True) -> None:
         metrics: Metrics dictionary from compute_all_metrics
         verbose: Whether to print detailed metrics
     """
-    print("\n" + "=" * 60)
-    print("FEATURE QUALITY REPORT")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("FEATURE QUALITY REPORT")
+    logger.info("=" * 60)
 
     # Basic info
-    print(f"\nDataset: {metrics['num_samples']} samples, {metrics['feature_dim']} dimensions")
+    logger.info(
+        "Dataset: %d samples, %d dimensions", metrics["num_samples"], metrics["feature_dim"]
+    )
 
     # Rank analysis
-    print("\n--- Rank Analysis ---")
+    logger.info("--- Rank Analysis ---")
     rank = metrics["rank"]
-    print(f"Effective Rank: {rank['effective_rank']:.2f}")
-    print(f"Rank Ratio: {rank['rank_ratio']:.4f}")
-    print(f"Components for 99% variance: {rank['n_components_99']}")
-    print(f"First component variance: {rank['variance_first_component']:.4f}")
+    logger.info("Effective Rank: %.2f", rank["effective_rank"])
+    logger.info("Rank Ratio: %.4f", rank["rank_ratio"])
+    logger.info("Components for 99%% variance: %s", rank["n_components_99"])
+    logger.info("First component variance: %.4f", rank["variance_first_component"])
 
     # Feature statistics
-    print("\n--- Feature Statistics ---")
+    logger.info("--- Feature Statistics ---")
     stats = metrics["statistics"]
-    print(f"Mean variance: {stats['mean_variance']:.6f}")
-    print(f"Std variance: {stats['std_variance']:.6f}")
-    print(f"Mean |correlation|: {stats['mean_abs_correlation_off_diag']:.6f}")
+    logger.info("Mean variance: %.6f", stats["mean_variance"])
+    logger.info("Std variance: %.6f", stats["std_variance"])
+    logger.info("Mean |correlation|: %.6f", stats["mean_abs_correlation_off_diag"])
 
     # Isotropy
-    print("\n--- Isotropy ---")
+    logger.info("--- Isotropy ---")
     iso = metrics["isotropy"]
-    print(f"Mean similarity: {iso['mean_similarity']:.6f}")
-    print(f"Std similarity: {iso['std_similarity']:.6f}")
-    print(f"Uniformity (lower is better): {iso['uniformity']:.6f}")
+    logger.info("Mean similarity: %.6f", iso["mean_similarity"])
+    logger.info("Std similarity: %.6f", iso["std_similarity"])
+    logger.info("Uniformity (lower is better): %.6f", iso["uniformity"])
 
     # Collapse detection
-    print("\n--- Collapse Detection ---")
+    logger.info("--- Collapse Detection ---")
     collapse = metrics["collapse"]
     if collapse["any_collapse"]:
-        print("WARNING: Potential representation collapse detected!")
+        logger.warning("Potential representation collapse detected!")
         if collapse["rank_collapse"]:
-            print("  - Rank collapse: effective rank is too low")
+            logger.warning("  - Rank collapse: effective rank is too low")
         if collapse["variance_collapse"]:
-            print("  - Variance collapse: feature variance is too low")
+            logger.warning("  - Variance collapse: feature variance is too low")
         if collapse["dimension_collapse"]:
-            print("  - Dimension collapse: too few dimensions used")
+            logger.warning("  - Dimension collapse: too few dimensions used")
     else:
-        print("No collapse detected - representations look healthy!")
+        logger.info("No collapse detected - representations look healthy!")
 
     if verbose:
-        print("\n--- Detailed Metrics ---")
-        print("Rank metrics:", rank)
-        print("Statistics:", stats)
-        print("Isotropy:", iso)
+        logger.info("--- Detailed Metrics ---")
+        logger.info("Rank metrics: %s", rank)
+        logger.info("Statistics: %s", stats)
+        logger.info("Isotropy: %s", iso)
 
-    print("\n" + "=" * 60)
+    logger.info("=" * 60)
 
 
 def compare_hierarchy_levels(
@@ -587,9 +592,9 @@ def compare_hierarchy_levels(
     results: dict[int, Any] = {}
 
     for level in range(num_levels):
-        print(f"\n{'='*60}")
-        print(f"Analyzing Hierarchy Level {level}")
-        print(f"{'='*60}")
+        logger.info("=" * 60)
+        logger.info("Analyzing Hierarchy Level %d", level)
+        logger.info("=" * 60)
 
         analyzer = FeatureQualityAnalyzer(
             model=model,
@@ -605,11 +610,11 @@ def compare_hierarchy_levels(
         results[level] = metrics
 
         # Print summary
-        print(f"\nLevel {level} Summary:")
-        print(f"  Effective Rank: {metrics['rank']['effective_rank']:.2f}")
-        print(f"  Rank Ratio: {metrics['rank']['rank_ratio']:.4f}")
-        print(f"  Mean Variance: {metrics['statistics']['mean_variance']:.6f}")
-        print(f"  Uniformity: {metrics['isotropy']['uniformity']:.6f}")
-        print(f"  Collapse: {metrics['collapse']['any_collapse']}")
+        logger.info("Level %d Summary:", level)
+        logger.info("  Effective Rank: %.2f", metrics["rank"]["effective_rank"])
+        logger.info("  Rank Ratio: %.4f", metrics["rank"]["rank_ratio"])
+        logger.info("  Mean Variance: %.6f", metrics["statistics"]["mean_variance"])
+        logger.info("  Uniformity: %.6f", metrics["isotropy"]["uniformity"])
+        logger.info("  Collapse: %s", metrics["collapse"]["any_collapse"])
 
     return results

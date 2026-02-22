@@ -6,6 +6,7 @@ on frozen features from H-JEPA. This is a standard evaluation protocol for
 self-supervised learning models.
 """
 
+import logging
 import warnings
 from typing import Any
 
@@ -18,6 +19,8 @@ from sklearn.metrics import accuracy_score, confusion_matrix, top_k_accuracy_sco
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 
 class LinearProbe(nn.Module):
@@ -328,16 +331,24 @@ class LinearProbeEvaluator:
                 history["val_acc"].append(val_metrics["accuracy"])
 
                 if verbose:
-                    print(
-                        f"Epoch {epoch+1}/{epochs} - "
-                        f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}% - "
-                        f"Val Loss: {val_metrics['loss']:.4f}, Val Acc: {val_metrics['accuracy']:.2f}%"
+                    logger.info(
+                        "Epoch %d/%d - Train Loss: %.4f, Train Acc: %.2f%% - "
+                        "Val Loss: %.4f, Val Acc: %.2f%%",
+                        epoch + 1,
+                        epochs,
+                        train_loss,
+                        train_acc,
+                        val_metrics["loss"],
+                        val_metrics["accuracy"],
                     )
             else:
                 if verbose:
-                    print(
-                        f"Epoch {epoch+1}/{epochs} - "
-                        f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%"
+                    logger.info(
+                        "Epoch %d/%d - Train Loss: %.4f, Train Acc: %.2f%%",
+                        epoch + 1,
+                        epochs,
+                        train_loss,
+                        train_acc,
                     )
 
             # Step scheduler
@@ -473,9 +484,9 @@ class LinearProbeEvaluator:
 
         for fold, (train_ids, val_ids) in enumerate(kfold.split(dataset)):
             if verbose:
-                print(f"\n{'='*50}")
-                print(f"Fold {fold + 1}/{k_folds}")
-                print(f"{'='*50}")
+                logger.info("=" * 50)
+                logger.info("Fold %d/%d", fold + 1, k_folds)
+                logger.info("=" * 50)
 
             # Create data samplers
             train_sampler = SubsetRandomSampler(train_ids)
@@ -516,20 +527,22 @@ class LinearProbeEvaluator:
             results["fold_losses"].append(metrics["loss"])
 
             if verbose:
-                print(f"Fold {fold + 1} - Accuracy: {metrics['accuracy']:.2f}%")
+                logger.info("Fold %d - Accuracy: %.2f%%", fold + 1, metrics["accuracy"])
 
         # Compute statistics
         results["mean_accuracy"] = np.mean(results["fold_accuracies"])
         results["std_accuracy"] = np.std(results["fold_accuracies"])
 
         if verbose:
-            print(f"\n{'='*50}")
-            print("Cross-Validation Results")
-            print(f"{'='*50}")
-            print(
-                f"Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%"
+            logger.info("=" * 50)
+            logger.info("Cross-Validation Results")
+            logger.info("=" * 50)
+            logger.info(
+                "Mean Accuracy: %.2f%% +/- %.2f%%",
+                results["mean_accuracy"],
+                results["std_accuracy"],
             )
-            print(f"Fold Accuracies: {results['fold_accuracies']}")
+            logger.info("Fold Accuracies: %s", results["fold_accuracies"])
 
         return results
 

@@ -5,6 +5,7 @@ This module implements hierarchical masking that generates different masks
 for different levels of the hierarchy, enabling multi-scale representation learning.
 """
 
+import logging
 from typing import cast
 
 import matplotlib.cm as cm
@@ -12,6 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import torch
+
+logger = logging.getLogger(__name__)
 
 
 class HierarchicalMaskGenerator:
@@ -469,8 +472,8 @@ class HierarchicalMaskGenerator:
 
 def demo() -> None:
     """Demonstration of HierarchicalMaskGenerator."""
-    print("Hierarchical Mask Generator Demo")
-    print("=" * 50)
+    logger.info("Hierarchical Mask Generator Demo")
+    logger.info("=" * 50)
 
     # Create mask generator
     mask_gen = HierarchicalMaskGenerator(
@@ -481,58 +484,57 @@ def demo() -> None:
         scale_progression="geometric",
     )
 
-    print(f"Input size: {mask_gen.input_size}")
-    print(f"Patch size: {mask_gen.patch_size}")
-    print(
-        f"Number of patches: {mask_gen.num_patches} ({mask_gen.num_patches_h}x{mask_gen.num_patches_w})"
+    logger.info("Input size: %s", mask_gen.input_size)
+    logger.info("Patch size: %s", mask_gen.patch_size)
+    logger.info(
+        "Number of patches: %d (%dx%d)",
+        mask_gen.num_patches,
+        mask_gen.num_patches_h,
+        mask_gen.num_patches_w,
     )
-    print(f"Number of hierarchies: {mask_gen.num_hierarchies}")
-    print(f"Number of target masks per level: {mask_gen.num_target_masks}")
-    print()
+    logger.info("Number of hierarchies: %d", mask_gen.num_hierarchies)
+    logger.info("Number of target masks per level: %d", mask_gen.num_target_masks)
 
     # Print level configurations
-    print("Level Configurations:")
+    logger.info("Level Configurations:")
     for config in mask_gen.level_configs:
-        print(f"  Level {config['level']}:")
-        print(f"    Target scale: {config['target_scale']}")
-        print(f"    Context scale: {config['context_scale']}")
-    print()
+        logger.info("  Level %s:", config["level"])
+        logger.info("    Target scale: %s", config["target_scale"])
+        logger.info("    Context scale: %s", config["context_scale"])
 
     # Generate masks
     batch_size = 4
     masks = mask_gen(batch_size=batch_size, device="cpu")
 
-    print(f"Generated masks for batch_size={batch_size}")
+    logger.info("Generated masks for batch_size=%d", batch_size)
     for level_key, level_masks in masks.items():
-        print(f"  {level_key}:")
-        print(f"    Context shape: {level_masks['context'].shape}")
-        print(f"    Targets shape: {level_masks['targets'].shape}")
-    print()
+        logger.info("  %s:", level_key)
+        logger.info("    Context shape: %s", level_masks["context"].shape)
+        logger.info("    Targets shape: %s", level_masks["targets"].shape)
 
     # Compute statistics
     stats = mask_gen.get_hierarchical_statistics(masks)
-    print("Hierarchical Mask Statistics:")
+    logger.info("Hierarchical Mask Statistics:")
     for level_key, level_stats in stats.items():
-        print(f"  {level_key}:")
+        logger.info("  %s:", level_key)
         for key, value in level_stats.items():
-            print(f"    {key}: {value:.4f}")
-    print()
+            logger.info("    %s: %.4f", key, value)
 
     # Visualize
-    print("Generating visualizations...")
+    logger.info("Generating visualizations...")
     fig1 = mask_gen.visualize_hierarchical_masks(
         masks, sample_idx=0, save_path="/tmp/hierarchical_masks_demo.png"
     )
     plt.close(fig1)
-    print("Visualization saved to /tmp/hierarchical_masks_demo.png")
+    logger.info("Visualization saved to /tmp/hierarchical_masks_demo.png")
 
     fig2 = mask_gen.visualize_combined_view(
         masks, sample_idx=0, save_path="/tmp/hierarchical_masks_combined_demo.png"
     )
     plt.close(fig2)
-    print("Combined view saved to /tmp/hierarchical_masks_combined_demo.png")
+    logger.info("Combined view saved to /tmp/hierarchical_masks_combined_demo.png")
 
-    print("\nDemo complete!")
+    logger.info("Demo complete!")
 
 
 if __name__ == "__main__":

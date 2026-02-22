@@ -6,6 +6,7 @@ few-shot learning, and domain adaptation evaluation.
 """
 
 import copy
+import logging
 from typing import Any
 
 import numpy as np
@@ -15,6 +16,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 
 class TransferHead(nn.Module):
@@ -313,12 +316,15 @@ class FineTuneEvaluator:
                 history["val_acc"].append(val_metrics["accuracy"])
 
                 if verbose:
-                    print(
-                        f"Epoch {epoch}/{epochs} - "
-                        f"Train Loss: {train_metrics['loss']:.4f}, "
-                        f"Train Acc: {train_metrics['accuracy']:.2f}% - "
-                        f"Val Loss: {val_metrics['loss']:.4f}, "
-                        f"Val Acc: {val_metrics['accuracy']:.2f}%"
+                    logger.info(
+                        "Epoch %d/%d - Train Loss: %.4f, Train Acc: %.2f%% - "
+                        "Val Loss: %.4f, Val Acc: %.2f%%",
+                        epoch,
+                        epochs,
+                        train_metrics["loss"],
+                        train_metrics["accuracy"],
+                        val_metrics["loss"],
+                        val_metrics["accuracy"],
                     )
 
                 # Track best
@@ -326,10 +332,12 @@ class FineTuneEvaluator:
                     best_val_acc = val_metrics["accuracy"]
             else:
                 if verbose:
-                    print(
-                        f"Epoch {epoch}/{epochs} - "
-                        f"Train Loss: {train_metrics['loss']:.4f}, "
-                        f"Train Acc: {train_metrics['accuracy']:.2f}%"
+                    logger.info(
+                        "Epoch %d/%d - Train Loss: %.4f, Train Acc: %.2f%%",
+                        epoch,
+                        epochs,
+                        train_metrics["loss"],
+                        train_metrics["accuracy"],
                     )
 
             # Step scheduler
@@ -337,7 +345,7 @@ class FineTuneEvaluator:
                 scheduler.step()
 
         if val_loader is not None and verbose:
-            print(f"\nBest Val Accuracy: {best_val_acc:.2f}%")
+            logger.info("Best Val Accuracy: %.2f%%", best_val_acc)
 
         return history
 
@@ -538,7 +546,7 @@ class FewShotEvaluator:
             Dictionary with metrics
         """
         if verbose:
-            print(f"\nEvaluating {n_way}-way {k_shot}-shot learning...")
+            logger.info("Evaluating %d-way %d-shot learning...", n_way, k_shot)
 
         # Sample episodes
         episodes = self.sample_few_shot_episodes(dataset, n_way, k_shot, n_query, n_episodes)
@@ -566,7 +574,13 @@ class FewShotEvaluator:
         }
 
         if verbose:
-            print(f"{n_way}-way {k_shot}-shot: " f"{mean_acc:.2f}% ± {conf_interval:.2f}%")
+            logger.info(
+                "%d-way %d-shot: %.2f%% +/- %.2f%%",
+                n_way,
+                k_shot,
+                mean_acc,
+                conf_interval,
+            )
 
         return metrics
 

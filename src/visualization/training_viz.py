@@ -6,6 +6,7 @@ gradient flow, and collapse monitoring.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,8 @@ try:
     import seaborn as sns
 except ImportError:
     sns = None
+
+logger = logging.getLogger(__name__)
 
 
 def plot_training_curves(
@@ -326,7 +329,7 @@ def visualize_gradient_flow(
             layers.append(param.grad.numel())
 
     if len(layer_names) == 0:
-        print("Warning: No gradients found. Run backward pass before calling this function.")
+        logger.warning("No gradients found. Run backward pass before calling this function.")
         return None
 
     fig, axes = plt.subplots(2, 2, figsize=figsize)
@@ -567,15 +570,15 @@ def load_training_logs(log_dir: str | Path) -> dict[str, Any]:
             with open(json_file) as f:
                 data = json.load(f)
                 metrics[json_file.stem] = data
-        except Exception as e:
-            print(f"Error loading {json_file}: {e}")
+        except (OSError, json.JSONDecodeError) as e:
+            logger.error("Error loading %s: %s", json_file, e)
 
     # Try to load numpy files
     for npy_file in log_dir.glob("*.npy"):
         try:
             data = np.load(npy_file, allow_pickle=True)
             metrics[npy_file.stem] = data.tolist() if isinstance(data, np.ndarray) else data
-        except Exception as e:
-            print(f"Error loading {npy_file}: {e}")
+        except (OSError, ValueError) as e:
+            logger.error("Error loading %s: %s", npy_file, e)
 
     return metrics

@@ -284,7 +284,7 @@ class CheckpointManager:
                     if os.path.exists(ckpt["path"]):
                         os.remove(ckpt["path"])
                         logger.info(f"Removed old checkpoint: {ckpt['path']}")
-                except Exception as e:
+                except OSError as e:
                     logger.warning(f"Failed to remove checkpoint {ckpt['path']}: {e}")
 
     def cleanup_old_checkpoints(self, keep_last_n: int = 5) -> None:
@@ -311,7 +311,7 @@ class CheckpointManager:
                     try:
                         os.remove(ckpt_path)
                         logger.info(f"Cleaned up old checkpoint: {ckpt_path}")
-                    except Exception as e:
+                    except OSError as e:
                         logger.warning(f"Failed to remove checkpoint {ckpt_path}: {e}")
 
     def get_latest_checkpoint(self) -> str | None:

@@ -6,6 +6,7 @@ feature quality without any training. It classifies test samples based on their
 nearest neighbors in the training set.
 """
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -17,6 +18,8 @@ from sklearn.metrics import accuracy_score, top_k_accuracy_score
 from sklearn.neighbors import NearestNeighbors
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 
 class KNNEvaluator:
@@ -156,7 +159,7 @@ class KNNEvaluator:
         )
         self.knn_index.fit(self.train_features)
 
-        print(f"Built k-NN index with {len(self.train_features)} samples")
+        logger.info("Built k-NN index with %d samples", len(self.train_features))
 
     def predict(
         self,
@@ -258,11 +261,11 @@ class KNNEvaluator:
                 metrics[f"top_{k}_accuracy"] = top_k_acc
 
         if verbose:
-            print(f"\nk-NN Evaluation Results (k={self.k}):")
-            print(f"  Accuracy: {accuracy:.2f}%")
+            logger.info("k-NN Evaluation Results (k=%d):", self.k)
+            logger.info("  Accuracy: %.2f%%", accuracy)
             for k in top_k_list:
                 if k > 1 and f"top_{k}_accuracy" in metrics:
-                    print(f"  Top-{k} Accuracy: {metrics[f'top_{k}_accuracy']:.2f}%")
+                    logger.info("  Top-%d Accuracy: %.2f%%", k, metrics[f"top_{k}_accuracy"])
 
         return metrics
 
@@ -297,7 +300,7 @@ class KNNEvaluator:
         for k in k_values:
             if self.train_features is None or k > len(self.train_features):
                 if verbose:
-                    print(f"Skipping k={k} (larger than training set size)")
+                    logger.info("Skipping k=%d (larger than training set size)", k)
                 continue
 
             # Update k-NN index with new k
@@ -317,7 +320,7 @@ class KNNEvaluator:
             }
 
             if verbose:
-                print(f"k={k:3d}: Accuracy = {accuracy:.2f}%")
+                logger.info("k=%3d: Accuracy = %.2f%%", k, accuracy)
 
         return results
 
@@ -406,18 +409,17 @@ def sweep_knn_params(
     best_acc = 0.0
     best_config: str | None = None
 
-    print("Sweeping k-NN hyperparameters...")
-    print(f"k values: {k_values}")
-    print(f"Temperatures: {temperatures}")
-    print(f"Distance metrics: {distance_metrics}")
-    print()
+    logger.info("Sweeping k-NN hyperparameters...")
+    logger.info("k values: %s", k_values)
+    logger.info("Temperatures: %s", temperatures)
+    logger.info("Distance metrics: %s", distance_metrics)
 
     for metric in distance_metrics:
         for temp in temperatures:
             for k in k_values:
                 config_name = f"{metric}_k{k}_t{temp}"
 
-                print(f"Testing {config_name}...")
+                logger.info("Testing %s...", config_name)
 
                 try:
                     evaluator = KNNEvaluator(
@@ -446,21 +448,21 @@ def sweep_knn_params(
                     }
 
                     acc = metrics["accuracy"]
-                    print(f"  Accuracy: {acc:.2f}%")
+                    logger.info("  Accuracy: %.2f%%", acc)
 
                     if acc > best_acc:
                         best_acc = acc
                         best_config = config_name
 
-                except Exception as e:
-                    print(f"  Error: {str(e)}")
+                except (RuntimeError, ValueError) as e:
+                    logger.error("  Error: %s", e)
                     continue
 
     if best_config is not None:
-        print(f"\nBest configuration: {best_config}")
-        print(f"Best accuracy: {best_acc:.2f}%")
-        print(f"Config: {results[best_config]['config']}")
+        logger.info("Best configuration: %s", best_config)
+        logger.info("Best accuracy: %.2f%%", best_acc)
+        logger.info("Config: %s", results[best_config]["config"])
     else:
-        print("\nNo successful configurations found.")
+        logger.info("No successful configurations found.")
 
     return results
