@@ -778,7 +778,7 @@ class TestEdgeCases:
         z_i = torch.randn(4, 128, device=device)
         z_j = torch.randn(8, 128, device=device)  # Different batch size
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             loss_fn(z_i, z_j)
 
     def test_rope_invalid_dimensions(self):

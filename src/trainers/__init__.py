@@ -2,9 +2,10 @@
 Training loops and utilities for H-JEPA.
 """
 
-from .trainer import HJEPATrainer, create_optimizer
+from .trainer import EarlyStopping, HJEPATrainer, create_optimizer
 
 __all__ = [
+    "EarlyStopping",
     "HJEPATrainer",
     "create_optimizer",
 ]

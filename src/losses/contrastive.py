@@ -133,9 +133,10 @@ class NTXentLoss(nn.Module):
         batch_size = z_i.shape[0]
 
         # Ensure same batch size
-        assert (
-            z_i.shape == z_j.shape
-        ), f"z_i and z_j must have the same shape, got {z_i.shape} and {z_j.shape}"
+        if z_i.shape != z_j.shape:
+            raise ValueError(
+                f"z_i and z_j must have the same shape, got {z_i.shape} and {z_j.shape}"
+            )
 
         # Compute similarity matrices
         # sim_ii: similarity between view1 and view1 [B, B]

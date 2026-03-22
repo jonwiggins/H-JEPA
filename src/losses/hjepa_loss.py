@@ -84,10 +84,11 @@ class HJEPALoss(nn.Module):
         if isinstance(hierarchy_weights, (int, float)):
             self.hierarchy_weights = [float(hierarchy_weights)] * num_hierarchies
         else:
-            assert len(hierarchy_weights) == num_hierarchies, (
-                f"Length of hierarchy_weights ({len(hierarchy_weights)}) must match "
-                f"num_hierarchies ({num_hierarchies})"
-            )
+            if len(hierarchy_weights) != num_hierarchies:
+                raise ValueError(
+                    f"Length of hierarchy_weights ({len(hierarchy_weights)}) must match "
+                    f"num_hierarchies ({num_hierarchies})"
+                )
             self.hierarchy_weights = list(hierarchy_weights)
 
         # Register as buffer so it moves to correct device
@@ -98,9 +99,8 @@ class HJEPALoss(nn.Module):
 
         # Validate loss type
         valid_loss_types = ["mse", "smoothl1", "huber"]
-        assert (
-            loss_type in valid_loss_types
-        ), f"loss_type must be one of {valid_loss_types}, got {loss_type}"
+        if loss_type not in valid_loss_types:
+            raise ValueError(f"loss_type must be one of {valid_loss_types}, got {loss_type}")
 
     def _compute_base_loss(
         self,
@@ -174,7 +174,7 @@ class HJEPALoss(nn.Module):
                 - 'loss_unweighted': Unweighted total loss (for logging)
 
         Raises:
-            AssertionError: If input shapes or types are invalid
+            ValueError: If input shapes or types are invalid
         """
         # Note: context_features is intentionally ignored - it's only used by CombinedLoss
         # for VICReg regularization. HJEPALoss doesn't include VICReg.
@@ -185,32 +185,38 @@ class HJEPALoss(nn.Module):
             targets = [targets]
 
         # Validate inputs
-        assert len(predictions) == len(targets), (
-            f"Number of predictions ({len(predictions)}) must match "
-            f"number of targets ({len(targets)})"
-        )
+        if len(predictions) != len(targets):
+            raise ValueError(
+                f"Number of predictions ({len(predictions)}) must match "
+                f"number of targets ({len(targets)})"
+            )
 
         num_levels = len(predictions)
-        assert num_levels == self.num_hierarchies, (
-            f"Expected {self.num_hierarchies} hierarchy levels, " f"but got {num_levels}"
-        )
+        if num_levels != self.num_hierarchies:
+            raise ValueError(
+                f"Expected {self.num_hierarchies} hierarchy levels, but got {num_levels}"
+            )
 
         # Validate shapes
         for i, (pred, target) in enumerate(zip(predictions, targets)):
-            assert pred.shape == target.shape, (
-                f"Prediction and target shapes must match at level {i}. "
-                f"Got pred: {pred.shape}, target: {target.shape}"
-            )
-            assert pred.ndim == 3, (
-                f"Predictions must be 3D tensors [B, N, D], " f"got shape {pred.shape} at level {i}"
-            )
+            if pred.shape != target.shape:
+                raise ValueError(
+                    f"Prediction and target shapes must match at level {i}. "
+                    f"Got pred: {pred.shape}, target: {target.shape}"
+                )
+            if pred.ndim != 3:
+                raise ValueError(
+                    f"Predictions must be 3D tensors [B, N, D], "
+                    f"got shape {pred.shape} at level {i}"
+                )
 
         # Process masks
         if masks is not None:
-            assert len(masks) == num_levels, (
-                f"Number of masks ({len(masks)}) must match "
-                f"number of hierarchy levels ({num_levels})"
-            )
+            if len(masks) != num_levels:
+                raise ValueError(
+                    f"Number of masks ({len(masks)}) must match "
+                    f"number of hierarchy levels ({num_levels})"
+                )
 
         # Compute loss at each hierarchy level
         losses = []
@@ -229,10 +235,11 @@ class HJEPALoss(nn.Module):
             if masks is not None and masks[i] is not None:
                 # Apply mask: compute loss only on masked patches
                 mask = masks[i]  # [B, N] - boolean mask indicating valid positions
-                assert mask.shape[:2] == pred.shape[:2], (
-                    f"Mask shape {mask.shape} incompatible with "
-                    f"prediction shape {pred.shape} at level {i}"
-                )
+                if mask.shape[:2] != pred.shape[:2]:
+                    raise ValueError(
+                        f"Mask shape {mask.shape} incompatible with "
+                        f"prediction shape {pred.shape} at level {i}"
+                    )
 
                 # Expand mask to match feature dimension if needed
                 if mask.ndim == 2:

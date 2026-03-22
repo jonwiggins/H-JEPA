@@ -70,7 +70,7 @@ class TestCombinedLoss:
 
     def test_initialization_weight_mismatch(self):
         """Test error when VICReg weight list length doesn't match hierarchies."""
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             CombinedLoss(
                 num_hierarchies=3,
                 vicreg_weight=[0.1, 0.2],  # Only 2 weights for 3 hierarchies
@@ -396,7 +396,7 @@ class TestHierarchicalCombinedLoss:
             {"invariance_weight": 15.0},
         ]  # Only 2 configs
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             HierarchicalCombinedLoss(
                 num_hierarchies=3,
                 vicreg_configs=vicreg_configs,

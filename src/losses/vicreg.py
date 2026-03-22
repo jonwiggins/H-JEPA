@@ -77,10 +77,14 @@ class VICRegLoss(nn.Module):
         self.flatten_patches = flatten_patches
 
         # Validate weights
-        assert invariance_weight >= 0, f"invariance_weight must be >= 0, got {invariance_weight}"
-        assert variance_weight >= 0, f"variance_weight must be >= 0, got {variance_weight}"
-        assert covariance_weight >= 0, f"covariance_weight must be >= 0, got {covariance_weight}"
-        assert variance_threshold > 0, f"variance_threshold must be > 0, got {variance_threshold}"
+        if invariance_weight < 0:
+            raise ValueError(f"invariance_weight must be >= 0, got {invariance_weight}")
+        if variance_weight < 0:
+            raise ValueError(f"variance_weight must be >= 0, got {variance_weight}")
+        if covariance_weight < 0:
+            raise ValueError(f"covariance_weight must be >= 0, got {covariance_weight}")
+        if variance_threshold <= 0:
+            raise ValueError(f"variance_threshold must be > 0, got {variance_threshold}")
 
     def _invariance_loss(
         self,
@@ -182,25 +186,25 @@ class VICRegLoss(nn.Module):
                 - 'variance_loss_b': Variance loss for second view
 
         Raises:
-            AssertionError: If input shapes are invalid
+            ValueError: If input shapes are invalid
         """
         # Handle single input case (both views concatenated)
         if z_b is None:
-            assert z_a.shape[0] % 2 == 0, (
-                "If only one input is provided, batch size must be even "
-                "(first half = view A, second half = view B)"
-            )
+            if z_a.shape[0] % 2 != 0:
+                raise ValueError(
+                    "If only one input is provided, batch size must be even "
+                    "(first half = view A, second half = view B)"
+                )
             batch_size = z_a.shape[0] // 2
             z_a, z_b = z_a[:batch_size], z_a[batch_size:]
 
         # Validate input shapes
-        assert z_a.shape == z_b.shape, (
-            f"z_a and z_b must have the same shape. " f"Got z_a: {z_a.shape}, z_b: {z_b.shape}"
-        )
-        assert z_a.ndim in [
-            2,
-            3,
-        ], f"Inputs must be 2D [B, D] or 3D [B, N, D], got shape {z_a.shape}"
+        if z_a.shape != z_b.shape:
+            raise ValueError(
+                f"z_a and z_b must have the same shape. Got z_a: {z_a.shape}, z_b: {z_b.shape}"
+            )
+        if z_a.ndim not in (2, 3):
+            raise ValueError(f"Inputs must be 2D [B, D] or 3D [B, N, D], got shape {z_a.shape}")
 
         # Flatten patch dimension if needed
         if z_a.ndim == 3 and self.flatten_patches:

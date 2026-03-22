@@ -152,8 +152,10 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             # Try loading CIFAR-10
             train_data = datasets.CIFAR10(root=data_path, train=True, download=False)
             test_data = datasets.CIFAR10(root=data_path, train=False, download=False)
-            assert len(train_data) == 50000, f"Expected 50000 train images, got {len(train_data)}"
-            assert len(test_data) == 10000, f"Expected 10000 test images, got {len(test_data)}"
+            if len(train_data) != 50000:
+                raise ValueError(f"Expected 50000 train images, got {len(train_data)}")
+            if len(test_data) != 10000:
+                raise ValueError(f"Expected 10000 test images, got {len(test_data)}")
             logger.info(
                 "CIFAR-10 verified: %d train + %d test images", len(train_data), len(test_data)
             )
@@ -163,8 +165,10 @@ def verify_dataset(dataset_name: str, data_path: Path) -> bool:
             # Try loading CIFAR-100
             train_data = datasets.CIFAR100(root=data_path, train=True, download=False)
             test_data = datasets.CIFAR100(root=data_path, train=False, download=False)
-            assert len(train_data) == 50000, f"Expected 50000 train images, got {len(train_data)}"
-            assert len(test_data) == 10000, f"Expected 10000 test images, got {len(test_data)}"
+            if len(train_data) != 50000:
+                raise ValueError(f"Expected 50000 train images, got {len(train_data)}")
+            if len(test_data) != 10000:
+                raise ValueError(f"Expected 10000 test images, got {len(test_data)}")
             logger.info(
                 "CIFAR-100 verified: %d train + %d test images", len(train_data), len(test_data)
             )

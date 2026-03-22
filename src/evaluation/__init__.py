@@ -36,6 +36,9 @@ Example usage:
     ... )
 """
 
+# Feature extraction (shared utility)
+from .feature_extraction import extract_features
+
 # Feature quality
 from .feature_quality import (
     FeatureQualityAnalyzer,
@@ -60,6 +63,8 @@ from .transfer import (
 )
 
 __all__ = [
+    # Feature extraction
+    "extract_features",
     # Linear probe
     "LinearProbe",
     "LinearProbeEvaluator",

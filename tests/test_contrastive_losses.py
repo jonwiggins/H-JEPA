@@ -246,14 +246,14 @@ class TestNTXentLoss:
         z_i = torch.randn(8, 128)
         z_j = torch.randn(4, 128)
 
-        with pytest.raises(AssertionError, match="must have the same shape"):
+        with pytest.raises(ValueError, match="must have the same shape"):
             loss_fn(z_i, z_j)
 
         # Different embedding dimensions
         z_i = torch.randn(8, 128)
         z_j = torch.randn(8, 64)
 
-        with pytest.raises(AssertionError, match="must have the same shape"):
+        with pytest.raises(ValueError, match="must have the same shape"):
             loss_fn(z_i, z_j)
 
     def test_accuracy_metric(self, setup):

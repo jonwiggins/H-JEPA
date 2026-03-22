@@ -282,7 +282,8 @@ def visualize_attention_rollout(
             rollout = torch.matmul(attn_avg, rollout)
 
     # Get attention from CLS token
-    assert rollout is not None, "Rollout should be computed"
+    if rollout is None:
+        raise RuntimeError("Rollout could not be computed: no attention maps were accumulated")
     rollout_cls = rollout[0, 1:].cpu().numpy()  # [num_patches]
 
     # Reshape to 2D

@@ -20,6 +20,8 @@ from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
 from tqdm import tqdm
 
+from .feature_extraction import extract_features as _extract_features
+
 logger = logging.getLogger(__name__)
 
 
@@ -183,34 +185,13 @@ class LinearProbeEvaluator:
         Returns:
             Tuple of (features, labels) as numpy arrays
         """
-        all_features = []
-        all_labels = []
-
-        for batch in tqdm(dataloader, desc=desc):
-            # Handle different dataloader return formats
-            # Some dataloaders return (images, labels), others return (images, labels, metadata)
-            if isinstance(batch, (list, tuple)):
-                images = batch[0]
-                labels = batch[1]
-            else:
-                raise ValueError(f"Unexpected batch type: {type(batch)}")
-
-            images = images.to(self.device)
-
-            # Extract features at specified hierarchy level
-            features: torch.Tensor = self.model.extract_features(  # type: ignore[operator]
-                images,
-                level=self.hierarchy_level,
-                use_target_encoder=True,
-            )
-
-            all_features.append(features.cpu().numpy())
-            all_labels.append(labels.cpu().numpy())
-
-        features_np: npt.NDArray[Any] = np.concatenate(all_features, axis=0)
-        labels_np: npt.NDArray[Any] = np.concatenate(all_labels, axis=0)
-
-        return features_np, labels_np
+        return _extract_features(
+            model=self.model,
+            dataloader=dataloader,
+            hierarchy_level=self.hierarchy_level,
+            device=self.device,
+            desc=desc,
+        )
 
     def train_probe(
         self,

@@ -13,11 +13,11 @@ import numpy as np
 import numpy.typing as npt
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, top_k_accuracy_score
 from sklearn.neighbors import NearestNeighbors
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+
+from .feature_extraction import extract_features as _extract_features
 
 logger = logging.getLogger(__name__)
 
@@ -99,33 +99,16 @@ class KNNEvaluator:
         Returns:
             Tuple of (features, labels) as numpy arrays
         """
-        all_features = []
-        all_labels = []
-
-        for images, labels in tqdm(dataloader, desc=desc):
-            images = images.to(self.device)
-
-            # Extract features at specified hierarchy level
-            features = self.model.extract_features(  # type: ignore[operator]
-                images,
-                level=self.hierarchy_level,
-                use_target_encoder=True,
-            )
-
-            # Pool features
-            features = self.pool_features(features)
-
-            # Normalize if requested
-            if normalize:
-                features = F.normalize(features, p=2, dim=-1)
-
-            all_features.append(features.cpu().numpy())
-            all_labels.append(labels.cpu().numpy())
-
-        features = np.concatenate(all_features, axis=0)
-        labels = np.concatenate(all_labels, axis=0)
-
-        return features, labels
+        return _extract_features(
+            model=self.model,
+            dataloader=dataloader,
+            hierarchy_level=self.hierarchy_level,
+            device=self.device,
+            pool=True,
+            pooling=self.pooling,
+            normalize=normalize,
+            desc=desc,
+        )
 
     def build_knn_index(
         self,

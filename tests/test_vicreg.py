@@ -58,16 +58,16 @@ class TestVICRegLoss:
 
     def test_initialization_invalid_weights(self):
         """Test that invalid weights raise assertions."""
-        with pytest.raises(AssertionError, match="invariance_weight must be >= 0"):
+        with pytest.raises(ValueError, match="invariance_weight must be >= 0"):
             VICRegLoss(invariance_weight=-1.0)
 
-        with pytest.raises(AssertionError, match="variance_weight must be >= 0"):
+        with pytest.raises(ValueError, match="variance_weight must be >= 0"):
             VICRegLoss(variance_weight=-1.0)
 
-        with pytest.raises(AssertionError, match="covariance_weight must be >= 0"):
+        with pytest.raises(ValueError, match="covariance_weight must be >= 0"):
             VICRegLoss(covariance_weight=-1.0)
 
-        with pytest.raises(AssertionError, match="variance_threshold must be > 0"):
+        with pytest.raises(ValueError, match="variance_threshold must be > 0"):
             VICRegLoss(variance_threshold=0.0)
 
     def test_invariance_loss_component(self, setup):
@@ -300,7 +300,7 @@ class TestVICRegLoss:
         z_odd = torch.randn(31, 16, 128)  # Odd batch size
 
         loss_fn = VICRegLoss()
-        with pytest.raises(AssertionError, match="batch size must be even"):
+        with pytest.raises(ValueError, match="batch size must be even"):
             loss_fn(z_odd)
 
     def test_mismatched_shapes(self):
@@ -310,7 +310,7 @@ class TestVICRegLoss:
         z_a = torch.randn(32, 16, 128)
         z_b = torch.randn(32, 16, 64)  # Different embedding dimension
 
-        with pytest.raises(AssertionError, match="must have the same shape"):
+        with pytest.raises(ValueError, match="must have the same shape"):
             loss_fn(z_a, z_b)
 
     def test_2d_input(self):

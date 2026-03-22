@@ -25,6 +25,7 @@ References:
     - VICReg: https://arxiv.org/abs/2105.04906
 """
 
+from collections.abc import Callable
 from typing import Any, Literal
 
 import torch
@@ -127,10 +128,11 @@ class CombinedLoss(nn.Module):
         if isinstance(vicreg_weight, (int, float)):
             self.vicreg_weights = [float(vicreg_weight)] * num_hierarchies
         else:
-            assert len(vicreg_weight) == num_hierarchies, (
-                f"Length of vicreg_weight ({len(vicreg_weight)}) must match "
-                f"num_hierarchies ({num_hierarchies})"
-            )
+            if len(vicreg_weight) != num_hierarchies:
+                raise ValueError(
+                    f"Length of vicreg_weight ({len(vicreg_weight)}) must match "
+                    f"num_hierarchies ({num_hierarchies})"
+                )
             self.vicreg_weights = list(vicreg_weight)
 
         # Register as buffer
@@ -357,10 +359,11 @@ class HierarchicalCombinedLoss(CombinedLoss):
 
         # Create separate VICReg losses for each hierarchy level if configs provided
         if vicreg_configs is not None:
-            assert len(vicreg_configs) == num_hierarchies, (
-                f"Number of vicreg_configs ({len(vicreg_configs)}) must match "
-                f"num_hierarchies ({num_hierarchies})"
-            )
+            if len(vicreg_configs) != num_hierarchies:
+                raise ValueError(
+                    f"Number of vicreg_configs ({len(vicreg_configs)}) must match "
+                    f"num_hierarchies ({num_hierarchies})"
+                )
 
             self.vicreg_losses = nn.ModuleList([VICRegLoss(**config) for config in vicreg_configs])
         else:
@@ -426,9 +429,139 @@ class HierarchicalCombinedLoss(CombinedLoss):
         return loss_dict
 
 
+# ---- Loss Registry ----
+# Each builder takes (loss_config, num_hierarchies) and returns an nn.Module.
+
+_LossBuilder = Callable[[dict[str, Any], int], nn.Module]
+_LOSS_REGISTRY: dict[str, _LossBuilder] = {}
+
+
+def _register_loss(
+    *names: str,
+) -> Callable[[_LossBuilder], _LossBuilder]:
+    """Decorator to register a loss builder function under one or more names."""
+
+    def decorator(fn: _LossBuilder) -> _LossBuilder:
+        for name in names:
+            _LOSS_REGISTRY[name] = fn
+        return fn
+
+    return decorator
+
+
+@_register_loss("hjepa", "jepa", "smoothl1", "mse")
+def _build_jepa(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    """Build a JEPA loss, optionally wrapped with contrastive loss."""
+    import warnings
+
+    loss_type = loss_config.get("type", "combined").lower()
+
+    if "vicreg_weight" in loss_config or "use_vicreg" in loss_config or "vicreg" in loss_config:
+        warnings.warn(
+            f"VICReg fields found in config but loss type is '{loss_type}'. "
+            f"VICReg regularization is only used with type='combined'. "
+            f"The VICReg configuration will be ignored.",
+            UserWarning,
+        )
+
+    default_loss_type = loss_type if loss_type in ("smoothl1", "mse", "cosine") else "smoothl1"
+
+    jepa_loss = HJEPALoss(
+        loss_type=loss_config.get("jepa_loss_type", default_loss_type),
+        hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
+        num_hierarchies=num_hierarchies,
+        normalize_embeddings=loss_config.get("normalize_embeddings", True),
+    )
+
+    if loss_config.get("use_contrastive", False):
+        from .contrastive import ContrastiveJEPALoss
+
+        return ContrastiveJEPALoss(
+            jepa_loss=jepa_loss,
+            jepa_weight=loss_config.get("jepa_weight", 1.0),
+            contrastive_weight=loss_config.get("contrastive_weight", 0.1),
+            contrastive_temperature=loss_config.get("contrastive_temperature", 0.1),
+            use_cosine_similarity=loss_config.get("use_cosine_similarity", True),
+            contrastive_on_context=loss_config.get("contrastive_on_context", False),
+        )
+
+    return jepa_loss
+
+
+@_register_loss("vicreg")
+def _build_vicreg(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    return VICRegLoss(
+        invariance_weight=loss_config.get("vicreg_invariance_weight", 25.0),
+        variance_weight=loss_config.get("vicreg_variance_weight", 25.0),
+        covariance_weight=loss_config.get("vicreg_covariance_weight", 1.0),
+        variance_threshold=loss_config.get("vicreg_variance_threshold", 1.0),
+    )
+
+
+@_register_loss("sigreg")
+def _build_sigreg(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    return SIGRegLoss(
+        num_slices=loss_config.get("sigreg_num_slices", 1024),
+        num_test_points=loss_config.get("sigreg_num_test_points", 17),
+        invariance_weight=loss_config.get("sigreg_invariance_weight", 25.0),
+        sigreg_weight=loss_config.get("sigreg_weight", 25.0),
+        eps=loss_config.get("eps", 1e-6),
+        flatten_patches=loss_config.get("flatten_patches", True),
+        fixed_slices=loss_config.get("sigreg_fixed_slices", False),
+    )
+
+
+@_register_loss("combined")
+def _build_combined(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    return CombinedLoss(
+        jepa_loss_type=loss_config.get("jepa_loss_type", "smoothl1"),
+        jepa_hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
+        num_hierarchies=num_hierarchies,
+        normalize_embeddings=loss_config.get("normalize_embeddings", True),
+        vicreg_weight=loss_config.get("vicreg_weight", 0.1),
+        vicreg_invariance_weight=loss_config.get("vicreg_invariance_weight", 25.0),
+        vicreg_variance_weight=loss_config.get("vicreg_variance_weight", 25.0),
+        vicreg_covariance_weight=loss_config.get("vicreg_covariance_weight", 1.0),
+    )
+
+
+@_register_loss("hierarchical_combined")
+def _build_hierarchical_combined(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    return HierarchicalCombinedLoss(
+        jepa_loss_type=loss_config.get("jepa_loss_type", "smoothl1"),
+        jepa_hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
+        num_hierarchies=num_hierarchies,
+        vicreg_weight=loss_config.get("vicreg_weight", 0.1),
+        vicreg_configs=loss_config.get("vicreg_configs", None),
+    )
+
+
+@_register_loss("cjepa", "contrastive_jepa")
+def _build_cjepa(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    from .contrastive import ContrastiveJEPALoss
+
+    jepa_loss = HJEPALoss(
+        loss_type=loss_config.get("jepa_loss_type", "smoothl1"),
+        hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
+        num_hierarchies=num_hierarchies,
+        normalize_embeddings=loss_config.get("normalize_embeddings", True),
+    )
+
+    return ContrastiveJEPALoss(
+        jepa_loss=jepa_loss,
+        jepa_weight=loss_config.get("jepa_weight", 1.0),
+        contrastive_weight=loss_config.get("contrastive_weight", 0.1),
+        contrastive_temperature=loss_config.get("contrastive_temperature", 0.1),
+        use_cosine_similarity=loss_config.get("use_cosine_similarity", True),
+        contrastive_on_context=loss_config.get("contrastive_on_context", False),
+    )
+
+
 def create_loss_from_config(config: dict[str, Any]) -> nn.Module:
     """
     Factory function to create loss from configuration dictionary.
+
+    Uses a registry of loss builders keyed by type name.
 
     Args:
         config: Configuration dictionary with loss parameters
@@ -445,133 +578,17 @@ def create_loss_from_config(config: dict[str, Any]) -> nn.Module:
         ...     'vicreg_weight': 0.1,
         ... }
         >>> loss_fn = create_loss_from_config(config)
-        >>>
-        >>> # For C-JEPA (Contrastive JEPA)
-        >>> config = {
-        ...     'type': 'cjepa',
-        ...     'use_contrastive': True,
-        ...     'contrastive_weight': 0.1,
-        ...     'contrastive_temperature': 0.1,
-        ... }
-        >>> loss_fn = create_loss_from_config(config)
     """
-    # Get loss parameters from config
-    # Check both top-level and 'loss' section for compatibility
     loss_config = config.get("loss", config)
     model_config = config.get("model", {})
 
     loss_type = loss_config.get("type", "combined").lower()
     num_hierarchies = model_config.get("num_hierarchies", loss_config.get("num_hierarchies", 3))
 
-    # Check if contrastive learning is enabled (for C-JEPA)
-    use_contrastive = loss_config.get("use_contrastive", False)
-
-    # Validate VICReg configuration - warn if VICReg fields are specified but won't be used
-    if loss_type in ["hjepa", "jepa", "smoothl1", "mse"]:
-        # Check for unused VICReg fields
-        if "vicreg_weight" in loss_config or "use_vicreg" in loss_config or "vicreg" in loss_config:
-            import warnings
-
-            warnings.warn(
-                f"VICReg fields found in config but loss type is '{loss_type}'. "
-                f"VICReg regularization is only used with type='combined'. "
-                f"The VICReg configuration will be ignored.",
-                UserWarning,
-            )
-
-    if loss_type == "hjepa" or loss_type == "jepa" or loss_type == "smoothl1" or loss_type == "mse":
-        # Determine jepa_loss_type with fallback logic
-        if loss_type in ["smoothl1", "mse", "cosine"]:
-            default_loss_type = loss_type
-        else:
-            default_loss_type = "smoothl1"
-
-        jepa_loss = HJEPALoss(
-            loss_type=loss_config.get("jepa_loss_type", default_loss_type),
-            hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
-            num_hierarchies=num_hierarchies,
-            normalize_embeddings=loss_config.get("normalize_embeddings", True),
-        )
-
-        # Wrap with contrastive loss if enabled (C-JEPA)
-        if use_contrastive:
-            from .contrastive import ContrastiveJEPALoss
-
-            return ContrastiveJEPALoss(
-                jepa_loss=jepa_loss,
-                jepa_weight=loss_config.get("jepa_weight", 1.0),
-                contrastive_weight=loss_config.get("contrastive_weight", 0.1),
-                contrastive_temperature=loss_config.get("contrastive_temperature", 0.1),
-                use_cosine_similarity=loss_config.get("use_cosine_similarity", True),
-                contrastive_on_context=loss_config.get("contrastive_on_context", False),
-            )
-
-        return jepa_loss
-
-    elif loss_type == "vicreg":
-        return VICRegLoss(
-            invariance_weight=loss_config.get("vicreg_invariance_weight", 25.0),
-            variance_weight=loss_config.get("vicreg_variance_weight", 25.0),
-            covariance_weight=loss_config.get("vicreg_covariance_weight", 1.0),
-            variance_threshold=loss_config.get("vicreg_variance_threshold", 1.0),
-        )
-
-    elif loss_type == "sigreg":
-        return SIGRegLoss(
-            num_slices=loss_config.get("sigreg_num_slices", 1024),
-            num_test_points=loss_config.get("sigreg_num_test_points", 17),
-            invariance_weight=loss_config.get("sigreg_invariance_weight", 25.0),
-            sigreg_weight=loss_config.get("sigreg_weight", 25.0),
-            eps=loss_config.get("eps", 1e-6),
-            flatten_patches=loss_config.get("flatten_patches", True),
-            fixed_slices=loss_config.get("sigreg_fixed_slices", False),
-        )
-
-    elif loss_type == "combined":
-        return CombinedLoss(
-            jepa_loss_type=loss_config.get("jepa_loss_type", "smoothl1"),
-            jepa_hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
-            num_hierarchies=num_hierarchies,
-            normalize_embeddings=loss_config.get("normalize_embeddings", True),
-            vicreg_weight=loss_config.get("vicreg_weight", 0.1),
-            vicreg_invariance_weight=loss_config.get("vicreg_invariance_weight", 25.0),
-            vicreg_variance_weight=loss_config.get("vicreg_variance_weight", 25.0),
-            vicreg_covariance_weight=loss_config.get("vicreg_covariance_weight", 1.0),
-        )
-
-    elif loss_type == "hierarchical_combined":
-        return HierarchicalCombinedLoss(
-            jepa_loss_type=config.get("jepa_loss_type", "smoothl1"),
-            jepa_hierarchy_weights=config.get("hierarchy_weights", 1.0),
-            num_hierarchies=config.get("num_hierarchies", 3),
-            vicreg_weight=config.get("vicreg_weight", 0.1),
-            vicreg_configs=config.get("vicreg_configs", None),
-        )
-
-    elif loss_type == "cjepa" or loss_type == "contrastive_jepa":
-        # C-JEPA: Contrastive JEPA hybrid
-        from .contrastive import ContrastiveJEPALoss
-
-        # Create base JEPA loss
-        jepa_loss = HJEPALoss(
-            loss_type=loss_config.get("jepa_loss_type", "smoothl1"),
-            hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
-            num_hierarchies=num_hierarchies,
-            normalize_embeddings=loss_config.get("normalize_embeddings", True),
-        )
-
-        # Wrap with contrastive loss
-        return ContrastiveJEPALoss(
-            jepa_loss=jepa_loss,
-            jepa_weight=loss_config.get("jepa_weight", 1.0),
-            contrastive_weight=loss_config.get("contrastive_weight", 0.1),
-            contrastive_temperature=loss_config.get("contrastive_temperature", 0.1),
-            use_cosine_similarity=loss_config.get("use_cosine_similarity", True),
-            contrastive_on_context=loss_config.get("contrastive_on_context", False),
-        )
-
-    else:
+    builder = _LOSS_REGISTRY.get(loss_type)
+    if builder is None:
         raise ValueError(
-            f"Unknown loss type: {loss_type}. "
-            f"Must be one of ['hjepa', 'vicreg', 'sigreg', 'combined', 'hierarchical_combined', 'cjepa', 'mse', 'smoothl1']"
+            f"Unknown loss type: {loss_type}. " f"Available types: {sorted(_LOSS_REGISTRY.keys())}"
         )
+
+    return builder(loss_config, num_hierarchies)

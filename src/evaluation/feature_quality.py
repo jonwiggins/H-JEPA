@@ -12,12 +12,12 @@ import numpy as np
 import numpy.typing as npt
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from scipy.linalg import svd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+
+from .feature_extraction import extract_features as _extract_features
 
 try:
     import umap
@@ -76,48 +76,16 @@ class FeatureQualityAnalyzer:
         Returns:
             Tuple of (features, labels) as numpy arrays
         """
-        all_features = []
-        all_labels = []
-        num_samples = 0
-
-        for images, labels in tqdm(dataloader, desc=desc):
-            if max_samples is not None and num_samples >= max_samples:
-                break
-
-            images = images.to(self.device)
-
-            # Extract features at specified hierarchy level
-            features = self.model.extract_features(  # type: ignore[operator]
-                images,
-                level=self.hierarchy_level,
-                use_target_encoder=True,
-            )
-
-            # Pool if requested
-            if pool and features.ndim == 3:
-                features = features.mean(dim=1)
-
-            # Normalize if requested
-            if normalize:
-                features = F.normalize(features, p=2, dim=-1)
-
-            all_features.append(features.cpu().numpy())
-            all_labels.append(labels.cpu().numpy())
-
-            num_samples += len(images)
-
-            if max_samples is not None and num_samples >= max_samples:
-                # Truncate last batch if needed
-                excess = num_samples - max_samples
-                if excess > 0:
-                    all_features[-1] = all_features[-1][:-excess]
-                    all_labels[-1] = all_labels[-1][:-excess]
-                break
-
-        features = np.concatenate(all_features, axis=0)
-        labels = np.concatenate(all_labels, axis=0)
-
-        return features, labels
+        return _extract_features(
+            model=self.model,
+            dataloader=dataloader,
+            hierarchy_level=self.hierarchy_level,
+            device=self.device,
+            pool=pool,
+            normalize=normalize,
+            max_samples=max_samples,
+            desc=desc,
+        )
 
     def compute_effective_rank(self, features: npt.NDArray[np.float64]) -> float:
         """

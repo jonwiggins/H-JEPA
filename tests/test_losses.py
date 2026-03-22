@@ -168,7 +168,7 @@ class TestHJEPALoss:
         predictions = [torch.randn(2, 10, 128) for _ in range(2)]  # Only 2 levels
         targets = [torch.randn(2, 10, 128) for _ in range(3)]  # 3 levels
 
-        with pytest.raises((AssertionError, ValueError)):
+        with pytest.raises(ValueError):
             loss_fn(predictions, targets)
 
     def test_edge_cases(self, setup):

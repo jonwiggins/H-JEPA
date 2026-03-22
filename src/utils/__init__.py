@@ -3,6 +3,8 @@ Utility functions for logging, checkpointing, and other helper functionalities.
 """
 
 from .checkpoint import CheckpointManager, load_checkpoint, save_checkpoint
+from .config import HJEPAConfig, load_config
+from .device import DeviceManager, get_best_device
 from .logging import MetricsLogger, ProgressTracker, setup_logging
 from .scheduler import (
     CosineScheduler,
@@ -25,6 +27,12 @@ __all__ = [
     "CheckpointManager",
     "save_checkpoint",
     "load_checkpoint",
+    # Config
+    "HJEPAConfig",
+    "load_config",
+    # Device
+    "DeviceManager",
+    "get_best_device",
     # Logging
     "MetricsLogger",
     "ProgressTracker",

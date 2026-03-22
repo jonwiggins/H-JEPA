@@ -217,15 +217,15 @@ class TestSIGRegLoss:
         z_a = torch.randn(8, 49, 192)
         z_b = torch.randn(8, 50, 192)  # Wrong number of patches
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             loss_fn(z_a, z_b)
 
     def test_invalid_parameters(self):
         """Test error on invalid parameters"""
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             SIGRegLoss(num_slices=0)  # Invalid
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             SIGRegLoss(invariance_weight=-1.0)  # Invalid
 
 

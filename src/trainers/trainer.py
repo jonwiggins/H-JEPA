@@ -24,10 +24,70 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..utils.checkpoint import CheckpointManager
+from ..utils.device import DeviceManager
 from ..utils.logging import MetricsLogger, ProgressTracker
 from ..utils.scheduler import create_ema_scheduler, create_lr_scheduler
 
 logger = logging.getLogger(__name__)
+
+
+class EarlyStopping:
+    """
+    Early stopping to halt training when a monitored metric stops improving.
+
+    Args:
+        patience: Number of epochs to wait for improvement before stopping
+        min_delta: Minimum change to qualify as an improvement
+        mode: 'min' for loss-like metrics (lower is better),
+              'max' for accuracy-like metrics (higher is better)
+    """
+
+    def __init__(
+        self,
+        patience: int = 10,
+        min_delta: float = 0.0,
+        mode: str = "min",
+    ) -> None:
+        if mode not in ("min", "max"):
+            raise ValueError(f"mode must be 'min' or 'max', got {mode}")
+
+        self.patience = patience
+        self.min_delta = min_delta
+        self.mode = mode
+        self.best_value: float | None = None
+        self.counter = 0
+        self.should_stop = False
+
+    def __call__(self, metric_value: float) -> bool:
+        """
+        Check if training should stop.
+
+        Args:
+            metric_value: Current value of the monitored metric
+
+        Returns:
+            True if training should stop
+        """
+        if self.best_value is None:
+            self.best_value = metric_value
+            return False
+
+        improved = (
+            (metric_value < self.best_value - self.min_delta)
+            if self.mode == "min"
+            else (metric_value > self.best_value + self.min_delta)
+        )
+
+        if improved:
+            self.best_value = metric_value
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.should_stop = True
+                return True
+
+        return False
 
 
 class HJEPATrainer:
@@ -72,8 +132,9 @@ class HJEPATrainer:
         self.loss_fn = loss_fn
         self.masking_fn = masking_fn
         self.config = config
-        # Convert device string to torch.device object for proper type checking
-        self.device = torch.device(device) if isinstance(device, str) else device
+        # Device management
+        self.device_manager = DeviceManager(device)
+        self.device = self.device_manager.device
 
         # Move model to device
         self.model = self.model.to(self.device)
@@ -114,15 +175,12 @@ class HJEPATrainer:
         )
 
         # Mixed precision training (only supported on CUDA)
-        if self.device.type == "cuda":
-            self.scaler: GradScaler | None = GradScaler(device="cuda") if self.use_amp else None
-        else:
-            if self.use_amp:
-                logger.warning(
-                    f"Mixed precision training not supported on {self.device.type}, disabling AMP"
-                )
+        if not self.device_manager.supports_amp and self.use_amp:
+            logger.warning(
+                f"Mixed precision training not supported on {self.device.type}, disabling AMP"
+            )
             self.use_amp = False
-            self.scaler = None
+        self.scaler: GradScaler | None = GradScaler(device="cuda") if self.use_amp else None
 
         # Checkpoint manager
         checkpoint_dir = config.get("checkpoint", {}).get(
@@ -172,6 +230,30 @@ class HJEPATrainer:
 
         # Logging frequency
         self.log_frequency = config["logging"].get("log_frequency", 100)
+
+        # Early stopping
+        early_stop_config = config.get("training", {}).get("early_stopping", {})
+        if early_stop_config.get("enabled", False):
+            self.early_stopping: EarlyStopping | None = EarlyStopping(
+                patience=early_stop_config.get("patience", 10),
+                min_delta=early_stop_config.get("min_delta", 0.0),
+                mode=early_stop_config.get("mode", "min"),
+            )
+            logger.info(
+                "Early stopping enabled: patience=%d, mode=%s",
+                early_stop_config.get("patience", 10),
+                early_stop_config.get("mode", "min"),
+            )
+        else:
+            self.early_stopping = None
+
+        # Online evaluation config
+        online_eval_config = config.get("training", {}).get("online_eval", {})
+        self.online_eval_enabled = online_eval_config.get("enabled", False)
+        self.online_eval_frequency = online_eval_config.get("frequency", 5)
+        self.online_eval_type = online_eval_config.get("type", "knn")
+        self.online_eval_k = online_eval_config.get("k", 20)
+        self.online_eval_max_samples = online_eval_config.get("max_samples", 5000)
 
         # Resume from checkpoint if provided
         if resume_checkpoint:
@@ -233,6 +315,31 @@ class HJEPATrainer:
             # Log prediction visualizations and embeddings periodically
             if epoch % 5 == 0:
                 self._log_epoch_visualizations(epoch)
+
+            # Online evaluation (k-NN or linear probe on frozen features)
+            if (
+                self.online_eval_enabled
+                and self.val_loader is not None
+                and (epoch + 1) % self.online_eval_frequency == 0
+            ):
+                online_metrics = self._run_online_eval()
+                self.metrics_logger.log_metrics(
+                    online_metrics,
+                    step=self.global_step,
+                    prefix="online_eval/",
+                )
+
+            # Early stopping check
+            if self.early_stopping is not None:
+                metric_for_stopping = val_loss if val_loss is not None else train_metrics["loss"]
+                if self.early_stopping(metric_for_stopping):
+                    logger.info(
+                        "Early stopping triggered at epoch %d (patience=%d, best=%.4f)",
+                        epoch + 1,
+                        self.early_stopping.patience,
+                        self.early_stopping.best_value,
+                    )
+                    break
 
             # Print epoch summary
             val_metrics_to_print = val_metrics if self.val_loader else None
@@ -309,16 +416,7 @@ class HJEPATrainer:
 
             # Clear memory cache periodically to prevent leaks (especially on MPS)
             if self.global_step % 50 == 0:
-                if self.device.type == "mps":
-                    # MPS doesn't have empty_cache, but we can trigger garbage collection
-                    import gc
-
-                    gc.collect()
-                    # Don't delete loss_dict as it may be needed later in the loop
-                    if "loss" in locals():
-                        del loss
-                elif self.device.type == "cuda":
-                    torch.cuda.empty_cache()
+                self.device_manager.empty_cache()
 
             # Log metrics
             if batch_idx % self.log_frequency == 0:
@@ -342,14 +440,9 @@ class HJEPATrainer:
                     log_dict.update(loss_dict)
 
                     # Add memory logging for debugging
-                    if self.device.type == "mps":
-                        log_dict["memory_mps_allocated_gb"] = (
-                            torch.mps.current_allocated_memory() / 1e9
-                        )
-                        log_dict["memory_mps_driver_gb"] = torch.mps.driver_allocated_memory() / 1e9
-                    elif self.device.type == "cuda":
-                        log_dict["memory_cuda_allocated_gb"] = torch.cuda.memory_allocated() / 1e9
-                        log_dict["memory_cuda_reserved_gb"] = torch.cuda.memory_reserved() / 1e9
+                    mem_stats = self.device_manager.memory_stats()
+                    for key, val in mem_stats.items():
+                        log_dict[f"memory_{self.device.type}_{key}"] = val
                     self.metrics_logger.log_metrics(
                         log_dict,
                         step=self.global_step,
@@ -426,7 +519,7 @@ class HJEPATrainer:
 
         # Forward pass with automatic mixed precision
         # Use appropriate device type for autocast
-        device_type = self.device.type if self.device.type != "mps" else "cpu"
+        device_type = self.device_manager.autocast_device_type
         with autocast(device_type=device_type, enabled=self.use_amp):
             # Forward through H-JEPA model
             outputs = self.model(images, prediction_mask)
@@ -504,7 +597,7 @@ class HJEPATrainer:
             prediction_mask = target_masks.any(dim=1)  # [B, N] - positions to predict
 
             # Forward pass (same as training)
-            device_type = self.device.type if self.device.type != "mps" else "cpu"
+            device_type = self.device_manager.autocast_device_type
             with autocast(device_type=device_type, enabled=self.use_amp):
                 # Forward through H-JEPA model
                 outputs = self.model(images, prediction_mask)
@@ -601,8 +694,7 @@ class HJEPATrainer:
             target_sample = target_flat
 
         try:
-            # Skip SVD computation on MPS (not supported)
-            if self.device.type == "mps":
+            if not self.device_manager.supports_svd:
                 metrics["context_eff_rank"] = -1
                 metrics["target_eff_rank"] = -1
             else:
@@ -700,6 +792,59 @@ class HJEPATrainer:
         except (RuntimeError, OSError) as e:
             logger.warning(f"Failed to log epoch visualizations: {e}")
             self.model.train()
+
+    @torch.no_grad()
+    def _run_online_eval(self) -> dict[str, float]:
+        """
+        Run lightweight online evaluation (k-NN) during training.
+
+        Returns:
+            Dictionary of evaluation metrics
+        """
+        from ..evaluation.feature_extraction import extract_features
+
+        self.model.eval()
+        metrics: dict[str, float] = {}
+
+        try:
+            train_features, train_labels = extract_features(
+                model=self.model,
+                dataloader=self.train_loader,
+                hierarchy_level=0,
+                device=str(self.device),
+                pool=True,
+                normalize=True,
+                max_samples=self.online_eval_max_samples,
+                desc="Online eval (train)",
+            )
+
+            # val_loader is guaranteed non-None by the caller's guard
+            val_features, val_labels = extract_features(
+                model=self.model,
+                dataloader=self.val_loader,  # type: ignore[arg-type]
+                hierarchy_level=0,
+                device=str(self.device),
+                pool=True,
+                normalize=True,
+                max_samples=self.online_eval_max_samples,
+                desc="Online eval (val)",
+            )
+
+            # Simple k-NN classification
+            from sklearn.neighbors import KNeighborsClassifier
+
+            knn = KNeighborsClassifier(n_neighbors=self.online_eval_k, metric="cosine", n_jobs=-1)
+            knn.fit(train_features, train_labels)
+            accuracy = knn.score(val_features, val_labels) * 100.0
+
+            metrics["knn_accuracy"] = accuracy
+            logger.info("Online k-NN eval: %.2f%% (k=%d)", accuracy, self.online_eval_k)
+
+        except Exception as e:
+            logger.warning("Online evaluation failed: %s", e)
+
+        self.model.train()
+        return metrics
 
     def _save_checkpoint(
         self,
