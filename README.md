@@ -6,13 +6,17 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![codecov](https://codecov.io/gh/jonwiggins/H-JEPA/branch/main/graph/badge.svg)](https://codecov.io/gh/jonwiggins/H-JEPA)
 
-**A PyTorch implementation of Hierarchical Joint-Embedding Predictive Architecture for visual self-supervised learning**
+**A hierarchical JEPA framework supporting masked-patch SSL, end-to-end SIGReg-only training (LeWM-style), and action-conditioned world modeling**
 
 ## Overview
 
-H-JEPA extends Meta's [I-JEPA](https://github.com/facebookresearch/ijepa) with hierarchical, multi-scale representation learning. Where I-JEPA predicts latent targets at a single scale, H-JEPA introduces a Feature Pyramid Network (FPN) that fuses representations across multiple hierarchy levels — learning both fine-grained and coarse semantic features simultaneously.
+H-JEPA is a hierarchical Joint-Embedding Predictive Architecture framework with three opt-in training regimes that share the same encoder and SIGReg primitives:
 
-The architecture uses Rotary Position Embeddings (RoPE) for spatial awareness, multi-crop augmentation for scale invariance, and a combined VICReg + prediction loss to prevent representation collapse. It supports CUDA, Apple Silicon (MPS), and CPU backends.
+1. **Masked-patch SSL** (default) — extends Meta's [I-JEPA](https://github.com/facebookresearch/ijepa) with a Feature Pyramid Network that fuses representations across multiple hierarchy levels for both fine-grained and coarse semantic features.
+2. **End-to-end SIGReg-only training** — drops the EMA target encoder and relies on [LeJEPA](https://arxiv.org/abs/2511.08544) / [LeWorldModel](https://arxiv.org/abs/2603.19312)-style SIGReg regularization to prevent collapse, halving trainable parameters and reducing tunable loss hyperparameters from six to one.
+3. **Action-conditioned world modeling** — adds an AdaLN-Zero predictor and CEM latent-space planner so the same encoder backbone can be trained on action-annotated trajectories for control.
+
+All three regimes are selectable via config — defaults preserve the original H-JEPA behavior. The architecture uses Rotary Position Embeddings (RoPE) for spatial awareness, multi-crop augmentation for scale invariance, and supports CUDA, Apple Silicon (MPS), and CPU backends.
 
 The implementation is validated end-to-end with 1400+ tests. No pretrained weights are published yet — this is a research codebase for training from scratch.
 
@@ -22,11 +26,24 @@ The implementation is validated end-to-end with 1400+ tests. No pretrained weigh
 - **Feature Pyramid Network** — fuse features across hierarchy levels
 - **Rotary Position Embeddings** — 2D spatial encoding without learned position parameters
 - **Flash Attention** — fused attention kernels on CUDA
-- **SigReg loss** — sigmoid-based regularization for training stability
+- **SIGReg loss** — sketched isotropic Gaussian regularization with two Epps–Pulley variants (reference points and characteristic-function quadrature)
+- **End-to-end mode** — opt-out of the EMA target encoder per LeWorldModel
+- **BatchNorm projection heads** — preserves the variance signal SIGReg shapes
+- **AdaLN-Zero action predictor** — zero-initialized action conditioning for stable world-model training
+- **CEM latent-space planner** — MPC + Cross-Entropy Method for downstream control
 - **Multi-crop augmentation** — multiple views at different scales per image
-- **VICReg + prediction loss** — combined objective to prevent collapse
+- **VICReg + prediction loss** — combined objective for the classic SSL regime
 - **Apple Silicon support** — runs on MPS with automatic fallbacks
 - **Mixed precision & gradient checkpointing** — efficient training on limited hardware
+
+## Training regimes at a glance
+
+| Config | EMA target encoder | Loss | Use case |
+|---|---|---|---|
+| `configs/default.yaml` | Yes | VICReg + prediction (current default) | Hierarchical masked-patch SSL |
+| `configs/lewm_tier1.yaml` | Yes | SIGReg + prediction | SSL with vectorized SIGReg, char-function test, BatchNorm projector |
+| `configs/lewm_tier2.yaml` | **No** | SIGReg-only, no detach | SSL without EMA — LeWM-style end-to-end training of the hierarchical stack |
+| `configs/lewm_world_model.yaml` | **No** | SIGReg + next-latent prediction | Action-conditioned world model with AdaLN-Zero predictor + CEM planner |
 
 ## Installation
 

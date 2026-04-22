@@ -3,9 +3,14 @@ Hierarchical Joint-Embedding Predictive Architecture (H-JEPA).
 
 This module implements the main H-JEPA model that combines context encoder,
 target encoder, and predictor for hierarchical self-supervised learning.
+
+It also supports a LeWM-style end-to-end training regime via the
+``use_target_encoder=False`` flag, which removes the EMA target encoder
+and propagates gradients through both branches of the JEPA pair, relying
+on SIGReg (configured via the loss) to prevent collapse.
 """
 
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import torch
 import torch.nn as nn
@@ -13,6 +18,50 @@ from einops import rearrange
 
 from .encoder import create_encoder
 from .predictor import create_predictor
+
+
+class BatchNorm1dForTokens(nn.Module):
+    """
+    BatchNorm1d that accepts token sequences of shape [B, N, D].
+
+    LeWorldModel applies BatchNorm to a single [CLS] token of shape [B, D],
+    but H-JEPA's projection heads operate on full token sequences. This
+    wrapper flattens [B, N, D] to [B*N, D] for normalization, then reshapes
+    back. For 2D input [B, D] it is a passthrough to ``nn.BatchNorm1d``.
+
+    BatchNorm is preferred over LayerNorm when the projection feeds a
+    SIGReg-style loss because LayerNorm strips per-feature variance — the
+    exact signal SIGReg shapes via the isotropic-Gaussian regularizer.
+    """
+
+    def __init__(self, dim: int, eps: float = 1e-5, momentum: float = 0.1):
+        super().__init__()
+        self.bn = nn.BatchNorm1d(dim, eps=eps, momentum=momentum)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim == 2:
+            return self.bn(x)  # type: ignore[no-any-return]
+        if x.ndim == 3:
+            B, N, D = x.shape
+            x_flat = x.reshape(B * N, D)
+            x_norm = self.bn(x_flat)
+            return x_norm.reshape(B, N, D)  # type: ignore[no-any-return]
+        raise ValueError(f"Expected 2D or 3D tensor, got shape {x.shape}")
+
+
+def _make_projection_norm(
+    dim: int, projection_norm: Literal["layernorm", "batchnorm", "none"]
+) -> nn.Module:
+    """Construct the post-projection normalization layer based on the choice."""
+    if projection_norm == "layernorm":
+        return nn.LayerNorm(dim)
+    if projection_norm == "batchnorm":
+        return BatchNorm1dForTokens(dim)
+    if projection_norm == "none":
+        return nn.Identity()
+    raise ValueError(
+        f"projection_norm must be 'layernorm', 'batchnorm', or 'none', got {projection_norm}"
+    )
 
 
 class HJEPA(nn.Module):
@@ -78,6 +127,8 @@ class HJEPA(nn.Module):
         use_layerscale: bool = False,
         layerscale_init: float = 1e-5,
         use_flash_attention: bool = True,
+        use_target_encoder: bool = True,
+        projection_norm: Literal["layernorm", "batchnorm", "none"] = "layernorm",
     ) -> None:
         super().__init__()
 
@@ -98,9 +149,12 @@ class HJEPA(nn.Module):
         self.use_gradient_checkpointing = use_gradient_checkpointing
         self.use_layerscale = use_layerscale
         self.use_flash_attention = use_flash_attention
+        self.use_target_encoder = use_target_encoder
+        self.projection_norm = projection_norm
 
-        # Create encoders
-        self.context_encoder, self.target_encoder = create_encoder(
+        # Create context encoder. Always create the target encoder via the factory
+        # for compatibility (it is discarded below when use_target_encoder=False).
+        context_encoder, target_encoder = create_encoder(
             encoder_type=encoder_type,
             img_size=img_size,
             pretrained=pretrained,
@@ -109,11 +163,19 @@ class HJEPA(nn.Module):
             use_layerscale=use_layerscale,
             layerscale_init=layerscale_init,
         )
+        self.context_encoder = context_encoder
 
-        # Override EMA parameters for target encoder
-        self.target_encoder.momentum = ema_momentum
-        self.target_encoder.ema_momentum_end = ema_momentum_end
-        self.target_encoder.ema_warmup_steps = ema_warmup_steps
+        if use_target_encoder:
+            self.target_encoder = target_encoder
+            # Override EMA parameters for target encoder
+            self.target_encoder.momentum = ema_momentum
+            self.target_encoder.ema_momentum_end = ema_momentum_end
+            self.target_encoder.ema_warmup_steps = ema_warmup_steps
+        else:
+            # End-to-end mode (LeWM-style): no separate target encoder. The forward
+            # pass routes the target through the context encoder so gradients flow
+            # through both branches, and the trainer skips the EMA update.
+            del target_encoder
 
         # Create predictor
         self.predictor = create_predictor(
@@ -138,7 +200,7 @@ class HJEPA(nn.Module):
             [
                 nn.Sequential(
                     nn.Linear(final_dim, embed_dim),
-                    nn.LayerNorm(embed_dim),
+                    _make_projection_norm(embed_dim, projection_norm),
                 )
                 for _ in range(num_hierarchies)
             ]
@@ -357,9 +419,14 @@ class HJEPA(nn.Module):
         # Encode context (visible patches)
         context_features = self.context_encoder(images, mask=mask)
 
-        # Encode target (full image) with no gradient
-        with torch.no_grad():
-            target_features = self.target_encoder(images)
+        # Encode target. With an EMA target encoder, the target branch is run
+        # under no_grad. In end-to-end mode the target shares weights with the
+        # context encoder and gradients flow through both branches.
+        if self.use_target_encoder:
+            with torch.no_grad():
+                target_features = self.target_encoder(images)
+        else:
+            target_features = self.context_encoder(images)
 
         # Get mask indices for prediction
         # mask shape: [B, N] where N is number of patches
@@ -526,8 +593,9 @@ class HJEPA(nn.Module):
         if level >= self.num_hierarchies:
             raise ValueError(f"Level {level} exceeds num_hierarchies {self.num_hierarchies}")
 
-        # Encode image
-        if use_target_encoder:
+        # Encode image. If the model was built without an EMA target encoder,
+        # always fall back to the context encoder regardless of the request.
+        if use_target_encoder and self.use_target_encoder:
             features = self.target_encoder(images)
         else:
             features = self.context_encoder(images)
@@ -562,8 +630,10 @@ class HJEPA(nn.Module):
             current_step: Current training step
 
         Returns:
-            Current EMA momentum value
+            Current EMA momentum value (1.0 in end-to-end mode, indicating no update)
         """
+        if not self.use_target_encoder:
+            return 1.0
         return self.target_encoder.update_from_context_encoder(self.context_encoder, current_step)
 
     def get_num_patches(self) -> int:
@@ -595,6 +665,8 @@ def create_hjepa(
     use_layerscale: bool = False,
     layerscale_init: float = 1e-5,
     use_flash_attention: bool = True,
+    use_target_encoder: bool = True,
+    projection_norm: Literal["layernorm", "batchnorm", "none"] = "layernorm",
 ) -> HJEPA:
     """
     Factory function to create H-JEPA model.
@@ -643,6 +715,8 @@ def create_hjepa(
         use_layerscale=use_layerscale,
         layerscale_init=layerscale_init,
         use_flash_attention=use_flash_attention,
+        use_target_encoder=use_target_encoder,
+        projection_norm=projection_norm,
     )
 
 
@@ -681,6 +755,10 @@ def create_hjepa_from_config(config: dict[str, Any]) -> HJEPA:
     # Get Flash Attention configuration
     use_flash_attention = model_config.get("use_flash_attention", True)
 
+    # LeWM-style flags (default to existing H-JEPA behavior)
+    use_target_encoder = model_config.get("use_target_encoder", True)
+    projection_norm = model_config.get("projection_norm", "layernorm")
+
     return create_hjepa(
         encoder_type=model_config.get("encoder_type", "vit_base_patch16_224"),
         img_size=config.get("data", {}).get("image_size", 224),
@@ -701,4 +779,6 @@ def create_hjepa_from_config(config: dict[str, Any]) -> HJEPA:
         use_layerscale=use_layerscale,
         layerscale_init=layerscale_init,
         use_flash_attention=use_flash_attention,
+        use_target_encoder=use_target_encoder,
+        projection_norm=projection_norm,
     )

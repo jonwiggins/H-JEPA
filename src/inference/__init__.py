@@ -1,5 +1,6 @@
 """Inference optimization module for H-JEPA."""
 
+from .cem_planner import CEMPlanner
 from .optimized_model import (
     BatchInference,
     OptimizedHJEPA,
@@ -14,4 +15,5 @@ __all__ = [
     "export_to_onnx",
     "quantize_model",
     "BatchInference",
+    "CEMPlanner",
 ]

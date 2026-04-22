@@ -39,6 +39,11 @@ from .multicrop_transforms import (
     MultiCropTransform,
     build_multicrop_transform,
 )
+from .sequential_dataset import (
+    EpisodeFileSequentialDataset,
+    SyntheticSequentialDataset,
+    build_sequential_dataloader,
+)
 from .transforms import (
     CutMix,
     DeiTIIIAugmentation,
@@ -94,4 +99,8 @@ __all__ = [
     "print_dataset_summary",
     "print_manual_download_instructions",
     "DATASET_INFO",
+    # Sequential / world-model datasets
+    "SyntheticSequentialDataset",
+    "EpisodeFileSequentialDataset",
+    "build_sequential_dataloader",
 ]

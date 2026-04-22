@@ -1,0 +1,86 @@
+# LeWM Tier 3: end-to-end world model with action conditioning.
+#
+# Trains a LeWM-style world model on action-annotated trajectories: the
+# encoder maps each frame to a latent, the AdaLN-Zero predictor rolls those
+# latents forward conditioned on actions, and SIGReg keeps the latent space
+# isotropic-Gaussian to prevent collapse. No EMA, no VICReg, no stop-grad.
+#
+# This config uses the synthetic sequential dataset for smoke testing. To
+# train on real trajectories, swap ``dataset.type`` to ``episode_files`` and
+# point ``dataset.root_dir`` at a directory of per-episode .pt files
+# containing dicts with keys ``frames`` ([T, C, H, W]) and ``actions`` ([T, A]).
+#
+# Note: this config exercises the new src/models/lewm.py + ActionPredictor
+# stack. The standard scripts/train.py loop is geared toward image SSL; for
+# world-model training a sequential trainer is required (out of scope for
+# this config — see the module docstring for usage).
+
+experiment:
+  name: lewm_world_model
+  seed: 42
+  output_dir: results/lewm_world_model
+
+model:
+  type: lewm
+  encoder_type: vit_tiny_patch16_224
+  img_size: 224
+  embed_dim: 192
+  action_dim: 4
+  pretrained: false
+  use_flash_attention: false
+  use_layerscale: false
+  projection_norm: batchnorm
+  predictor:
+    depth: 6
+    num_heads: 16
+    mlp_ratio: 4.0
+    dropout: 0.1
+    max_seq_len: 32
+
+data:
+  type: synthetic_sequential
+  num_episodes: 256
+  seq_len: 16
+  image_size: 224
+  channels: 3
+  action_dim: 4
+  batch_size: 8
+  num_workers: 0
+  seed: 42
+
+loss:
+  prediction_loss_type: mse
+  sigreg_weight: 0.1
+  sigreg_num_slices: 1024
+  sigreg_test_method: char_function
+  sigreg_char_function_t_min: 0.2
+  sigreg_char_function_t_max: 4.0
+  sigreg_char_function_num_quadrature: 32
+  sigreg_char_function_lambda: 1.0
+
+training:
+  epochs: 1
+  warmup_epochs: 0
+  optimizer: adamw
+  lr: 3.0e-4
+  weight_decay: 0.04
+  betas: [0.9, 0.95]
+  lr_schedule: cosine
+
+planner:
+  horizon: 8
+  num_samples: 64
+  num_elites: 8
+  num_iterations: 5
+  action_low: -1.0
+  action_high: 1.0
+
+logging:
+  log_frequency: 5
+  use_wandb: false
+  use_tensorboard: false
+
+checkpoint:
+  save_best: false
+
+device: cpu

@@ -1,9 +1,8 @@
 """
 SIGReg Loss: Sketched Isotropic Gaussian Regularization
 
-This module implements SIGReg from the LeJEPA paper, which provides improved
-training stability over standard VICReg through a theoretically grounded approach
-to preventing representation collapse.
+This module implements SIGReg from the LeJEPA paper, with extensions from the
+LeWorldModel paper that adopt the same regularizer for end-to-end world modeling.
 
 Mathematical Formulation:
     SIGReg uses random projections (slicing) to test if embeddings follow an
@@ -14,32 +13,24 @@ Mathematical Formulation:
     where T is a univariate statistical test (Epps-Pulley) that measures
     the distance from a standard 1D Gaussian distribution.
 
-Key Differences from VICReg:
-    1. Computational Efficiency: O(K) complexity vs O(K^2) for covariance
-    2. Single Hyperparameter: num_slices vs 3 separate weights in VICReg
-    3. Theoretical Foundation: Based on Cramér-Wold theorem and optimal
-       isotropic Gaussian distribution
-    4. Improved Stability: Sign consistency and better variance handling
-    5. Scalability: Linear memory/time complexity in dimension and samples
-
-Epps-Pulley Test:
-    The Epps-Pulley test is a smooth, differentiable test for comparing
-    distributions. For projected samples y = a^T z:
-
-    EP(y) = (1/N^2) * Σ_{i,j} ψ(y_i - y_j) - 2/(N*K) * Σ_{i,k} ψ(y_i - g_k)
-            + (1/K^2) * Σ_{k,l} ψ(g_k - g_l)
-
-    where ψ is a smooth kernel function and g_k are reference Gaussian samples.
+Two Epps-Pulley variants are supported:
+    1. "reference_points" (default, original LeJEPA implementation):
+       Compares the empirical distribution to evenly-spaced quantile reference
+       points using a Gaussian kernel.
+    2. "char_function" (LeWorldModel variant):
+       Computes the integral of the squared difference between the empirical
+       characteristic function and the standard Gaussian characteristic function
+       (exp(-t²/2)), weighted by w(t) = exp(-t²/(2λ²)), discretized via
+       trapezoidal quadrature on t ∈ [t_min, t_max].
 
 References:
-    LeJEPA: Provable and Scalable Self-Supervised Learning Without the Heuristics
-    https://arxiv.org/abs/2511.08544
-
-    VICReg: Variance-Invariance-Covariance Regularization for Self-Supervised Learning
-    https://arxiv.org/abs/2105.04906
+    LeJEPA: https://arxiv.org/abs/2511.08544
+    LeWorldModel: https://arxiv.org/abs/2603.19312
+    VICReg: https://arxiv.org/abs/2105.04906
 """
 
 import math
+from typing import Literal
 
 import torch
 import torch.nn as nn
@@ -69,10 +60,17 @@ class EppsPulleyTest(nn.Module):
         self,
         num_points: int = 17,
         eps: float = 1e-6,
+        test_method: Literal["reference_points", "char_function"] = "reference_points",
+        char_function_t_min: float = 0.2,
+        char_function_t_max: float = 4.0,
+        char_function_num_quadrature: int = 32,
+        char_function_lambda: float = 1.0,
     ):
         super().__init__()
         self.num_points = num_points
         self.eps = eps
+        self.test_method = test_method
+        self.char_function_lambda = char_function_lambda
 
         # Pre-compute reference Gaussian samples (evenly spaced quantiles)
         # These serve as reference points for the standard Gaussian distribution
@@ -82,6 +80,13 @@ class EppsPulleyTest(nn.Module):
         reference_points = torch.erfinv(2 * quantiles - 1) * math.sqrt(2)
         self.reference_points: torch.Tensor
         self.register_buffer("reference_points", reference_points)
+
+        # Quadrature points for char-function variant (LeWorldModel)
+        quadrature_points = torch.linspace(
+            char_function_t_min, char_function_t_max, char_function_num_quadrature
+        )
+        self.quadrature_points: torch.Tensor
+        self.register_buffer("quadrature_points", quadrature_points)
 
     def _kernel(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
@@ -117,9 +122,14 @@ class EppsPulleyTest(nn.Module):
         Returns:
             Scalar test statistic (or [B] if batched)
         """
-        # Handle batched or single input
+        if self.test_method == "char_function":
+            return self._char_function_forward(x)
+        return self._reference_points_forward(x)
+
+    def _reference_points_forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Original reference-points implementation (LeJEPA)."""
         if x.ndim == 1:
-            x = x.unsqueeze(0)  # [1, N]
+            x = x.unsqueeze(0)
             squeeze_output = True
         else:
             squeeze_output = False
@@ -127,36 +137,68 @@ class EppsPulleyTest(nn.Module):
         batch_size, N = x.shape
         K = self.num_points
 
-        # Standardize input to have mean=0, std=1 for fair comparison
-        # This ensures we're comparing shape, not just location/scale
         x_mean = x.mean(dim=-1, keepdim=True)
         x_std = x.std(dim=-1, keepdim=True) + self.eps
-        x_standardized = (x - x_mean) / x_std  # [B, N]
+        x_standardized = (x - x_mean) / x_std
 
-        # Get reference Gaussian points
-        g = self.reference_points.unsqueeze(0).expand(batch_size, -1)  # [B, K]
+        g = self.reference_points.unsqueeze(0).expand(batch_size, -1)
 
-        # Compute three terms of Epps-Pulley statistic:
+        kernel_xx = self._kernel(x_standardized, x_standardized)
+        term1 = kernel_xx.sum(dim=(-2, -1)) / (N**2)
 
-        # 1. Self-interaction of empirical samples: (1/N^2) * Σ_{i,j} ψ(x_i - x_j)
-        kernel_xx = self._kernel(x_standardized, x_standardized)  # [B, N, N]
-        term1 = kernel_xx.sum(dim=(-2, -1)) / (N**2)  # [B]
+        kernel_xg = self._kernel(x_standardized, g)
+        term2 = -2 * kernel_xg.sum(dim=(-2, -1)) / (N * K)
 
-        # 2. Cross-interaction with reference: -2/(N*K) * Σ_{i,k} ψ(x_i - g_k)
-        kernel_xg = self._kernel(x_standardized, g)  # [B, N, K]
-        term2 = -2 * kernel_xg.sum(dim=(-2, -1)) / (N * K)  # [B]
+        kernel_gg = self._kernel(g, g)
+        term3 = kernel_gg.sum(dim=(-2, -1)) / (K**2)
 
-        # 3. Self-interaction of reference: (1/K^2) * Σ_{k,l} ψ(g_k - g_l)
-        kernel_gg = self._kernel(g, g)  # [B, K, K]
-        term3 = kernel_gg.sum(dim=(-2, -1)) / (K**2)  # [B]
+        test_statistic = term1 + term2 + term3
 
-        # Combine terms
-        test_statistic = term1 + term2 + term3  # [B]
-
-        # Return scalar if input was 1D
         if squeeze_output:
             return test_statistic.squeeze(0)
+        return test_statistic
 
+    def _char_function_forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Characteristic-function quadrature variant (LeWorldModel).
+
+        Computes T = ∫ w(t) |φ_N(t) - φ_0(t)|² dt where:
+            φ_N(t) = (1/N) Σ exp(it·x_n) is the empirical char function
+            φ_0(t) = exp(-t²/2) is the standard Gaussian char function
+            w(t) = exp(-t²/(2λ²)) is the Gaussian weighting
+
+        For real-valued x: Re(φ_N(t)) = (1/N)Σ cos(t·x_n), Im(φ_N(t)) = (1/N)Σ sin(t·x_n)
+        and |φ_N - φ_0|² = (Re(φ_N) - φ_0)² + Im(φ_N)² since φ_0 is real.
+        """
+        if x.ndim == 1:
+            x = x.unsqueeze(0)
+            squeeze_output = True
+        else:
+            squeeze_output = False
+
+        x_mean = x.mean(dim=-1, keepdim=True)
+        x_std = x.std(dim=-1, keepdim=True) + self.eps
+        x_std_normed = (x - x_mean) / x_std  # [B, N]
+
+        t = self.quadrature_points  # [T]
+
+        # tx: [B, N, T]
+        tx = x_std_normed.unsqueeze(-1) * t.view(1, 1, -1)
+        cos_phi_N = torch.cos(tx).mean(dim=1)  # [B, T]
+        sin_phi_N = torch.sin(tx).mean(dim=1)  # [B, T]
+
+        phi_0 = torch.exp(-0.5 * t**2)  # [T]
+
+        diff_sq = (cos_phi_N - phi_0.unsqueeze(0)) ** 2 + sin_phi_N**2  # [B, T]
+
+        weight = torch.exp(-0.5 * t**2 / (self.char_function_lambda**2))  # [T]
+        integrand = diff_sq * weight.unsqueeze(0)  # [B, T]
+
+        dt = (t[-1] - t[0]) / (len(t) - 1)
+        test_statistic = torch.trapz(integrand, dx=dt.item(), dim=-1)  # [B]
+
+        if squeeze_output:
+            return test_statistic.squeeze(0)
         return test_statistic
 
 
@@ -207,6 +249,12 @@ class SIGRegLoss(nn.Module):
         eps: float = 1e-6,
         flatten_patches: bool = True,
         fixed_slices: bool = False,
+        vectorized: bool = True,
+        test_method: Literal["reference_points", "char_function"] = "reference_points",
+        char_function_t_min: float = 0.2,
+        char_function_t_max: float = 4.0,
+        char_function_num_quadrature: int = 32,
+        char_function_lambda: float = 1.0,
     ):
         super().__init__()
 
@@ -217,6 +265,7 @@ class SIGRegLoss(nn.Module):
         self.eps = eps
         self.flatten_patches = flatten_patches
         self.fixed_slices = fixed_slices
+        self.vectorized = vectorized
 
         # Validate parameters
         if num_slices <= 0:
@@ -232,6 +281,11 @@ class SIGRegLoss(nn.Module):
         self.univariate_test = EppsPulleyTest(
             num_points=num_test_points,
             eps=eps,
+            test_method=test_method,
+            char_function_t_min=char_function_t_min,
+            char_function_t_max=char_function_t_max,
+            char_function_num_quadrature=char_function_num_quadrature,
+            char_function_lambda=char_function_lambda,
         )
 
         # Pre-allocated fixed random slices if requested
@@ -323,19 +377,21 @@ class SIGRegLoss(nn.Module):
         # Result: [N, M] where each column is a 1D projection
         projections = z @ random_slices.T  # [N, M]
 
-        # Compute Epps-Pulley test for each projection
-        # We want to minimize the test statistic (distance from Gaussian)
-        test_statistics = []
+        if self.vectorized:
+            # Pass all projections through the test in a single batched call.
+            # EppsPulleyTest accepts [B, N] where B is the slice dimension.
+            batched_projections = projections.T.contiguous()  # [M, N]
+            test_statistics = self.univariate_test(batched_projections)  # [M]
+            return test_statistics.mean()  # type: ignore[no-any-return]
 
+        # Legacy per-slice loop, retained for reproducibility.
+        test_statistics_list = []
         for i in range(self.num_slices):
             projection = projections[:, i]  # [N]
             stat = self.univariate_test(projection)
-            test_statistics.append(stat)
+            test_statistics_list.append(stat)
 
-        # Average over all slices
-        sigreg_loss = torch.stack(test_statistics).mean()
-
-        return sigreg_loss
+        return torch.stack(test_statistics_list).mean()
 
     def forward(
         self,

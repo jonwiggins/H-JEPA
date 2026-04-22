@@ -70,6 +70,7 @@ class HJEPALoss(nn.Module):
         normalize_embeddings: bool = True,
         huber_delta: float = 1.0,
         eps: float = 1e-8,
+        detach_targets: bool = True,
     ):
         super().__init__()
 
@@ -79,6 +80,10 @@ class HJEPALoss(nn.Module):
         self.normalize_embeddings = normalize_embeddings
         self.huber_delta = huber_delta
         self.eps = eps
+        # When False (LeWM-style end-to-end mode), gradients flow through both
+        # branches of the JEPA pair. The default True preserves classic
+        # I-JEPA / V-JEPA stop-gradient semantics.
+        self.detach_targets = detach_targets
 
         # Process hierarchy weights
         if isinstance(hierarchy_weights, (int, float)):
@@ -228,8 +233,9 @@ class HJEPALoss(nn.Module):
                 pred = self._normalize(pred)
                 target = self._normalize(target)
 
-            # Detach targets (stop gradient)
-            target = target.detach()
+            # Detach targets (stop gradient) — disabled in LeWM-style end-to-end mode
+            if self.detach_targets:
+                target = target.detach()
 
             # Compute base loss
             if masks is not None and masks[i] is not None:

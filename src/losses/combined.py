@@ -471,6 +471,7 @@ def _build_jepa(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
         hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
         num_hierarchies=num_hierarchies,
         normalize_embeddings=loss_config.get("normalize_embeddings", True),
+        detach_targets=loss_config.get("detach_targets", True),
     )
 
     if loss_config.get("use_contrastive", False):
@@ -508,7 +509,119 @@ def _build_sigreg(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Modul
         eps=loss_config.get("eps", 1e-6),
         flatten_patches=loss_config.get("flatten_patches", True),
         fixed_slices=loss_config.get("sigreg_fixed_slices", False),
+        vectorized=loss_config.get("sigreg_vectorized", True),
+        test_method=loss_config.get("sigreg_test_method", "reference_points"),
+        char_function_t_min=loss_config.get("sigreg_char_function_t_min", 0.2),
+        char_function_t_max=loss_config.get("sigreg_char_function_t_max", 4.0),
+        char_function_num_quadrature=loss_config.get("sigreg_char_function_num_quadrature", 32),
+        char_function_lambda=loss_config.get("sigreg_char_function_lambda", 1.0),
     )
+
+
+@_register_loss("hjepa_sigreg", "sigreg_combined")
+def _build_hjepa_sigreg(loss_config: dict[str, Any], num_hierarchies: int) -> nn.Module:
+    """Build a SigReg-regularized JEPA loss with the trainer's signature.
+
+    Mirrors ``_build_combined`` but swaps VICReg for SIGReg. Returns
+    ``HJEPASIGRegLoss``, which composes HJEPALoss + SIGRegLoss into a single
+    ``forward(predictions, targets, masks, context_features)`` call so it
+    can be plugged directly into the existing trainer.
+    """
+    sigreg = SIGRegLoss(
+        num_slices=loss_config.get("sigreg_num_slices", 1024),
+        num_test_points=loss_config.get("sigreg_num_test_points", 17),
+        invariance_weight=loss_config.get("sigreg_invariance_weight", 25.0),
+        sigreg_weight=loss_config.get("sigreg_weight", 25.0),
+        eps=loss_config.get("eps", 1e-6),
+        flatten_patches=loss_config.get("flatten_patches", True),
+        fixed_slices=loss_config.get("sigreg_fixed_slices", False),
+        vectorized=loss_config.get("sigreg_vectorized", True),
+        test_method=loss_config.get("sigreg_test_method", "reference_points"),
+        char_function_t_min=loss_config.get("sigreg_char_function_t_min", 0.2),
+        char_function_t_max=loss_config.get("sigreg_char_function_t_max", 4.0),
+        char_function_num_quadrature=loss_config.get("sigreg_char_function_num_quadrature", 32),
+        char_function_lambda=loss_config.get("sigreg_char_function_lambda", 1.0),
+    )
+    jepa_loss = HJEPALoss(
+        loss_type=loss_config.get("jepa_loss_type", "smoothl1"),
+        hierarchy_weights=loss_config.get("hierarchy_weights", 1.0),
+        num_hierarchies=num_hierarchies,
+        normalize_embeddings=loss_config.get("normalize_embeddings", True),
+        detach_targets=loss_config.get("detach_targets", True),
+    )
+    return HJEPASIGRegLoss(
+        jepa_loss=jepa_loss,
+        sigreg_loss=sigreg,
+        sigreg_weight=loss_config.get("sigreg_loss_weight", 1.0),
+    )
+
+
+class HJEPASIGRegLoss(nn.Module):
+    """
+    Combined H-JEPA prediction loss + SIGReg encoder regularization.
+
+    The trainer calls losses with ``forward(predictions, targets, masks,
+    context_features)``. SIGRegLoss alone takes ``(z_a, z_b)``, so this
+    wrapper adapts the API: it computes the standard hierarchical JEPA
+    prediction loss and adds a SIGReg term on the encoder's
+    ``context_features`` to prevent collapse, mirroring the way
+    ``CombinedLoss`` integrates VICReg.
+
+    Args:
+        jepa_loss: An HJEPALoss instance.
+        sigreg_loss: A SIGRegLoss instance.
+        sigreg_weight: Scalar multiplier for the SIGReg term.
+    """
+
+    def __init__(
+        self,
+        jepa_loss: HJEPALoss,
+        sigreg_loss: SIGRegLoss,
+        sigreg_weight: float = 1.0,
+    ):
+        super().__init__()
+        self.jepa_loss = jepa_loss
+        self.sigreg_loss = sigreg_loss
+        self.sigreg_weight = sigreg_weight
+
+    def forward(
+        self,
+        predictions: list[torch.Tensor] | torch.Tensor,
+        targets: list[torch.Tensor] | torch.Tensor,
+        masks: list[torch.Tensor] | None = None,
+        context_features: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
+        jepa_dict = self.jepa_loss(predictions, targets, masks)
+        loss_dict: dict[str, torch.Tensor] = {}
+
+        if context_features is not None:
+            # Split batch into two halves to give SIGReg an invariance pair.
+            # When the batch is too small to split, pass the same tensor twice;
+            # SIGReg's regularization term still operates on the (single) view.
+            if context_features.shape[0] >= 2:
+                mid = context_features.shape[0] // 2
+                features_a = context_features[:mid]
+                features_b = context_features[mid : 2 * mid]
+            else:
+                features_a = context_features
+                features_b = context_features
+            sigreg_dict = self.sigreg_loss(features_a, features_b)
+            sigreg_total = sigreg_dict["sigreg_loss"]  # the regularization term
+            loss_dict["sigreg_loss"] = sigreg_total
+            loss_dict["sigreg_invariance"] = sigreg_dict.get(
+                "invariance_loss", torch.zeros((), device=sigreg_total.device)
+            )
+        else:
+            sigreg_total = torch.zeros((), device=jepa_dict["loss"].device)
+            loss_dict["sigreg_loss"] = sigreg_total
+
+        total_loss = jepa_dict["loss"] + self.sigreg_weight * sigreg_total
+        loss_dict["loss"] = total_loss
+        loss_dict["jepa_loss"] = jepa_dict["loss"]
+        for key, value in jepa_dict.items():
+            if key not in loss_dict:
+                loss_dict[key] = value
+        return loss_dict
 
 
 @_register_loss("combined")

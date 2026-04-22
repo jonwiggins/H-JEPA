@@ -634,6 +634,10 @@ class HJEPATrainer:
             # If model doesn't have separate encoders, skip EMA update
             return
 
+        # End-to-end mode (LeWM-style): no EMA update, gradients flow through both branches.
+        if getattr(self.model, "use_target_encoder", True) is False:
+            return
+
         context_params = self.model.context_encoder.parameters()  # type: ignore[union-attr]
         target_params = self.model.target_encoder.parameters()  # type: ignore[union-attr]
 
