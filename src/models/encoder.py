@@ -362,17 +362,28 @@ class RoPEAttentionWrapper(nn.Module):
                 use_pytorch_sdpa=True,  # Use PyTorch SDPA when beneficial
             )
 
-    def forward(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        attn_mask: torch.Tensor | None = None,
+        is_causal: bool = False,
+        **kwargs: object,
+    ) -> torch.Tensor:
         """
         Forward pass with RoPE applied to Q and K.
 
         Args:
             x: Input tensor [batch, seq_len, embed_dim]
             attn_mask: Optional attention mask (currently ignored with Flash Attention)
+            is_causal: Accepted for forward-compat with newer timm versions that
+                pass it to attention modules; ignored here because Vision
+                Transformer attention is bidirectional.
+            **kwargs: Swallow any other future kwargs timm may add.
 
         Returns:
             Output tensor [batch, seq_len, embed_dim]
         """
+        del is_causal, kwargs  # explicitly unused
         B, N, C = x.shape
 
         # Compute Q, K, V using original module
