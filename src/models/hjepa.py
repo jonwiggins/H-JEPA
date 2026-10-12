@@ -129,6 +129,8 @@ class HJEPA(nn.Module):
         use_flash_attention: bool = True,
         use_target_encoder: bool = True,
         projection_norm: Literal["layernorm", "batchnorm", "none"] = "layernorm",
+        use_rope: bool = False,
+        rope_theta: float = 10000.0,
     ) -> None:
         super().__init__()
 
@@ -158,12 +160,19 @@ class HJEPA(nn.Module):
             encoder_type=encoder_type,
             img_size=img_size,
             pretrained=pretrained,
+            use_rope=use_rope,
+            rope_theta=rope_theta,
             drop_path_rate=drop_path_rate,
             use_flash_attention=use_flash_attention,
             use_layerscale=use_layerscale,
             layerscale_init=layerscale_init,
         )
         self.context_encoder = context_encoder
+        self.context_encoder.use_gradient_checkpointing = use_gradient_checkpointing
+        if embed_dim != context_encoder.embed_dim:
+            raise ValueError(
+                f"embed_dim={embed_dim} must match encoder dimension {context_encoder.embed_dim}"
+            )
 
         if use_target_encoder:
             self.target_encoder = target_encoder
@@ -215,7 +224,17 @@ class HJEPA(nn.Module):
         if use_fpn:
             self._build_fpn()
 
-        self.apply(self._init_weights)
+        # Initialize only the newly added heads: recursively reinitializing the
+        # encoders here destroys both pretrained weights and the exact EMA copy.
+        for name, module in self.named_children():
+            if name not in {"context_encoder", "target_encoder"}:
+                module.apply(self._init_weights)
+
+    def train(self, mode: bool = True) -> "HJEPA":
+        super().train(mode)
+        if self.use_target_encoder:
+            self.target_encoder.eval()
+        return self
 
     def _init_weights(self, m: nn.Module) -> None:
         """Initialize weights."""
@@ -243,7 +262,7 @@ class HJEPA(nn.Module):
         else:
             # Coarser levels: average pooling with increasing kernel size
             kernel_size = 2**level
-            return nn.AvgPool1d(kernel_size=kernel_size, stride=kernel_size)
+            return nn.AvgPool1d(kernel_size=kernel_size, stride=kernel_size, ceil_mode=True)
 
     def _build_fpn(self) -> None:
         """
@@ -397,6 +416,7 @@ class HJEPA(nn.Module):
         images: torch.Tensor,
         mask: torch.Tensor,
         return_all_levels: bool = True,
+        context_mask: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
         """
         Forward pass through H-JEPA.
@@ -417,7 +437,10 @@ class HJEPA(nn.Module):
         B = images.shape[0]
 
         # Encode context (visible patches)
-        context_features = self.context_encoder(images, mask=mask)
+        # Optional visible-context mask is independent of the target indices.
+        # Targets are always hidden, even if a caller supplies overlapping masks.
+        hidden = mask.bool() if context_mask is None else (~context_mask.bool() | mask.bool())
+        context_features = self.context_encoder(images, mask=hidden)
 
         # Encode target. With an EMA target encoder, the target branch is run
         # under no_grad. In end-to-end mode the target shares weights with the
@@ -435,6 +458,8 @@ class HJEPA(nn.Module):
 
         # Find the number of masked patches per sample
         num_masked_per_sample = mask_bool.sum(dim=1)
+        if (num_masked_per_sample == 0).any():
+            raise ValueError("Each image must contain at least one target patch")
         max_masked = int(num_masked_per_sample.max().item())
 
         # Create padded mask indices tensor [B, max_masked]
@@ -459,6 +484,7 @@ class HJEPA(nn.Module):
         predicted_features = self.predictor(
             context_features=context_features[:, 1:, :],  # Exclude CLS token
             mask_indices=mask_indices,
+            mask_valid=mask_valid,
             pos_embed=pos_embed,  # Already excludes CLS and expanded to batch size
         )
 
@@ -478,69 +504,47 @@ class HJEPA(nn.Module):
                 "target_features": target_features,
             }
 
-        # Compute hierarchical predictions and targets
-        predictions_hierarchy = []
-        targets_hierarchy = []
-        masks_valid_hierarchy = []
-
-        if self.use_fpn:
-            # Apply FPN to create multi-scale features with top-down pathway
-            pred_fpn_features = self._apply_fpn(predicted_features, is_prediction=True)
-            target_fpn_features = self._apply_fpn(target_masked, is_prediction=False)
-
-            # Process mask_valid through FPN pooling as well
-            # Convert to float and expand to embedding dimension for FPN processing
-            mask_valid_float = mask_valid.unsqueeze(-1).float()  # [B, N, 1]
-            # Expand to match embedding dimension expected by FPN
-            mask_valid_expanded = mask_valid_float.expand(
-                -1, -1, self.embed_dim
-            )  # [B, N, embed_dim]
-            mask_fpn_features = self._apply_fpn(mask_valid_expanded, is_prediction=False)
-
-            # Project FPN features to final embedding space
+        # Build each sample's sequence pyramid before padding. Pooling and FPN
+        # interpolation must not mix real patches with another sample's padding.
+        pred_levels: list[list[torch.Tensor]] = [[] for _ in range(self.num_hierarchies)]
+        target_levels: list[list[torch.Tensor]] = [[] for _ in range(self.num_hierarchies)]
+        for i, count in enumerate(num_masked_per_sample.tolist()):
+            pred = predicted_features[i : i + 1, :count]
+            target = target_masked[i : i + 1, :count]
+            if self.use_fpn:
+                pred_pyramid = self._apply_fpn(pred, is_prediction=True)
+                target_pyramid = self._apply_fpn(target, is_prediction=False)
+            else:
+                pred_pyramid = [pred] * self.num_hierarchies
+                target_pyramid = [target] * self.num_hierarchies
             for level in range(self.num_hierarchies):
-                pred_projected = self.hierarchy_projections[level](pred_fpn_features[level])
-                target_projected = self.hierarchy_projections[level](target_fpn_features[level])
+                pred_levels[level].append(pred_pyramid[level].squeeze(0))
+                target_levels[level].append(target_pyramid[level].squeeze(0))
 
-                # Convert pooled mask back to bool (average across embedding dim, then threshold)
-                # Take mean across embedding dimension to get back mask shape
-                mask_valid_level = mask_fpn_features[level].mean(dim=-1) > 0.5
-
-                predictions_hierarchy.append(pred_projected)
-                targets_hierarchy.append(target_projected)
-                masks_valid_hierarchy.append(mask_valid_level)
-        else:
-            # Original hierarchical pooling without FPN
-            for level in range(self.num_hierarchies):
-                # Project features to hierarchy-specific space
-                pred_projected = self.hierarchy_projections[level](predicted_features)
-                target_projected = self.hierarchy_projections[level](target_masked)
-
-                # Process mask_valid with same pooling
-                mask_valid_level = mask_valid.clone()
-
-                # Apply pooling for coarser levels
-                if level > 0:
-                    # Rearrange for 1D pooling: [B, N, D] -> [B, D, N]
-                    pred_projected = rearrange(pred_projected, "b n d -> b d n")
-                    target_projected = rearrange(target_projected, "b n d -> b d n")
-
-                    # Apply pooling
-                    pred_projected = self.hierarchy_pooling[level](pred_projected)
-                    target_projected = self.hierarchy_pooling[level](target_projected)
-
-                    # Rearrange back: [B, D, N'] -> [B, N', D]
-                    pred_projected = rearrange(pred_projected, "b d n -> b n d")
-                    target_projected = rearrange(target_projected, "b d n -> b n d")
-
-                    # Pool mask_valid as well (convert to float, pool, threshold back to bool)
-                    mask_valid_float = rearrange(mask_valid_level.float(), "b n -> b 1 n")
-                    mask_valid_float = self.hierarchy_pooling[level](mask_valid_float)
-                    mask_valid_level = rearrange(mask_valid_float, "b 1 n -> b n") > 0.5
-
-                predictions_hierarchy.append(pred_projected)
-                targets_hierarchy.append(target_projected)
-                masks_valid_hierarchy.append(mask_valid_level)
+        predictions_hierarchy, targets_hierarchy, masks_valid_hierarchy = [], [], []
+        for level, projection in enumerate(self.hierarchy_projections):
+            lengths = [x.shape[0] for x in pred_levels[level]]
+            # Project only real tokens, including for BatchNorm statistics.
+            pred = projection(torch.cat(pred_levels[level]).unsqueeze(0)).squeeze(0)
+            target = projection(torch.cat(target_levels[level]).unsqueeze(0)).squeeze(0)
+            pred_sequences = pred.split(lengths)
+            target_sequences = target.split(lengths)
+            if not self.use_fpn:
+                # Preserve the original non-FPN order: project, then pool.
+                pool = self.hierarchy_pooling[level]
+                pred_sequences = [pool(x.T.unsqueeze(0)).squeeze(0).T for x in pred_sequences]
+                target_sequences = [pool(x.T.unsqueeze(0)).squeeze(0).T for x in target_sequences]
+                lengths = [x.shape[0] for x in pred_sequences]
+            predictions_hierarchy.append(
+                torch.nn.utils.rnn.pad_sequence(pred_sequences, batch_first=True)
+            )
+            targets_hierarchy.append(
+                torch.nn.utils.rnn.pad_sequence(target_sequences, batch_first=True)
+            )
+            masks_valid_hierarchy.append(
+                torch.arange(max(lengths), device=mask.device)[None, :]
+                < torch.tensor(lengths, device=mask.device)[:, None]
+            )
 
         return {
             "predictions": predictions_hierarchy,
@@ -611,9 +615,7 @@ class HJEPA(nn.Module):
             # Project to final embedding space
             features = self.hierarchy_projections[level](features)
         else:
-            # Original method: project then pool
             features = self.hierarchy_projections[level](features)
-
             # Apply pooling for coarser levels
             if level > 0:
                 features = rearrange(features, "b n d -> b d n")
@@ -667,6 +669,8 @@ def create_hjepa(
     use_flash_attention: bool = True,
     use_target_encoder: bool = True,
     projection_norm: Literal["layernorm", "batchnorm", "none"] = "layernorm",
+    use_rope: bool = False,
+    rope_theta: float = 10000.0,
 ) -> HJEPA:
     """
     Factory function to create H-JEPA model.
@@ -717,6 +721,8 @@ def create_hjepa(
         use_flash_attention=use_flash_attention,
         use_target_encoder=use_target_encoder,
         projection_norm=projection_norm,
+        use_rope=use_rope,
+        rope_theta=rope_theta,
     )
 
 
@@ -740,7 +746,7 @@ def create_hjepa_from_config(config: dict[str, Any]) -> HJEPA:
 
     # Get FPN configuration
     fpn_config = model_config.get("fpn", {})
-    use_fpn = fpn_config.get("use_fpn", False)
+    use_fpn = fpn_config.get("use_fpn", model_config.get("use_fpn", False))
     fpn_feature_dim = fpn_config.get("feature_dim", None)
     fpn_fusion_method = fpn_config.get("fusion_method", "add")
 
@@ -749,11 +755,17 @@ def create_hjepa_from_config(config: dict[str, Any]) -> HJEPA:
 
     # Get LayerScale configuration
     layerscale_config = model_config.get("layerscale", {})
-    use_layerscale = layerscale_config.get("use_layerscale", False)
-    layerscale_init = layerscale_config.get("init_value", 1e-5)
+    use_layerscale = layerscale_config.get(
+        "use_layerscale", model_config.get("use_layerscale", False)
+    )
+    layerscale_init = layerscale_config.get("init_value", model_config.get("layerscale_init", 1e-5))
 
     # Get Flash Attention configuration
     use_flash_attention = model_config.get("use_flash_attention", True)
+
+    rope_config = model_config.get("rope", {})
+    use_rope = rope_config.get("use_rope", model_config.get("use_rope", False))
+    rope_theta = rope_config.get("theta", 10000.0)
 
     # LeWM-style flags (default to existing H-JEPA behavior)
     use_target_encoder = model_config.get("use_target_encoder", True)
@@ -781,4 +793,6 @@ def create_hjepa_from_config(config: dict[str, Any]) -> HJEPA:
         use_flash_attention=use_flash_attention,
         use_target_encoder=use_target_encoder,
         projection_norm=projection_norm,
+        use_rope=use_rope,
+        rope_theta=rope_theta,
     )

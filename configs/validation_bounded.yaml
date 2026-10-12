@@ -1,0 +1,48 @@
+experiment:
+  name: bounded-cifar10
+  output_dir: results/validation/run
+  seed: 42
+seed: 42
+model:
+  encoder_type: vit_tiny_patch16_224
+  embed_dim: 192
+  num_hierarchies: 2
+  predictor: {depth: 1, num_heads: 3, mlp_ratio: 2.0}
+  fpn: {use_fpn: true, feature_dim: 32, fusion_method: add}
+  use_flash_attention: false
+data:
+  dataset: cifar10
+  data_path: ./data
+  image_size: 64
+  batch_size: 4
+  num_workers: 0
+  pin_memory: false
+  train_subset_size: 32
+  val_subset_size: 16
+masking:
+  num_masks: 2
+  mask_scale: [0.25, 0.4]
+  aspect_ratio: [0.75, 1.5]
+loss:
+  type: combined
+  hierarchy_weights: [1.0, 0.7]
+training:
+  epochs: 2
+  max_steps: 8
+  optimizer: adamw
+  lr: 0.0001
+  weight_decay: 0.04
+  warmup_epochs: 0
+  accumulation_steps: 2
+  clip_grad: 1.0
+  use_amp: false
+logging:
+  log_frequency: 1
+  use_wandb: false
+  use_tensorboard: false
+  log_dir: results/validation/run/logs
+checkpoint:
+  checkpoint_dir: results/validation/run/checkpoints
+  save_frequency: 1
+evaluation:
+  eval_frequency: 1

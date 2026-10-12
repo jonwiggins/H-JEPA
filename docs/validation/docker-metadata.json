@@ -1,0 +1,132 @@
+[
+  {
+    "job": "build-train",
+    "event": "pull_request",
+    "ref": "refs/pull/6/merge",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-train:pr-6",
+      "ghcr.io/jonwiggins/h-jepa-train:sha-1d97f43"
+    ],
+    "login_and_push": false
+  },
+  {
+    "job": "build-train",
+    "event": "push",
+    "ref": "refs/heads/main",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-train:main",
+      "ghcr.io/jonwiggins/h-jepa-train:sha-1d97f43"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-train",
+    "event": "push",
+    "ref": "refs/tags/v1.2.3",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-train:1.2.3",
+      "ghcr.io/jonwiggins/h-jepa-train:1.2",
+      "ghcr.io/jonwiggins/h-jepa-train:sha-1d97f43",
+      "ghcr.io/jonwiggins/h-jepa-train:latest"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-train",
+    "event": "workflow_dispatch",
+    "ref": "refs/heads/main",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-train:main",
+      "ghcr.io/jonwiggins/h-jepa-train:sha-1d97f43"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-inference-cpu",
+    "event": "pull_request",
+    "ref": "refs/pull/6/merge",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:pr-6",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:sha-1d97f43"
+    ],
+    "login_and_push": false
+  },
+  {
+    "job": "build-inference-cpu",
+    "event": "push",
+    "ref": "refs/heads/main",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:main",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:latest",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:sha-1d97f43"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-inference-cpu",
+    "event": "push",
+    "ref": "refs/tags/v1.2.3",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:1.2.3",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:1.2",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:sha-1d97f43",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:latest"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-inference-cpu",
+    "event": "workflow_dispatch",
+    "ref": "refs/heads/main",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:main",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:latest",
+      "ghcr.io/jonwiggins/h-jepa-inference-cpu:sha-1d97f43"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-inference-gpu",
+    "event": "pull_request",
+    "ref": "refs/pull/6/merge",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:pr-6",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:sha-1d97f43"
+    ],
+    "login_and_push": false
+  },
+  {
+    "job": "build-inference-gpu",
+    "event": "push",
+    "ref": "refs/heads/main",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:main",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:latest",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:sha-1d97f43"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-inference-gpu",
+    "event": "push",
+    "ref": "refs/tags/v1.2.3",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:1.2.3",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:1.2",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:sha-1d97f43",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:latest"
+    ],
+    "login_and_push": true
+  },
+  {
+    "job": "build-inference-gpu",
+    "event": "workflow_dispatch",
+    "ref": "refs/heads/main",
+    "tags": [
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:main",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:latest",
+      "ghcr.io/jonwiggins/h-jepa-inference-gpu:sha-1d97f43"
+    ],
+    "login_and_push": true
+  }
+]

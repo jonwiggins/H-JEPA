@@ -268,7 +268,7 @@ class HJEPALoss(nn.Module):
 
                 if self.reduction == "mean":
                     # Mean over valid elements only
-                    level_loss = masked_loss.sum() / (mask.sum() + self.eps)
+                    level_loss = masked_loss.sum() / (mask.expand_as(base_loss).sum() + self.eps)
                 elif self.reduction == "sum":
                     # Sum over valid elements
                     level_loss = masked_loss.sum()

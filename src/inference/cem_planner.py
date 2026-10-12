@@ -58,6 +58,8 @@ class CEMPlanner:
         action_high: float | torch.Tensor = 1.0,
         cost_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None,
     ):
+        if min(action_dim, horizon, num_samples, num_elites, num_iterations) < 1:
+            raise ValueError("CEM dimensions and iteration counts must be positive")
         if num_elites > num_samples:
             raise ValueError(f"num_elites ({num_elites}) cannot exceed num_samples ({num_samples})")
 
@@ -221,7 +223,7 @@ class CEMPlanner:
             elite_idx = torch.topk(costs, self.num_elites, largest=False).indices
             elites = samples[elite_idx]  # [num_elites, H, A]
             mean = elites.mean(dim=0)
-            std = elites.std(dim=0).clamp(min=1e-3)
+            std = elites.std(dim=0, correction=0).clamp(min=1e-3)
 
         if return_full_sequence:
             return mean

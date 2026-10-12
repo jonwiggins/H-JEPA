@@ -8,11 +8,11 @@ for different levels of the hierarchy, enabling multi-scale representation learn
 import logging
 from typing import cast
 
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import torch
+from matplotlib import colormaps
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +406,7 @@ class HierarchicalMaskGenerator:
             # Different colors for targets
             for i, tgt_mask in enumerate(target_masks):
                 tgt_2d = tgt_mask.reshape(self.num_patches_h, self.num_patches_w)
-                color = cm.get_cmap("Set1")(i / self.num_target_masks)[:3]
+                color = colormaps["Set1"](i / self.num_target_masks)[:3]
                 combined[tgt_2d > 0] = color
 
             axes[level_idx].imshow(combined)

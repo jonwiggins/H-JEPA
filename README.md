@@ -1,7 +1,7 @@
 # H-JEPA: Hierarchical Joint-Embedding Predictive Architecture
 
 [![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20|%203.12-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![PyTorch 2.4.1+](https://img.shields.io/badge/PyTorch-2.4.1+-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![codecov](https://codecov.io/gh/jonwiggins/H-JEPA/branch/main/graph/badge.svg)](https://codecov.io/gh/jonwiggins/H-JEPA)
@@ -13,12 +13,12 @@
 H-JEPA is a hierarchical Joint-Embedding Predictive Architecture framework with three opt-in training regimes that share the same encoder and SIGReg primitives:
 
 1. **Masked-patch SSL** (default) — extends Meta's [I-JEPA](https://github.com/facebookresearch/ijepa) with a Feature Pyramid Network that fuses representations across multiple hierarchy levels for both fine-grained and coarse semantic features.
-2. **End-to-end SIGReg-only training** — drops the EMA target encoder and relies on [LeJEPA](https://arxiv.org/abs/2511.08544) / [LeWorldModel](https://arxiv.org/abs/2603.19312)-style SIGReg regularization to prevent collapse, halving trainable parameters and reducing tunable loss hyperparameters from six to one.
+2. **End-to-end SIGReg-only training** — drops the EMA target encoder and relies on [LeJEPA](https://arxiv.org/abs/2511.08544) / [LeWorldModel](https://arxiv.org/abs/2603.19312)-style SIGReg regularization to prevent collapse, removing the frozen teacher copy and reducing tunable loss hyperparameters from six to one.
 3. **Action-conditioned world modeling** — adds an AdaLN-Zero predictor and CEM latent-space planner so the same encoder backbone can be trained on action-annotated trajectories for control.
 
-All three regimes are selectable via config — defaults preserve the original H-JEPA behavior. The architecture uses Rotary Position Embeddings (RoPE) for spatial awareness, multi-crop augmentation for scale invariance, and supports CUDA, Apple Silicon (MPS), and CPU backends.
+The two image SSL regimes use `scripts/train.py`. The action-conditioned stack currently provides model/data/planner components and a synthetic smoke script; a production sequential trainer is not implemented. The architecture uses Rotary Position Embeddings (RoPE) for spatial awareness, multi-crop augmentation for scale invariance, and supports CUDA, Apple Silicon (MPS), and CPU backends.
 
-The implementation is validated end-to-end with 1400+ tests. No pretrained weights are published yet — this is a research codebase for training from scratch.
+The repository contains 1400+ tests; test count alone does not establish training correctness. See [bounded correctness validation](docs/VALIDATION_2026-10-12.md) for measured evidence and limitations. No pretrained weights are published yet — this is a research codebase for training from scratch.
 
 ## Key Features
 
@@ -42,7 +42,7 @@ The implementation is validated end-to-end with 1400+ tests. No pretrained weigh
 |---|---|---|---|
 | `configs/default.yaml` | Yes | VICReg + prediction (current default) | Hierarchical masked-patch SSL |
 | `configs/lewm_tier1.yaml` | Yes | SIGReg + prediction | SSL with vectorized SIGReg, char-function test, BatchNorm projector |
-| `configs/lewm_tier2.yaml` | **No** | SIGReg-only, no detach | SSL without EMA — LeWM-style end-to-end training of the hierarchical stack |
+| `configs/lewm_tier2.yaml` | **No** | Prediction + SIGReg, no detach | SSL without EMA — LeWM-style end-to-end training of the hierarchical stack |
 | `configs/lewm_world_model.yaml` | **No** | SIGReg + next-latent prediction | Action-conditioned world model with AdaLN-Zero predictor + CEM planner |
 
 ## Installation
@@ -50,7 +50,7 @@ The implementation is validated end-to-end with 1400+ tests. No pretrained weigh
 ### Prerequisites
 
 - Python 3.11 or higher
-- PyTorch 2.0+
+- PyTorch 2.4.1+
 - CUDA 11.7+ (optional, for GPU) or Apple Silicon Mac
 
 ### Setup

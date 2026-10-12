@@ -186,6 +186,8 @@ class CheckpointManager:
                 # Scheduler state handling depends on implementation
                 logger.info("Scheduler state found in checkpoint")
 
+        self.best_metric = checkpoint.get("best_metric", self.best_metric)
+
         # Load scaler state
         if scaler is not None and "scaler_state_dict" in checkpoint:
             scaler.load_state_dict(checkpoint["scaler_state_dict"])
@@ -196,6 +198,18 @@ class CheckpointManager:
             "epoch": checkpoint.get("epoch", 0),
             "metrics": checkpoint.get("metrics", {}),
             "best_metric": checkpoint.get("best_metric", None),
+            **{
+                key: checkpoint[key]
+                for key in (
+                    "global_step",
+                    "rng_state",
+                    "loss_state_dict",
+                    "config",
+                    "epoch_complete",
+                    "early_stopping",
+                )
+                if key in checkpoint
+            },
         }
 
         logger.info(f"Resumed from epoch {metadata['epoch']}")

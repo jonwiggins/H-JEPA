@@ -343,7 +343,7 @@ def test_empty_mask_edge_case(small_model):
 
     # This edge case should raise an error because pooling operations
     # cannot handle empty tensors
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError, match="at least one target patch"):
         with torch.no_grad():
             small_model(images, mask, return_all_levels=True)
 

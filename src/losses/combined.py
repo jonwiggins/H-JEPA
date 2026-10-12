@@ -187,16 +187,10 @@ class CombinedLoss(nn.Module):
         # diverse representations across the batch.
         if context_features is not None:
             # Apply VICReg to encoder features for collapse prevention
-            # Split batch into two halves to create pseudo-views
-            if context_features.shape[0] >= 2:
-                mid = context_features.shape[0] // 2
-                features_a = context_features[:mid]
-                features_b = context_features[mid : 2 * mid]
-                vicreg_dict = self.vicreg_loss(features_a, features_b)
-            else:
-                # Single sample - compute variance/covariance on the features themselves
-                # Use same tensor for both views (variance term will still work)
-                vicreg_dict = self.vicreg_loss(context_features, context_features)
+            # These are independent images, not paired augmentations. Apply
+            # variance/covariance to all encoder samples without an invariance
+            # penalty between unrelated images (or dropping odd batch tails).
+            vicreg_dict = self.vicreg_loss(context_features, context_features)
 
             weighted_vicreg = self.vicreg_weights[0] * vicreg_dict["loss"]
             loss_dict["vicreg_loss"] = weighted_vicreg
@@ -552,7 +546,7 @@ def _build_hjepa_sigreg(loss_config: dict[str, Any], num_hierarchies: int) -> nn
     return HJEPASIGRegLoss(
         jepa_loss=jepa_loss,
         sigreg_loss=sigreg,
-        sigreg_weight=loss_config.get("sigreg_loss_weight", 1.0),
+        sigreg_weight=loss_config.get("sigreg_loss_weight", loss_config.get("sigreg_weight", 25.0)),
     )
 
 
@@ -595,17 +589,7 @@ class HJEPASIGRegLoss(nn.Module):
         loss_dict: dict[str, torch.Tensor] = {}
 
         if context_features is not None:
-            # Split batch into two halves to give SIGReg an invariance pair.
-            # When the batch is too small to split, pass the same tensor twice;
-            # SIGReg's regularization term still operates on the (single) view.
-            if context_features.shape[0] >= 2:
-                mid = context_features.shape[0] // 2
-                features_a = context_features[:mid]
-                features_b = context_features[mid : 2 * mid]
-            else:
-                features_a = context_features
-                features_b = context_features
-            sigreg_dict = self.sigreg_loss(features_a, features_b)
+            sigreg_dict = self.sigreg_loss(context_features, context_features)
             sigreg_total = sigreg_dict["sigreg_loss"]  # the regularization term
             loss_dict["sigreg_loss"] = sigreg_total
             loss_dict["sigreg_invariance"] = sigreg_dict.get(

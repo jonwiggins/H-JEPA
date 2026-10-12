@@ -1,5 +1,5 @@
 # Training Dockerfile for H-JEPA
-# Optimized for CUDA 11.8+ and PyTorch 2.0+
+# Optimized for CUDA 11.8+ and PyTorch 2.7.1
 
 FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
@@ -33,14 +33,14 @@ RUN apt-get update && apt-get install -y \
 RUN python3.11 -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install PyTorch with CUDA support (clean up cache to save space)
-RUN pip install --no-cache-dir torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118
+RUN python3.11 -m pip install --no-cache-dir torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu118
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python3.11 -m pip install --no-cache-dir -r requirements.txt
 
 # Install additional training dependencies
-RUN pip install --no-cache-dir \
+RUN python3.11 -m pip install --no-cache-dir \
     nvidia-ml-py3 \
     gpustat \
     py-cpuinfo \
@@ -50,7 +50,9 @@ RUN pip install --no-cache-dir \
 COPY . .
 
 # Install h-jepa package in development mode
-RUN pip install --no-cache-dir -e .
+RUN python3.11 -m pip install --no-cache-dir -e . \
+    && python3.11 -m pip check \
+    && python3.11 scripts/train.py --help
 
 # Create directories for data and results
 RUN mkdir -p /workspace/data /workspace/results /workspace/checkpoints

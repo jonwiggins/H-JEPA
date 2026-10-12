@@ -104,7 +104,7 @@ def mock_hjepa_model():
         def load_state_dict(self, state_dict):
             pass
 
-        def __call__(self, images, mask):
+        def __call__(self, images, mask, context_mask=None):
             """Forward pass."""
             batch_size = images.shape[0]
             return {
@@ -167,8 +167,8 @@ def sample_val_loader(device):
 def sample_loss_fn():
     """Create a simple mock loss function."""
 
-    class MockLoss:
-        def __call__(self, predictions, targets, context_features=None, **kwargs):
+    class MockLoss(nn.Module):
+        def forward(self, predictions, targets, context_features=None, **kwargs):
             return {
                 "loss": torch.tensor(0.5, requires_grad=True),
                 "pred_loss": torch.tensor(0.4, requires_grad=True),
@@ -576,8 +576,8 @@ class TestTrainingStep:
 
         assert isinstance(loss, torch.Tensor)
         assert "loss" in loss_dict
-        assert isinstance(loss_dict["loss"], torch.Tensor)
-        assert loss_dict["loss"].item() > 0
+        assert isinstance(loss_dict["loss"], float)
+        assert loss_dict["loss"] > 0
 
     def test_train_step_returns_scalar_loss(self, trainer, device):
         """Test that training step returns scalar loss."""
@@ -1527,7 +1527,7 @@ class TestModelWithoutEncoders:
                 super().__init__()
                 self.linear = nn.Linear(384, 384)
 
-            def __call__(self, images, mask):
+            def __call__(self, images, mask, context_mask=None):
                 batch_size = images.shape[0]
                 return {
                     "predictions": torch.randn(batch_size, 196, 384),

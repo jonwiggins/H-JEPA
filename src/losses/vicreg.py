@@ -120,7 +120,7 @@ class VICRegLoss(nn.Module):
             Scalar variance loss
         """
         # Compute standard deviation for each dimension
-        std = torch.sqrt(z.var(dim=0) + self.eps)  # [D]
+        std = torch.sqrt(z.var(dim=0, correction=1 if z.shape[0] > 1 else 0) + self.eps)  # [D]
 
         # Hinge loss: penalize if std < threshold
         variance_loss = torch.mean(F.relu(self.variance_threshold - std))
@@ -158,7 +158,7 @@ class VICRegLoss(nn.Module):
         off_diagonal_cov = cov[off_diagonal_mask]
 
         # Mean of squared off-diagonal elements
-        covariance_loss: torch.Tensor = (off_diagonal_cov**2).mean()
+        covariance_loss: torch.Tensor = (off_diagonal_cov**2).sum() / D
 
         return covariance_loss
 
