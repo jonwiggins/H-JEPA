@@ -9,9 +9,9 @@ are **not evidence of convergence, competitive accuracy, or universal correctnes
 ## Revisions and environment
 
 - Baseline: `eb995a02678dfa5bcc808e782af035121962a5d4`, also the fetched `origin/main`.
-- Validated implementation: `1bc7e40425856bfc92725d9e1ec73c19666c28db`.
-  Final diagnostic runs record this revision and a clean working tree. Subsequent
-  report/artifact commits do not change the implementation.
+- Original validated implementation: `1bc7e40425856bfc92725d9e1ec73c19666c28db`.
+  CI follow-through implementation: `0d1e058eaa4b4cf81be0927ab22273cb5381a46c`.
+  See the follow-through section for its repeat diagnostics and dependency versions.
 - Task branch: `optio/task-8e636231-a839-4b71-b129-f99c8cf411d7`.
 - Apple M1 Max, 64 GiB unified memory, macOS 27.2 arm64, Python 3.12.12.
   PyTorch 2.14.1, torchvision 0.29.1, timm 1.0.30, NumPy 2.5.4.
@@ -233,11 +233,11 @@ Final full suite excluding the network-downloading `tests/test_data.py`: **1426 
 .venv/bin/mypy src
 ```
 
-Black, Ruff, isort and `git diff --check` passed. Mypy is **not clean** in this installed environment: baseline 14 errors, final 11 errors, all remaining errors in unchanged `evaluation/linear_probe.py`, `evaluation/feature_quality.py`, and `visualization/masking_viz.py`. Baseline was checked from a `git archive eb995a0` source copy inside this checkout with the same venv. Three baseline errors were removed by the trainer/comment and Matplotlib fixes; no new mypy errors remain in changed modules.
+Black, Ruff, isort and `git diff --check` passed. The original local mypy result recorded 14 baseline errors and 11 errors in unchanged evaluation/visualization files after fixes, using NumPy 2.5.4. This was incomplete evidence: a later nonincremental check also found the trainer float/`detach` error. CI, using the requirements-file NumPy 1.26.4 constraint, found three trainer errors. The follow-through below reproduces and fixes those errors; mypy now passes all 50 files under CI dependencies. The original source comparison used a `git archive eb995a0` copy inside this checkout; it did not establish CI compatibility.
 
 Every training/evaluation attempt ran under an isolated process group and a monotonic deadline, with a persistent locked 3300-second ledger. First real experiment cap: 180 seconds; all later caps at most 600 seconds. Tests, startup, checkpoint I/O and interrupted work are charged conservatively as well. A one-second timeout exercise killed both its sleeping parent and child; both PIDs were absent afterward. No training jobs were left running.
 
-**Total conservatively charged: 1066.41 seconds (17 min 46.41 s), below 55 minutes.** Measured real-data experiment process time, including startup/evaluation/replay, totals 141.04 seconds. Unit-test training/evaluation is additionally covered by the conservative all-process total. Downloads and static code review are not training.
+**Original investigation charge: 1066.41 seconds (17 min 46.41 s).** The cumulative follow-through total appears below. Measured real-data experiment process time, including startup/evaluation/replay, totals 141.04 seconds. Unit-test training/evaluation is additionally covered by the conservative all-process total. Downloads and static code review are not training.
 
 One early supervisor cleanup hit macOS `PermissionError` while signaling a reaped process group. Its tests had finished, but the supervisor end timestamp was not recorded. We retained its entire 180-second reservation rather than invent elapsed time. The committed ledger records the failure and last test output time; the wrapper now preserves accounting on this exception. Other attempts have start/end timestamps and elapsed times.
 
@@ -328,5 +328,42 @@ git clone --depth 1 --branch v4 https://github.com/docker/metadata-action.git re
 Mypy: **no issues in 50 source files**. Black 24.8.0 and Ruff pass.
 The original budget ledger remains intact, including its 1066.4106376233976-second
 charge; all follow-through test/training attempts append to that same ledger.
-Final measured smoke/resume and exact-head CI results are recorded below as they
-complete.
+Measured smoke/resume results follow; remote CI is checked on each pushed head.
+
+Follow-through regressions: **113 passed, 5 skipped**. Two consecutive fresh real
+CIFAR-10 MPS processes at clean revision `0d1e058` each completed eight optimizer
+updates plus checkpoint replay. Both had zero weight, optimizer-tensor and loss
+replay differences; EMA error was zero and teacher gradients absent. First/last
+first-epoch losses were 3.284759/1.445586; epoch-two final loss 1.442349; validation
+loss 1.797784; raw gradient norm range 2.685261–118.594795; clipped norms ≤1.000001.
+Context parameter update was 0.000348842, pooled feature std 0.344399, centered
+rank 3/effective rank 2.662456 on four images; k-NN output 25% on the tiny split.
+These match the original classic diagnostics, with the same limitations.
+
+CI dependency matching also downgraded SciPy to 1.17.1 and contourpy to 1.3.3.
+The optional Parquet harness needed PyArrow 19.0.1 because the formerly installed
+26.0.0 required NumPy 2; that import-only failed attempt remains charged. No
+project dependency constraint was relaxed. Metrics/environment and all 12 metadata
+cases are in `validation/ci-followthrough.json` and `validation/docker-metadata.json`.
+The metadata action source revision was `818d4b7b91585d195f67373fd9cb0332e31a7175`.
+
+```sh
+uv pip install --python .venv/bin/python pyarrow==19.0.1
+.venv/bin/python scripts/bounded_validation.py --seconds 180 --name ci_classic_resume_retry -- .venv/bin/python scripts/validate_small_run.py --name ci_classic_resume_retry --resume-check
+.venv/bin/python scripts/bounded_validation.py --seconds 180 --name ci_classic_fresh -- .venv/bin/python scripts/validate_small_run.py --name ci_classic_fresh --resume-check
+```
+
+| Follow-through attempt | Charged seconds | Outcome |
+|---|---:|---|
+| ci_trainer_regressions | 7.11 | exit 4 |
+| ci_trainer_regressions_retry | 11.07 | exit 1 |
+| ci_trainer_regressions_fixed | 11.04 | exit 1 |
+| ci_trainer_regressions_final | 11.25 | exit 0 |
+| ci_classic_resume | 0.24 | exit 1 |
+| ci_classic_resume_retry | 43.82 | exit 0 |
+| ci_classic_fresh | 12.39 | exit 0 |
+
+**Cumulative charge: 1163.32 seconds (19m 23.32s) / 3300 seconds.**
+The two earlier regression failures exposed obsolete tensor-metric assertions;
+the first invocation used a mistyped test filename. All attempts remain charged.
+No training processes remain. Exact-head remote checks are pending this push.

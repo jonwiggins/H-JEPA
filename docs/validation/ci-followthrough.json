@@ -1,0 +1,1126 @@
+{
+  "environment": {
+    "numpy": "1.26.4",
+    "scipy": "1.17.1",
+    "contourpy": "1.3.3",
+    "pyarrow": "19.0.1",
+    "torch": "2.14.1",
+    "torchvision": "0.29.1",
+    "mypy": "2.4.0",
+    "black": "24.8.0",
+    "ruff": "0.17.0"
+  },
+  "metadata_action_revision": "818d4b7b91585d195f67373fd9cb0332e31a7175",
+  "runs": [
+    {
+      "name": "ci_classic_resume_retry",
+      "revision": "0d1e058eaa4b4cf81be0927ab22273cb5381a46c",
+      "working_tree_dirty": false,
+      "device": "mps",
+      "platform": "macOS-27.2-arm64-arm-64bit",
+      "python": "3.12.12",
+      "torch": "2.14.1",
+      "torchvision": "0.29.1",
+      "timm": "1.0.30",
+      "config": {
+        "experiment": {
+          "name": "bounded-cifar10",
+          "output_dir": "results/validation/run",
+          "seed": 42
+        },
+        "seed": 42,
+        "model": {
+          "encoder_type": "vit_tiny_patch16_224",
+          "embed_dim": 192,
+          "num_hierarchies": 2,
+          "predictor": {
+            "depth": 1,
+            "num_heads": 3,
+            "mlp_ratio": 2.0
+          },
+          "fpn": {
+            "use_fpn": true,
+            "feature_dim": 32,
+            "fusion_method": "add"
+          },
+          "use_flash_attention": false
+        },
+        "data": {
+          "dataset": "cifar10",
+          "data_path": "./data",
+          "image_size": 64,
+          "batch_size": 4,
+          "num_workers": 0,
+          "pin_memory": false,
+          "train_subset_size": 32,
+          "val_subset_size": 16
+        },
+        "masking": {
+          "num_masks": 2,
+          "mask_scale": [
+            0.25,
+            0.4
+          ],
+          "aspect_ratio": [
+            0.75,
+            1.5
+          ]
+        },
+        "loss": {
+          "type": "combined",
+          "hierarchy_weights": [
+            1.0,
+            0.7
+          ]
+        },
+        "training": {
+          "epochs": 2,
+          "max_steps": 8,
+          "optimizer": "adamw",
+          "lr": 0.0001,
+          "weight_decay": 0.04,
+          "warmup_epochs": 0,
+          "accumulation_steps": 2,
+          "clip_grad": 1.0,
+          "use_amp": false
+        },
+        "logging": {
+          "log_frequency": 1,
+          "use_wandb": false,
+          "use_tensorboard": false,
+          "log_dir": "results/validation/ci_classic_resume_retry/logs"
+        },
+        "checkpoint": {
+          "checkpoint_dir": "results/validation/ci_classic_resume_retry/checkpoints",
+          "save_frequency": 1
+        },
+        "evaluation": {
+          "eval_frequency": 1
+        }
+      },
+      "data": "uoft-cs/cifar10 Parquet: first 32 train / first 16 test rows",
+      "losses": [
+        {
+          "vicreg_loss": 3.275758743286133,
+          "vicreg_encoder": 32.75758743286133,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3022264540195465,
+          "vicreg_covariance": 25.201927185058594,
+          "loss": 3.2847585678100586,
+          "jepa_loss": 0.008999708108603954,
+          "loss_h0": 0.005151290912181139,
+          "loss_h1": 0.005497738718986511,
+          "loss_unweighted": 0.0053245145827531815,
+          "context_std": 0.6694837808609009,
+          "target_std": 0.7663214206695557,
+          "context_norm": 57.1312255859375,
+          "target_norm": 57.13132858276367,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 3.0554041862487793,
+          "vicreg_encoder": 30.554040908813477,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.25947508215904236,
+          "vicreg_covariance": 24.067163467407227,
+          "loss": 3.0649077892303467,
+          "jepa_loss": 0.009503698907792568,
+          "loss_h0": 0.005572382360696793,
+          "loss_h1": 0.00561616662889719,
+          "loss_unweighted": 0.005594274494796991,
+          "context_std": 0.7033113837242126,
+          "target_std": 0.7705711722373962,
+          "context_norm": 57.131229400634766,
+          "target_norm": 57.13129425048828,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 1.7651945352554321,
+          "vicreg_encoder": 17.651945114135742,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3049521744251251,
+          "vicreg_covariance": 10.0281400680542,
+          "loss": 1.774539828300476,
+          "jepa_loss": 0.009345298632979393,
+          "loss_h0": 0.0058187381364405155,
+          "loss_h1": 0.0050379433669149876,
+          "loss_unweighted": 0.0054283407516777515
+        },
+        {
+          "vicreg_loss": 1.7719329595565796,
+          "vicreg_encoder": 17.719329833984375,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.268520325422287,
+          "vicreg_covariance": 11.00632095336914,
+          "loss": 1.7791416645050049,
+          "jepa_loss": 0.007208654657006264,
+          "loss_h0": 0.0041766962967813015,
+          "loss_h1": 0.0043313694186508656,
+          "loss_unweighted": 0.0042540328577160835
+        },
+        {
+          "vicreg_loss": 1.5228848457336426,
+          "vicreg_encoder": 15.228848457336426,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5602225661277771,
+          "vicreg_covariance": 1.223284363746643,
+          "loss": 1.5313493013381958,
+          "jepa_loss": 0.008464429527521133,
+          "loss_h0": 0.00503441970795393,
+          "loss_h1": 0.004900014493614435,
+          "loss_unweighted": 0.004967217333614826
+        },
+        {
+          "vicreg_loss": 1.661753535270691,
+          "vicreg_encoder": 16.617534637451172,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5169320106506348,
+          "vicreg_covariance": 3.694234848022461,
+          "loss": 1.6704455614089966,
+          "jepa_loss": 0.008691996335983276,
+          "loss_h0": 0.005192479118704796,
+          "loss_h1": 0.004999310243874788,
+          "loss_unweighted": 0.005095894448459148
+        },
+        {
+          "vicreg_loss": 1.5552759170532227,
+          "vicreg_encoder": 15.552759170532227,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5339633822441101,
+          "vicreg_covariance": 2.20367431640625,
+          "loss": 1.5633699893951416,
+          "jepa_loss": 0.00809407327324152,
+          "loss_h0": 0.0047826324589550495,
+          "loss_h1": 0.004730629734694958,
+          "loss_unweighted": 0.004756631329655647
+        },
+        {
+          "vicreg_loss": 1.437313199043274,
+          "vicreg_encoder": 14.37313175201416,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5264216065406799,
+          "vicreg_covariance": 1.2125910520553589,
+          "loss": 1.4455856084823608,
+          "jepa_loss": 0.008272437378764153,
+          "loss_h0": 0.004865925293415785,
+          "loss_h1": 0.004866445902734995,
+          "loss_unweighted": 0.00486618559807539
+        }
+      ],
+      "gradient_norms": {
+        "clipped_norms": [
+          1.0,
+          0.9999999403953552,
+          0.9999997615814209,
+          0.9999998211860657
+        ],
+        "raw_norms": [
+          118.59479522705078,
+          22.836549758911133,
+          5.194903373718262,
+          4.713990688323975
+        ],
+        "ema_errors": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_seconds": [
+          0.2794172919820994,
+          0.06811124994419515,
+          0.0348001669626683,
+          0.06324391695670784,
+          0.04267066600732505,
+          0.05343954195268452,
+          0.036774333799257874,
+          0.04678199999034405
+        ]
+      },
+      "validation": {
+        "loss": 1.7977842688560486
+      },
+      "global_step": 4,
+      "context_parameter_max_update": 0.0003488421207293868,
+      "continuation_diagnostics": {
+        "clipped_norms": [
+          1.0,
+          1.0,
+          0.9999998211860657,
+          0.9999996423721313
+        ],
+        "raw_norms": [
+          60.6613883972168,
+          55.59669494628906,
+          11.795965194702148,
+          2.685260534286499
+        ],
+        "ema_errors": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_seconds": [
+          0.04481329210102558,
+          0.03476604097522795,
+          0.03315758309327066,
+          0.04206541716121137,
+          0.03504699980840087,
+          0.04530399991199374,
+          0.03489987482316792,
+          0.047975749941542745
+        ]
+      },
+      "replay_diagnostics": {
+        "clipped_norms": [
+          1.0,
+          1.0,
+          0.9999998211860657,
+          0.9999996423721313
+        ],
+        "raw_norms": [
+          60.6613883972168,
+          55.59669494628906,
+          11.795965194702148,
+          2.685260534286499
+        ],
+        "ema_errors": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_seconds": [
+          0.038015917176380754,
+          0.03641041717492044,
+          0.03529324987903237,
+          0.04222895880229771,
+          0.03263662499375641,
+          0.04466633312404156,
+          0.03228420787490904,
+          0.04336166591383517
+        ]
+      },
+      "resume_max_parameter_difference": 0.0,
+      "continuation": [
+        {
+          "vicreg_loss": 2.0847818851470947,
+          "vicreg_encoder": 20.84781837463379,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3177320659160614,
+          "vicreg_covariance": 12.90451717376709,
+          "loss": 2.0940754413604736,
+          "jepa_loss": 0.009293664246797562,
+          "loss_h0": 0.005374094936996698,
+          "loss_h1": 0.0055993846617639065,
+          "loss_unweighted": 0.005486739799380302,
+          "context_std": 0.6050872206687927,
+          "target_std": 0.7695719599723816,
+          "context_norm": 57.11923599243164,
+          "target_norm": 57.13119125366211,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 1.5304478406906128,
+          "vicreg_encoder": 15.30447769165039,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.502160906791687,
+          "vicreg_covariance": 2.750454902648926,
+          "loss": 1.5381923913955688,
+          "jepa_loss": 0.007744504138827324,
+          "loss_h0": 0.004756907466799021,
+          "loss_h1": 0.004267995245754719,
+          "loss_unweighted": 0.004512451589107513,
+          "context_std": 0.417606920003891,
+          "target_std": 0.7716179490089417,
+          "context_norm": 57.11842346191406,
+          "target_norm": 57.131187438964844,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 2.107351779937744,
+          "vicreg_encoder": 21.073516845703125,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3970392048358917,
+          "vicreg_covariance": 11.147536277770996,
+          "loss": 2.1145615577697754,
+          "jepa_loss": 0.007209779694676399,
+          "loss_h0": 0.004544504452496767,
+          "loss_h1": 0.0038075356278568506,
+          "loss_unweighted": 0.004176020156592131
+        },
+        {
+          "vicreg_loss": 1.540022373199463,
+          "vicreg_encoder": 15.400223731994629,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5356900691986084,
+          "vicreg_covariance": 2.00797176361084,
+          "loss": 1.5459479093551636,
+          "jepa_loss": 0.005925589706748724,
+          "loss_h0": 0.003384038805961609,
+          "loss_h1": 0.0036307871341705322,
+          "loss_unweighted": 0.0035074129700660706
+        },
+        {
+          "vicreg_loss": 1.3759759664535522,
+          "vicreg_encoder": 13.759759902954102,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.38443687558174133,
+          "vicreg_covariance": 4.148837566375732,
+          "loss": 1.3830925226211548,
+          "jepa_loss": 0.007116504944860935,
+          "loss_h0": 0.0042204237543046474,
+          "loss_h1": 0.0041372585110366344,
+          "loss_unweighted": 0.004178841132670641
+        },
+        {
+          "vicreg_loss": 1.4407345056533813,
+          "vicreg_encoder": 14.407344818115234,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3328467607498169,
+          "vicreg_covariance": 6.086175441741943,
+          "loss": 1.4491618871688843,
+          "jepa_loss": 0.008427400141954422,
+          "loss_h0": 0.0049340371042490005,
+          "loss_h1": 0.004990519490092993,
+          "loss_unweighted": 0.00496227853000164
+        },
+        {
+          "vicreg_loss": 1.4489854574203491,
+          "vicreg_encoder": 14.48985481262207,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.4492287337779999,
+          "vicreg_covariance": 3.259136438369751,
+          "loss": 1.4567664861679077,
+          "jepa_loss": 0.007780987769365311,
+          "loss_h0": 0.0044381157495081425,
+          "loss_h1": 0.0047755311243236065,
+          "loss_unweighted": 0.0046068234369158745
+        },
+        {
+          "vicreg_loss": 1.433305263519287,
+          "vicreg_encoder": 14.333052635192871,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.47584888339042664,
+          "vicreg_covariance": 2.436830759048462,
+          "loss": 1.4423487186431885,
+          "jepa_loss": 0.009043492376804352,
+          "loss_h0": 0.004727988503873348,
+          "loss_h1": 0.006165004801005125,
+          "loss_unweighted": 0.005446496419608593
+        }
+      ],
+      "replay": [
+        {
+          "vicreg_loss": 2.0847818851470947,
+          "vicreg_encoder": 20.84781837463379,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3177320659160614,
+          "vicreg_covariance": 12.90451717376709,
+          "loss": 2.0940754413604736,
+          "jepa_loss": 0.009293664246797562,
+          "loss_h0": 0.005374094936996698,
+          "loss_h1": 0.0055993846617639065,
+          "loss_unweighted": 0.005486739799380302,
+          "context_std": 0.6050872206687927,
+          "target_std": 0.7695719599723816,
+          "context_norm": 57.11923599243164,
+          "target_norm": 57.13119125366211,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 1.5304478406906128,
+          "vicreg_encoder": 15.30447769165039,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.502160906791687,
+          "vicreg_covariance": 2.750454902648926,
+          "loss": 1.5381923913955688,
+          "jepa_loss": 0.007744504138827324,
+          "loss_h0": 0.004756907466799021,
+          "loss_h1": 0.004267995245754719,
+          "loss_unweighted": 0.004512451589107513,
+          "context_std": 0.417606920003891,
+          "target_std": 0.7716179490089417,
+          "context_norm": 57.11842346191406,
+          "target_norm": 57.131187438964844,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 2.107351779937744,
+          "vicreg_encoder": 21.073516845703125,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3970392048358917,
+          "vicreg_covariance": 11.147536277770996,
+          "loss": 2.1145615577697754,
+          "jepa_loss": 0.007209779694676399,
+          "loss_h0": 0.004544504452496767,
+          "loss_h1": 0.0038075356278568506,
+          "loss_unweighted": 0.004176020156592131
+        },
+        {
+          "vicreg_loss": 1.540022373199463,
+          "vicreg_encoder": 15.400223731994629,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5356900691986084,
+          "vicreg_covariance": 2.00797176361084,
+          "loss": 1.5459479093551636,
+          "jepa_loss": 0.005925589706748724,
+          "loss_h0": 0.003384038805961609,
+          "loss_h1": 0.0036307871341705322,
+          "loss_unweighted": 0.0035074129700660706
+        },
+        {
+          "vicreg_loss": 1.3759759664535522,
+          "vicreg_encoder": 13.759759902954102,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.38443687558174133,
+          "vicreg_covariance": 4.148837566375732,
+          "loss": 1.3830925226211548,
+          "jepa_loss": 0.007116504944860935,
+          "loss_h0": 0.0042204237543046474,
+          "loss_h1": 0.0041372585110366344,
+          "loss_unweighted": 0.004178841132670641
+        },
+        {
+          "vicreg_loss": 1.4407345056533813,
+          "vicreg_encoder": 14.407344818115234,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3328467607498169,
+          "vicreg_covariance": 6.086175441741943,
+          "loss": 1.4491618871688843,
+          "jepa_loss": 0.008427400141954422,
+          "loss_h0": 0.0049340371042490005,
+          "loss_h1": 0.004990519490092993,
+          "loss_unweighted": 0.00496227853000164
+        },
+        {
+          "vicreg_loss": 1.4489854574203491,
+          "vicreg_encoder": 14.48985481262207,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.4492287337779999,
+          "vicreg_covariance": 3.259136438369751,
+          "loss": 1.4567664861679077,
+          "jepa_loss": 0.007780987769365311,
+          "loss_h0": 0.0044381157495081425,
+          "loss_h1": 0.0047755311243236065,
+          "loss_unweighted": 0.0046068234369158745
+        },
+        {
+          "vicreg_loss": 1.433305263519287,
+          "vicreg_encoder": 14.333052635192871,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.47584888339042664,
+          "vicreg_covariance": 2.436830759048462,
+          "loss": 1.4423487186431885,
+          "jepa_loss": 0.009043492376804352,
+          "loss_h0": 0.004727988503873348,
+          "loss_h1": 0.006165004801005125,
+          "loss_unweighted": 0.005446496419608593
+        }
+      ],
+      "resumed_global_step": 8,
+      "expected_global_step": 8,
+      "resumed_lr": 4.767963140691306e-06,
+      "expected_lr": 4.767963140691306e-06,
+      "resume_optimizer_max_difference": 0.0,
+      "resume_loss_max_difference": 0.0,
+      "representation": {
+        "batch_feature_std": 0.3443986475467682,
+        "centered_rank": 3,
+        "effective_rank": 2.6624557971954346
+      },
+      "hierarchy_shapes": [
+        [
+          4,
+          11,
+          192
+        ],
+        [
+          4,
+          6,
+          192
+        ]
+      ],
+      "valid_tokens": [
+        [
+          8,
+          8,
+          11,
+          8
+        ],
+        [
+          4,
+          4,
+          6,
+          4
+        ]
+      ],
+      "teacher_gradients_absent": true,
+      "evaluation": {
+        "knn_accuracy": 25.0
+      }
+    },
+    {
+      "name": "ci_classic_fresh",
+      "revision": "0d1e058eaa4b4cf81be0927ab22273cb5381a46c",
+      "working_tree_dirty": false,
+      "device": "mps",
+      "platform": "macOS-27.2-arm64-arm-64bit",
+      "python": "3.12.12",
+      "torch": "2.14.1",
+      "torchvision": "0.29.1",
+      "timm": "1.0.30",
+      "config": {
+        "experiment": {
+          "name": "bounded-cifar10",
+          "output_dir": "results/validation/run",
+          "seed": 42
+        },
+        "seed": 42,
+        "model": {
+          "encoder_type": "vit_tiny_patch16_224",
+          "embed_dim": 192,
+          "num_hierarchies": 2,
+          "predictor": {
+            "depth": 1,
+            "num_heads": 3,
+            "mlp_ratio": 2.0
+          },
+          "fpn": {
+            "use_fpn": true,
+            "feature_dim": 32,
+            "fusion_method": "add"
+          },
+          "use_flash_attention": false
+        },
+        "data": {
+          "dataset": "cifar10",
+          "data_path": "./data",
+          "image_size": 64,
+          "batch_size": 4,
+          "num_workers": 0,
+          "pin_memory": false,
+          "train_subset_size": 32,
+          "val_subset_size": 16
+        },
+        "masking": {
+          "num_masks": 2,
+          "mask_scale": [
+            0.25,
+            0.4
+          ],
+          "aspect_ratio": [
+            0.75,
+            1.5
+          ]
+        },
+        "loss": {
+          "type": "combined",
+          "hierarchy_weights": [
+            1.0,
+            0.7
+          ]
+        },
+        "training": {
+          "epochs": 2,
+          "max_steps": 8,
+          "optimizer": "adamw",
+          "lr": 0.0001,
+          "weight_decay": 0.04,
+          "warmup_epochs": 0,
+          "accumulation_steps": 2,
+          "clip_grad": 1.0,
+          "use_amp": false
+        },
+        "logging": {
+          "log_frequency": 1,
+          "use_wandb": false,
+          "use_tensorboard": false,
+          "log_dir": "results/validation/ci_classic_fresh/logs"
+        },
+        "checkpoint": {
+          "checkpoint_dir": "results/validation/ci_classic_fresh/checkpoints",
+          "save_frequency": 1
+        },
+        "evaluation": {
+          "eval_frequency": 1
+        }
+      },
+      "data": "uoft-cs/cifar10 Parquet: first 32 train / first 16 test rows",
+      "losses": [
+        {
+          "vicreg_loss": 3.275758743286133,
+          "vicreg_encoder": 32.75758743286133,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3022264540195465,
+          "vicreg_covariance": 25.201927185058594,
+          "loss": 3.2847585678100586,
+          "jepa_loss": 0.008999708108603954,
+          "loss_h0": 0.005151290912181139,
+          "loss_h1": 0.005497738718986511,
+          "loss_unweighted": 0.0053245145827531815,
+          "context_std": 0.6694837808609009,
+          "target_std": 0.7663214206695557,
+          "context_norm": 57.1312255859375,
+          "target_norm": 57.13132858276367,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 3.0554041862487793,
+          "vicreg_encoder": 30.554040908813477,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.25947508215904236,
+          "vicreg_covariance": 24.067163467407227,
+          "loss": 3.0649077892303467,
+          "jepa_loss": 0.009503698907792568,
+          "loss_h0": 0.005572382360696793,
+          "loss_h1": 0.00561616662889719,
+          "loss_unweighted": 0.005594274494796991,
+          "context_std": 0.7033113837242126,
+          "target_std": 0.7705711722373962,
+          "context_norm": 57.131229400634766,
+          "target_norm": 57.13129425048828,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 1.7651945352554321,
+          "vicreg_encoder": 17.651945114135742,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3049521744251251,
+          "vicreg_covariance": 10.0281400680542,
+          "loss": 1.774539828300476,
+          "jepa_loss": 0.009345298632979393,
+          "loss_h0": 0.0058187381364405155,
+          "loss_h1": 0.0050379433669149876,
+          "loss_unweighted": 0.0054283407516777515
+        },
+        {
+          "vicreg_loss": 1.7719329595565796,
+          "vicreg_encoder": 17.719329833984375,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.268520325422287,
+          "vicreg_covariance": 11.00632095336914,
+          "loss": 1.7791416645050049,
+          "jepa_loss": 0.007208654657006264,
+          "loss_h0": 0.0041766962967813015,
+          "loss_h1": 0.0043313694186508656,
+          "loss_unweighted": 0.0042540328577160835
+        },
+        {
+          "vicreg_loss": 1.5228848457336426,
+          "vicreg_encoder": 15.228848457336426,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5602225661277771,
+          "vicreg_covariance": 1.223284363746643,
+          "loss": 1.5313493013381958,
+          "jepa_loss": 0.008464429527521133,
+          "loss_h0": 0.00503441970795393,
+          "loss_h1": 0.004900014493614435,
+          "loss_unweighted": 0.004967217333614826
+        },
+        {
+          "vicreg_loss": 1.661753535270691,
+          "vicreg_encoder": 16.617534637451172,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5169320106506348,
+          "vicreg_covariance": 3.694234848022461,
+          "loss": 1.6704455614089966,
+          "jepa_loss": 0.008691996335983276,
+          "loss_h0": 0.005192479118704796,
+          "loss_h1": 0.004999310243874788,
+          "loss_unweighted": 0.005095894448459148
+        },
+        {
+          "vicreg_loss": 1.5552759170532227,
+          "vicreg_encoder": 15.552759170532227,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5339633822441101,
+          "vicreg_covariance": 2.20367431640625,
+          "loss": 1.5633699893951416,
+          "jepa_loss": 0.00809407327324152,
+          "loss_h0": 0.0047826324589550495,
+          "loss_h1": 0.004730629734694958,
+          "loss_unweighted": 0.004756631329655647
+        },
+        {
+          "vicreg_loss": 1.437313199043274,
+          "vicreg_encoder": 14.37313175201416,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5264216065406799,
+          "vicreg_covariance": 1.2125910520553589,
+          "loss": 1.4455856084823608,
+          "jepa_loss": 0.008272437378764153,
+          "loss_h0": 0.004865925293415785,
+          "loss_h1": 0.004866445902734995,
+          "loss_unweighted": 0.00486618559807539
+        }
+      ],
+      "gradient_norms": {
+        "clipped_norms": [
+          1.0,
+          0.9999999403953552,
+          0.9999997615814209,
+          0.9999998211860657
+        ],
+        "raw_norms": [
+          118.59479522705078,
+          22.836549758911133,
+          5.194903373718262,
+          4.713990688323975
+        ],
+        "ema_errors": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_seconds": [
+          0.2548362920060754,
+          0.06884049996733665,
+          0.0371802500449121,
+          0.06892295903526247,
+          0.04150700010359287,
+          0.04446295788511634,
+          0.03557862504385412,
+          0.046463374979794025
+        ]
+      },
+      "validation": {
+        "loss": 1.7977842688560486
+      },
+      "global_step": 4,
+      "context_parameter_max_update": 0.0003488421207293868,
+      "continuation_diagnostics": {
+        "clipped_norms": [
+          1.0,
+          1.0,
+          0.9999998211860657,
+          0.9999996423721313
+        ],
+        "raw_norms": [
+          60.6613883972168,
+          55.59669494628906,
+          11.795965194702148,
+          2.685260534286499
+        ],
+        "ema_errors": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_seconds": [
+          0.0444737090729177,
+          0.03529754187911749,
+          0.035791957983747125,
+          0.050023374846205115,
+          0.03441991610452533,
+          0.04189041699282825,
+          0.033418624894693494,
+          0.04638079204596579
+        ]
+      },
+      "replay_diagnostics": {
+        "clipped_norms": [
+          1.0,
+          1.0,
+          0.9999998211860657,
+          0.9999996423721313
+        ],
+        "raw_norms": [
+          60.6613883972168,
+          55.59669494628906,
+          11.795965194702148,
+          2.685260534286499
+        ],
+        "ema_errors": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_seconds": [
+          0.037470417097210884,
+          0.03573283297009766,
+          0.035478249890729785,
+          0.04357420792803168,
+          0.04222058295272291,
+          0.04984712484292686,
+          0.032673709094524384,
+          0.04421145794913173
+        ]
+      },
+      "resume_max_parameter_difference": 0.0,
+      "continuation": [
+        {
+          "vicreg_loss": 2.0847818851470947,
+          "vicreg_encoder": 20.84781837463379,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3177320659160614,
+          "vicreg_covariance": 12.90451717376709,
+          "loss": 2.0940754413604736,
+          "jepa_loss": 0.009293664246797562,
+          "loss_h0": 0.005374094936996698,
+          "loss_h1": 0.0055993846617639065,
+          "loss_unweighted": 0.005486739799380302,
+          "context_std": 0.6050872206687927,
+          "target_std": 0.7695719599723816,
+          "context_norm": 57.11923599243164,
+          "target_norm": 57.13119125366211,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 1.5304478406906128,
+          "vicreg_encoder": 15.30447769165039,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.502160906791687,
+          "vicreg_covariance": 2.750454902648926,
+          "loss": 1.5381923913955688,
+          "jepa_loss": 0.007744504138827324,
+          "loss_h0": 0.004756907466799021,
+          "loss_h1": 0.004267995245754719,
+          "loss_unweighted": 0.004512451589107513,
+          "context_std": 0.417606920003891,
+          "target_std": 0.7716179490089417,
+          "context_norm": 57.11842346191406,
+          "target_norm": 57.131187438964844,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 2.107351779937744,
+          "vicreg_encoder": 21.073516845703125,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3970392048358917,
+          "vicreg_covariance": 11.147536277770996,
+          "loss": 2.1145615577697754,
+          "jepa_loss": 0.007209779694676399,
+          "loss_h0": 0.004544504452496767,
+          "loss_h1": 0.0038075356278568506,
+          "loss_unweighted": 0.004176020156592131
+        },
+        {
+          "vicreg_loss": 1.540022373199463,
+          "vicreg_encoder": 15.400223731994629,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5356900691986084,
+          "vicreg_covariance": 2.00797176361084,
+          "loss": 1.5459479093551636,
+          "jepa_loss": 0.005925589706748724,
+          "loss_h0": 0.003384038805961609,
+          "loss_h1": 0.0036307871341705322,
+          "loss_unweighted": 0.0035074129700660706
+        },
+        {
+          "vicreg_loss": 1.3759759664535522,
+          "vicreg_encoder": 13.759759902954102,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.38443687558174133,
+          "vicreg_covariance": 4.148837566375732,
+          "loss": 1.3830925226211548,
+          "jepa_loss": 0.007116504944860935,
+          "loss_h0": 0.0042204237543046474,
+          "loss_h1": 0.0041372585110366344,
+          "loss_unweighted": 0.004178841132670641
+        },
+        {
+          "vicreg_loss": 1.4407345056533813,
+          "vicreg_encoder": 14.407344818115234,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3328467607498169,
+          "vicreg_covariance": 6.086175441741943,
+          "loss": 1.4491618871688843,
+          "jepa_loss": 0.008427400141954422,
+          "loss_h0": 0.0049340371042490005,
+          "loss_h1": 0.004990519490092993,
+          "loss_unweighted": 0.00496227853000164
+        },
+        {
+          "vicreg_loss": 1.4489854574203491,
+          "vicreg_encoder": 14.48985481262207,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.4492287337779999,
+          "vicreg_covariance": 3.259136438369751,
+          "loss": 1.4567664861679077,
+          "jepa_loss": 0.007780987769365311,
+          "loss_h0": 0.0044381157495081425,
+          "loss_h1": 0.0047755311243236065,
+          "loss_unweighted": 0.0046068234369158745
+        },
+        {
+          "vicreg_loss": 1.433305263519287,
+          "vicreg_encoder": 14.333052635192871,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.47584888339042664,
+          "vicreg_covariance": 2.436830759048462,
+          "loss": 1.4423487186431885,
+          "jepa_loss": 0.009043492376804352,
+          "loss_h0": 0.004727988503873348,
+          "loss_h1": 0.006165004801005125,
+          "loss_unweighted": 0.005446496419608593
+        }
+      ],
+      "replay": [
+        {
+          "vicreg_loss": 2.0847818851470947,
+          "vicreg_encoder": 20.84781837463379,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3177320659160614,
+          "vicreg_covariance": 12.90451717376709,
+          "loss": 2.0940754413604736,
+          "jepa_loss": 0.009293664246797562,
+          "loss_h0": 0.005374094936996698,
+          "loss_h1": 0.0055993846617639065,
+          "loss_unweighted": 0.005486739799380302,
+          "context_std": 0.6050872206687927,
+          "target_std": 0.7695719599723816,
+          "context_norm": 57.11923599243164,
+          "target_norm": 57.13119125366211,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 1.5304478406906128,
+          "vicreg_encoder": 15.30447769165039,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.502160906791687,
+          "vicreg_covariance": 2.750454902648926,
+          "loss": 1.5381923913955688,
+          "jepa_loss": 0.007744504138827324,
+          "loss_h0": 0.004756907466799021,
+          "loss_h1": 0.004267995245754719,
+          "loss_unweighted": 0.004512451589107513,
+          "context_std": 0.417606920003891,
+          "target_std": 0.7716179490089417,
+          "context_norm": 57.11842346191406,
+          "target_norm": 57.131187438964844,
+          "context_eff_rank": -1.0,
+          "target_eff_rank": -1.0
+        },
+        {
+          "vicreg_loss": 2.107351779937744,
+          "vicreg_encoder": 21.073516845703125,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3970392048358917,
+          "vicreg_covariance": 11.147536277770996,
+          "loss": 2.1145615577697754,
+          "jepa_loss": 0.007209779694676399,
+          "loss_h0": 0.004544504452496767,
+          "loss_h1": 0.0038075356278568506,
+          "loss_unweighted": 0.004176020156592131
+        },
+        {
+          "vicreg_loss": 1.540022373199463,
+          "vicreg_encoder": 15.400223731994629,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.5356900691986084,
+          "vicreg_covariance": 2.00797176361084,
+          "loss": 1.5459479093551636,
+          "jepa_loss": 0.005925589706748724,
+          "loss_h0": 0.003384038805961609,
+          "loss_h1": 0.0036307871341705322,
+          "loss_unweighted": 0.0035074129700660706
+        },
+        {
+          "vicreg_loss": 1.3759759664535522,
+          "vicreg_encoder": 13.759759902954102,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.38443687558174133,
+          "vicreg_covariance": 4.148837566375732,
+          "loss": 1.3830925226211548,
+          "jepa_loss": 0.007116504944860935,
+          "loss_h0": 0.0042204237543046474,
+          "loss_h1": 0.0041372585110366344,
+          "loss_unweighted": 0.004178841132670641
+        },
+        {
+          "vicreg_loss": 1.4407345056533813,
+          "vicreg_encoder": 14.407344818115234,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.3328467607498169,
+          "vicreg_covariance": 6.086175441741943,
+          "loss": 1.4491618871688843,
+          "jepa_loss": 0.008427400141954422,
+          "loss_h0": 0.0049340371042490005,
+          "loss_h1": 0.004990519490092993,
+          "loss_unweighted": 0.00496227853000164
+        },
+        {
+          "vicreg_loss": 1.4489854574203491,
+          "vicreg_encoder": 14.48985481262207,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.4492287337779999,
+          "vicreg_covariance": 3.259136438369751,
+          "loss": 1.4567664861679077,
+          "jepa_loss": 0.007780987769365311,
+          "loss_h0": 0.0044381157495081425,
+          "loss_h1": 0.0047755311243236065,
+          "loss_unweighted": 0.0046068234369158745
+        },
+        {
+          "vicreg_loss": 1.433305263519287,
+          "vicreg_encoder": 14.333052635192871,
+          "vicreg_invariance": 0.0,
+          "vicreg_variance": 0.47584888339042664,
+          "vicreg_covariance": 2.436830759048462,
+          "loss": 1.4423487186431885,
+          "jepa_loss": 0.009043492376804352,
+          "loss_h0": 0.004727988503873348,
+          "loss_h1": 0.006165004801005125,
+          "loss_unweighted": 0.005446496419608593
+        }
+      ],
+      "resumed_global_step": 8,
+      "expected_global_step": 8,
+      "resumed_lr": 4.767963140691306e-06,
+      "expected_lr": 4.767963140691306e-06,
+      "resume_optimizer_max_difference": 0.0,
+      "resume_loss_max_difference": 0.0,
+      "representation": {
+        "batch_feature_std": 0.3443986475467682,
+        "centered_rank": 3,
+        "effective_rank": 2.6624557971954346
+      },
+      "hierarchy_shapes": [
+        [
+          4,
+          11,
+          192
+        ],
+        [
+          4,
+          6,
+          192
+        ]
+      ],
+      "valid_tokens": [
+        [
+          8,
+          8,
+          11,
+          8
+        ],
+        [
+          4,
+          4,
+          6,
+          4
+        ]
+      ],
+      "teacher_gradients_absent": true,
+      "evaluation": {
+        "knn_accuracy": 25.0
+      }
+    }
+  ]
+}
