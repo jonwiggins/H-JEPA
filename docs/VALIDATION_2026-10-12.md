@@ -362,8 +362,49 @@ uv pip install --python .venv/bin/python pyarrow==19.0.1
 | ci_classic_resume | 0.24 | exit 1 |
 | ci_classic_resume_retry | 43.82 | exit 0 |
 | ci_classic_fresh | 12.39 | exit 0 |
+| ci_dependency_suite | 218.59 | exit 0; 1427 passed, 13 skipped |
 
-**Cumulative charge: 1163.32 seconds (19m 23.32s) / 3300 seconds.**
+**Cumulative charge: 1381.92 seconds (23m 01.92s) / 3300 seconds.**
 The two earlier regression failures exposed obsolete tensor-metric assertions;
 the first invocation used a mistyped test filename. All attempts remain charged.
 No training processes remain. Exact-head remote checks are pending this push.
+
+The complete local network-free suite was repeated under CI dependencies:
+**1,427 passed, 13 skipped**, 215.86 seconds pytest / 218.59 seconds process time.
+The additional test is the metric-buffer/backpropagation regression. The separate
+archive-download tests still run in the unchanged CI test command; they were not
+rerun locally because the real-data path already has bounded mirror/CLI evidence.
+
+```sh
+.venv/bin/python scripts/bounded_validation.py --seconds 600 --name ci_dependency_suite -- .venv/bin/python -m pytest -q -o addopts='' tests --ignore=tests/test_data.py
+```
+
+### Container dependency findings after tag repair
+
+The CPU build and its original model-import smoke check succeeded, but its build
+log exposed `fastapi 0.104.1 requires anyio<4` alongside installed AnyIO 4.15.1.
+W&B 0.30.0 requires Pydantic >=2.6, conflicting with the image's 2.5 pin; its
+HTTP dependencies also require AnyIO 4. The final editable install silently
+replaced packages and left that inconsistent environment. FastAPI is now pinned
+to 0.143.0, with Pydantic >=2.9,<3. Final installs run `pip check` and import both
+the serving app and trainer, making dependency/import failures fatal to the build.
+
+The Dockerfiles also pinned torch 2.1.0, whose
+[AMP exports](https://github.com/pytorch/pytorch/blob/v2.1.0/torch/amp/__init__.py)
+lack the `GradScaler` already imported by the project's trainer/checkpoint code.
+The [2.4.1 exports](https://github.com/pytorch/pytorch/blob/v2.4.1/torch/amp/__init__.py)
+include it. Declared minimums are raised to torch 2.4.1 / torchvision 0.19.1;
+Docker pins torch 2.7.1 / torchvision 0.22.1, a CPU/CUDA-11.8 pair listed in the
+[official installation matrix](https://pytorch.org/get-started/previous-versions/).
+Training builds now execute `scripts/train.py --help`, which imports the actual
+entrypoint without starting a training experiment. Pip commands use python3.11
+explicitly, and `.venv/` is excluded from Docker build context.
+
+A separate checkout-local `results/validation/container-venv` resolved these
+versions together with requirements, serving dependencies and the editable
+project. `uv pip check`, serving/trainer imports and training `--help` passed.
+The first CPU real-CIFAR smoke/replay passed with exact weights/optimizer/loss
+continuation. This is macOS CPU dependency evidence, **not Linux-container or CUDA
+execution evidence**. Linux builds/import checks are validated by subsequent CI.
+The earlier CI smoke only imported the model, so it could miss the trainer import
+failure; no existing checks have been weakened or removed.

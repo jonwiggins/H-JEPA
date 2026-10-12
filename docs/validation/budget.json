@@ -521,5 +521,25 @@
     "child_pid": 66027,
     "end": "2026-10-12T21:23:03.620167+00:00",
     "returncode": 0
+  },
+  {
+    "name": "ci_dependency_suite",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests",
+      "--ignore=tests/test_data.py"
+    ],
+    "start": "2026-10-12T21:24:09.334917+00:00",
+    "allowance_seconds": 600.0,
+    "elapsed_seconds": 218.59494295786135,
+    "status": "completed",
+    "child_pid": 66695,
+    "end": "2026-10-12T21:27:47.931915+00:00",
+    "returncode": 0
   }
 ]
