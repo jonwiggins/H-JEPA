@@ -541,5 +541,62 @@
     "child_pid": 66695,
     "end": "2026-10-12T21:27:47.931915+00:00",
     "returncode": 0
+  },
+  {
+    "name": "container_cpu_resume",
+    "command": [
+      "results/validation/container-venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "container_cpu_resume",
+      "--device",
+      "cpu",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T21:32:16.647169+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 64.2804584170226,
+    "status": "completed",
+    "child_pid": 70805,
+    "end": "2026-10-12T21:33:20.929299+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "container_cpu_final_resume",
+    "command": [
+      "results/validation/container-venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "container_cpu_final_resume",
+      "--device",
+      "cpu",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T21:33:51.760059+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 8.418724125018343,
+    "status": "completed",
+    "child_pid": 71586,
+    "end": "2026-10-12T21:34:00.180008+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "container_cpu_final_fresh",
+    "command": [
+      "results/validation/container-venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "container_cpu_final_fresh",
+      "--device",
+      "cpu",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T21:34:11.060170+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 8.429398832842708,
+    "status": "completed",
+    "child_pid": 71754,
+    "end": "2026-10-12T21:34:19.490858+00:00",
+    "returncode": 0
   }
 ]

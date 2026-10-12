@@ -363,8 +363,11 @@ uv pip install --python .venv/bin/python pyarrow==19.0.1
 | ci_classic_resume_retry | 43.82 | exit 0 |
 | ci_classic_fresh | 12.39 | exit 0 |
 | ci_dependency_suite | 218.59 | exit 0; 1427 passed, 13 skipped |
+| container_cpu_resume | 64.28 | exit 0; candidate dependency environment |
+| container_cpu_final_resume | 8.42 | exit 0; clean a81666a |
+| container_cpu_final_fresh | 8.43 | exit 0; clean a81666a |
 
-**Cumulative charge: 1381.92 seconds (23m 01.92s) / 3300 seconds.**
+**Cumulative charge: 1463.04 seconds (24m 23.04s) / 3300 seconds.**
 The two earlier regression failures exposed obsolete tensor-metric assertions;
 the first invocation used a mistyped test filename. All attempts remain charged.
 No training processes remain. Exact-head remote checks are pending this push.
@@ -408,3 +411,25 @@ continuation. This is macOS CPU dependency evidence, **not Linux-container or CU
 execution evidence**. Linux builds/import checks are validated by subsequent CI.
 The earlier CI smoke only imported the model, so it could miss the trainer import
 failure; no existing checks have been weakened or removed.
+
+Two final fresh CPU processes on clean revision `a81666a23530c5a59e2407d0b9ed09938a154152` reproduced
+exact checkpoint continuation (zero model/optimizer/loss differences, step 8,
+matching scheduler LR). Both had finite losses and gradients, zero EMA error and
+no teacher gradients. Loss was 3.284728 to 1.446319
+in epoch one; epoch-two last loss 1.443557; validation
+1.800071; raw gradient norms 2.706037–118.613701.
+Pooled feature std 0.344457, effective rank
+2.662146, centered rank 3. CPU/PyTorch 2.7.1
+numbers differ slightly from MPS/PyTorch 2.14.1; exact equality is established
+within each environment, not across them. No CUDA computation or trained serving
+request was exercised.
+
+```sh
+uv venv --python .venv/bin/python results/validation/container-venv
+uv pip install --python results/validation/container-venv/bin/python torch==2.7.1 torchvision==0.22.1 -r requirements.txt -e . fastapi==0.143.0 'uvicorn[standard]==0.24.0' python-multipart==0.0.6 aiofiles==23.2.1 prometheus-client==0.19.0 pyarrow==19.0.1
+uv pip check --python results/validation/container-venv/bin/python
+results/validation/container-venv/bin/python -c 'from src.serving.model_server import app; from src.trainers import HJEPATrainer'
+results/validation/container-venv/bin/python scripts/train.py --help
+.venv/bin/python scripts/bounded_validation.py --seconds 180 --name container_cpu_final_resume -- results/validation/container-venv/bin/python scripts/validate_small_run.py --name container_cpu_final_resume --device cpu --resume-check
+.venv/bin/python scripts/bounded_validation.py --seconds 180 --name container_cpu_final_fresh -- results/validation/container-venv/bin/python scripts/validate_small_run.py --name container_cpu_final_fresh --device cpu --resume-check
+```

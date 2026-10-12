@@ -1,7 +1,7 @@
 # H-JEPA: Hierarchical Joint-Embedding Predictive Architecture
 
 [![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20|%203.12-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![PyTorch 2.4.1+](https://img.shields.io/badge/PyTorch-2.4.1+-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![codecov](https://codecov.io/gh/jonwiggins/H-JEPA/branch/main/graph/badge.svg)](https://codecov.io/gh/jonwiggins/H-JEPA)
@@ -50,7 +50,7 @@ The repository contains 1400+ tests; test count alone does not establish trainin
 ### Prerequisites
 
 - Python 3.11 or higher
-- PyTorch 2.0+
+- PyTorch 2.4.1+
 - CUDA 11.7+ (optional, for GPU) or Apple Silicon Mac
 
 ### Setup
