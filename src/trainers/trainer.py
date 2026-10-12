@@ -456,7 +456,7 @@ class HJEPATrainer:
                 # Update progress bar
                 pbar.set_postfix(
                     {
-                        "loss": f"{float(loss_dict['loss'].detach()):.4f}",
+                        "loss": f"{loss_dict['loss']:.4f}",
                         "lr": f"{current_lr:.2e}",
                     }
                 )
@@ -586,7 +586,13 @@ class HJEPATrainer:
             )
             loss_dict.update(collapse_metrics)
 
-        return loss, loss_dict
+        # Logging must not retain the autograd graph across the epoch. Keep the
+        # differentiable loss separate from the scalar metrics promised above.
+        metrics = {
+            name: float(value.detach()) if isinstance(value, torch.Tensor) else float(value)
+            for name, value in loss_dict.items()
+        }
+        return loss, metrics
 
     @torch.no_grad()
     def _validate_epoch(self, epoch: int) -> dict[str, float]:
@@ -891,7 +897,9 @@ class HJEPATrainer:
         return metrics
 
     def _rng_state(self) -> dict[str, Any]:
-        np_state = np.random.get_state()
+        np_state = np.random.get_state(legacy=True)
+        if not isinstance(np_state, tuple):
+            raise ValueError("Checkpoint RNG capture requires NumPy's legacy MT19937 generator")
         state: dict[str, Any] = {
             "python": random.getstate(),
             "numpy": (np_state[0], np_state[1].tolist(), *np_state[2:]),

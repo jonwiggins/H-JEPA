@@ -286,3 +286,47 @@ assert a['metrics'] == b['metrics']
 print('Exact CLI checkpoint continuation verified')
 PY
 ```
+
+## CI follow-through (PR #6)
+
+The first PR head, `b9da295f7fc8b268d44859957711d5228a6d4ca9`, failed
+[Tests run 38301325713](https://github.com/jonwiggins/H-JEPA/actions/runs/38301325713)
+and [Docker run 38301325630](https://github.com/jonwiggins/H-JEPA/actions/runs/38301325630).
+The earlier local mypy paragraph above did **not** establish CI compatibility:
+installing `requirements.txt` gives NumPy 1.26.4, not the original editable-only
+installation's NumPy 2.5.4. A fresh, nonincremental check reproduced exactly CI's
+three trainer errors with mypy 2.4.0, NumPy 1.26.4 and PyTorch 2.14.1.
+
+- `_train_step` promised float metrics but returned tensors, and progress logging
+  called `detach()` on a declared float. Metrics now become detached Python
+  scalars at the training-step boundary, while the separate loss tensor retains
+  its gradient. This also prevents epoch metric buffers retaining autograd graphs.
+  A regression checks both the buffer values and nonzero backpropagation.
+- NumPy 1.26's `get_state()` default overload resolves to a dictionary; its explicit
+  legacy overload permits either tuple or dictionary. Capture now requests
+  `legacy=True` and checks the tuple format before weights-only-safe serialization.
+  This preserves the existing checkpoint schema and explicitly rejects an
+  unsupported nonlegacy generator instead of mis-indexing its dictionary.
+- Docker metadata's `{{branch}}-` SHA prefix becomes `-` on PR and tag refs, creating
+  invalid Docker references. All three images now use the action's `sha-` default.
+  Existing PR login/publish guards remain intact. The actual metadata-action v4
+  bundle was exercised for PR #6, main push, v1.2.3 tag push and workflow_dispatch:
+  all 12 cases generated valid tags; PRs had `pr-6` and `sha-1d97f43`, no `main` or
+  `latest`. Push/manual events retain their publication gates. This is a metadata
+  test, not evidence of a successful registry push or GPU execution.
+
+Reproduction commands (all installation is inside the existing checkout venv):
+
+```sh
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/mypy --no-incremental src/
+git clone --depth 1 --branch v4 https://github.com/docker/metadata-action.git results/validation/metadata-action
+.venv/bin/python scripts/validate_docker_metadata.py
+.venv/bin/python scripts/bounded_validation.py --seconds 180 --name ci_trainer_regressions_final -- .venv/bin/python -m pytest -q -o addopts='' tests/test_correctness_regressions.py tests/test_trainers.py
+```
+
+Mypy: **no issues in 50 source files**. Black 24.8.0 and Ruff pass.
+The original budget ledger remains intact, including its 1066.4106376233976-second
+charge; all follow-through test/training attempts append to that same ledger.
+Final measured smoke/resume and exact-head CI results are recorded below as they
+complete.

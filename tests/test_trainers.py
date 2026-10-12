@@ -576,8 +576,8 @@ class TestTrainingStep:
 
         assert isinstance(loss, torch.Tensor)
         assert "loss" in loss_dict
-        assert isinstance(loss_dict["loss"], torch.Tensor)
-        assert loss_dict["loss"].item() > 0
+        assert isinstance(loss_dict["loss"], float)
+        assert loss_dict["loss"] > 0
 
     def test_train_step_returns_scalar_loss(self, trainer, device):
         """Test that training step returns scalar loss."""

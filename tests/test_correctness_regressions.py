@@ -191,6 +191,22 @@ def test_lr_is_applied_before_update(tmp_path):
     )
 
 
+def test_training_metrics_do_not_retain_autograd_graph(tmp_path):
+    trainer = make_scalar_trainer(tmp_path)
+    loss, metrics = trainer._train_step((torch.ones(1, 1),), 0, 0)
+    assert loss.requires_grad
+    assert all(isinstance(value, float) for value in metrics.values())
+    assert metrics["loss"] == loss.detach().item()
+    trainer.metrics_logger.accumulate_metrics(metrics)
+    assert all(
+        isinstance(value, float)
+        for values in trainer.metrics_logger.metrics_buffer.values()
+        for value in values
+    )
+    loss.backward()
+    assert trainer.model.context_encoder.weight.grad.abs().sum() > 0
+
+
 def test_checkpoint_restores_rng_step_optimizer_and_next_update(tmp_path):
     import random
 
