@@ -13,6 +13,8 @@ Features:
 """
 
 import logging
+import math
+import random
 from collections.abc import Callable
 from typing import Any
 
@@ -147,7 +149,10 @@ class HJEPATrainer:
         self.use_amp = config["training"].get("use_amp", False)
 
         # Steps per epoch
-        self.steps_per_epoch = len(train_loader) // self.accumulation_steps
+        if self.accumulation_steps < 1 or len(train_loader) == 0:
+            raise ValueError("Training requires a nonempty loader and positive accumulation_steps")
+        self.steps_per_epoch = math.ceil(len(train_loader) / self.accumulation_steps)
+        self.max_steps = config["training"].get("max_steps")
 
         # Learning rate scheduler
         self.lr_scheduler: Callable[[int], float] = create_lr_scheduler(
@@ -162,17 +167,16 @@ class HJEPATrainer:
 
         # EMA scheduler for target encoder
         ema_config = config.get("training", {}).get("ema_momentum_schedule", {})
-        self.ema_scheduler: Callable[[int], float] = create_ema_scheduler(
-            base_momentum=ema_config.get("start", 0.996),
-            final_momentum=ema_config.get("end", 1.0),
+        model_ema = config.get("model", {}).get("ema", {})
+        self.ema_scheduler = create_ema_scheduler(
+            base_momentum=ema_config.get("start", model_ema.get("momentum", 0.996)),
+            final_momentum=ema_config.get("end", model_ema.get("momentum_end", 1.0)),
             epochs=self.epochs,
             steps_per_epoch=self.steps_per_epoch,
-            warmup_epochs=(
-                ema_config.get("warmup_steps", 1000) // self.steps_per_epoch
-                if self.steps_per_epoch > 0
-                else 0
-            ),
+            warmup_epochs=model_ema.get("momentum_warmup_epochs", 0),
         )
+        if "warmup_steps" in ema_config:
+            self.ema_scheduler.warmup_steps = ema_config["warmup_steps"]
 
         # Mixed precision training (only supported on CUDA)
         if not self.device_manager.supports_amp and self.use_amp:
@@ -275,6 +279,8 @@ class HJEPATrainer:
         logger.info("Starting training...")
 
         for epoch in range(self.current_epoch, self.epochs):
+            if self.max_steps is not None and self.global_step >= self.max_steps:
+                break
             self.current_epoch = epoch
             self.progress_tracker.start_epoch()
 
@@ -304,10 +310,6 @@ class HJEPATrainer:
                 val_loss = None
                 is_best = False
 
-            # Save checkpoint
-            if self.checkpoint_manager.should_save(epoch) or is_best:
-                self._save_checkpoint(epoch, val_loss, is_best)
-
             # Log system metrics
             if epoch % 10 == 0:
                 self.metrics_logger.log_system_metrics(step=self.global_step)
@@ -329,17 +331,23 @@ class HJEPATrainer:
                     prefix="online_eval/",
                 )
 
-            # Early stopping check
+            stop_early = False
             if self.early_stopping is not None:
-                metric_for_stopping = val_loss if val_loss is not None else train_metrics["loss"]
-                if self.early_stopping(metric_for_stopping):
-                    logger.info(
-                        "Early stopping triggered at epoch %d (patience=%d, best=%.4f)",
-                        epoch + 1,
-                        self.early_stopping.patience,
-                        self.early_stopping.best_value,
-                    )
-                    break
+                metric = val_loss if val_loss is not None else train_metrics["loss"]
+                stop_early = self.early_stopping(metric)
+            reached_limit = self.max_steps is not None and self.global_step >= self.max_steps
+            # Save after all stochastic epoch work and early-stopping state updates.
+            if (
+                self.checkpoint_manager.should_save(epoch)
+                or is_best
+                or stop_early
+                or reached_limit
+                or epoch + 1 == self.epochs
+            ):
+                self._save_checkpoint(epoch, val_loss, is_best)
+            if stop_early:
+                logger.info("Early stopping triggered at epoch %d", epoch + 1)
+                break
 
             # Print epoch summary
             val_metrics_to_print = val_metrics if self.val_loader else None
@@ -368,12 +376,28 @@ class HJEPATrainer:
             leave=True,
         )
 
+        self.optimizer.zero_grad(set_to_none=True)
+        total_loss = 0.0
+        num_batches = 0
+        window_samples = 0
+        self.epoch_complete = False
         for batch_idx, batch in enumerate(pbar):
+            if self.max_steps is not None and self.global_step >= self.max_steps:
+                break
             # Compute effective step (accounting for accumulation)
             effective_step = batch_idx // self.accumulation_steps
 
             # Forward pass and loss computation
             loss, loss_dict = self._train_step(batch, epoch, effective_step)
+
+            total_loss += float(loss.detach())
+            num_batches += 1
+            # Accumulate sample-weighted means, then divide by the actual
+            # window population. The last DataLoader batch can be smaller.
+            images = batch[0] if isinstance(batch, (tuple, list)) else batch
+            batch_samples = images.shape[0]
+            window_samples += batch_samples
+            loss = loss * batch_samples
 
             # Backward pass
             if self.use_amp and self.scaler is not None:
@@ -383,33 +407,39 @@ class HJEPATrainer:
                 loss.backward()  # type: ignore[no-untyped-call]
 
             # Optimizer step (if accumulation is complete)
-            if (batch_idx + 1) % self.accumulation_steps == 0:
+            if (batch_idx + 1) % self.accumulation_steps == 0 or batch_idx + 1 == len(
+                self.train_loader
+            ):
+                # The schedule value belongs to the update about to be applied.
+                lr = self.lr_scheduler(self.global_step)
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = lr
+                if self.use_amp and self.scaler is not None:
+                    self.scaler.unscale_(self.optimizer)
+                for param in self.model.parameters():
+                    if param.grad is not None:
+                        param.grad.div_(window_samples)
+                window_samples = 0
                 # Gradient clipping
                 if self.clip_grad is not None:
-                    if self.use_amp and self.scaler is not None:
-                        self.scaler.unscale_(self.optimizer)
-
                     torch.nn.utils.clip_grad_norm_(
                         self.model.parameters(),
                         self.clip_grad,
                     )
 
-                # Optimizer step
+                # A skipped AMP update must not advance the EMA or schedules.
+                updated = True
                 if self.use_amp and self.scaler is not None:
+                    old_scale = self.scaler.get_scale()
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
+                    updated = self.scaler.get_scale() >= old_scale
                 else:
                     self.optimizer.step()
-
-                self.optimizer.zero_grad()
-
-                # Update learning rate
-                lr = self.lr_scheduler(self.global_step)
-                for param_group in self.optimizer.param_groups:
-                    param_group["lr"] = lr
-
-                # Update global step
-                self.global_step += 1
+                self.optimizer.zero_grad(set_to_none=True)
+                if updated:
+                    self._update_target_encoder(self.ema_scheduler(self.global_step))
+                    self.global_step += 1
 
             # Accumulate metrics (before memory cleanup to avoid UnboundLocalError)
             self.metrics_logger.accumulate_metrics(loss_dict)
@@ -426,7 +456,7 @@ class HJEPATrainer:
                 # Update progress bar
                 pbar.set_postfix(
                     {
-                        "loss": f"{loss.item():.4f}",
+                        "loss": f"{float(loss_dict['loss'].detach()):.4f}",
                         "lr": f"{current_lr:.2e}",
                     }
                 )
@@ -462,6 +492,8 @@ class HJEPATrainer:
                         step=self.global_step,
                     )
 
+        self.epoch_complete = num_batches == len(self.train_loader)
+
         # Compute epoch averages
         self.metrics_logger.log_accumulated_metrics(
             step=self.global_step,
@@ -471,7 +503,7 @@ class HJEPATrainer:
 
         # Return average metrics
         # loss_dict["loss"] is always a float, not a tensor
-        return {"loss": float(loss_dict["loss"])}
+        return {"loss": total_loss / max(1, num_batches)}
 
     def _train_step(
         self,
@@ -499,7 +531,7 @@ class HJEPATrainer:
         images = images.to(self.device)
 
         # Generate masks
-        masks_dict = self.masking_fn(  # type: ignore[call-arg]  # type: ignore[call-arg]
+        masks_dict = self.masking_fn(  # type: ignore[call-arg]
             batch_size=images.size(0),
             device=self.device,
         )
@@ -522,7 +554,9 @@ class HJEPATrainer:
         device_type = self.device_manager.autocast_device_type
         with autocast(device_type=device_type, enabled=self.use_amp):
             # Forward through H-JEPA model
-            outputs = self.model(images, prediction_mask)
+            outputs = self.model(
+                images, prediction_mask, context_mask=masks_dict["level_0"].get("context")
+            )
 
             # Extract predictions and targets for all hierarchy levels
             predictions = outputs["predictions"]
@@ -540,12 +574,9 @@ class HJEPATrainer:
                 predictions=predictions,
                 targets=targets,
                 context_features=context_features,
+                masks=outputs.get("masks_valid"),
             )
             loss = loss_dict["loss"]
-
-        # Update target encoder with EMA
-        ema_momentum = self.ema_scheduler(self.global_step)
-        self._update_target_encoder(ema_momentum)
 
         # Monitor representation collapse
         if step % (self.log_frequency * 10) == 0:
@@ -600,7 +631,9 @@ class HJEPATrainer:
             device_type = self.device_manager.autocast_device_type
             with autocast(device_type=device_type, enabled=self.use_amp):
                 # Forward through H-JEPA model
-                outputs = self.model(images, prediction_mask)
+                outputs = self.model(
+                    images, prediction_mask, context_mask=masks_dict["level_0"].get("context")
+                )
 
                 # Extract predictions and targets
                 predictions = outputs["predictions"]
@@ -611,13 +644,14 @@ class HJEPATrainer:
                     predictions=predictions,
                     targets=targets,
                     context_features=context_features,
+                    masks=outputs.get("masks_valid"),
                 )
                 loss = loss_dict["loss"]
 
             val_losses.append(loss.item())
             pbar.set_postfix({"val_loss": f"{loss.item():.4f}"})
 
-        avg_val_loss = np.mean(val_losses)
+        avg_val_loss = float(np.mean(val_losses))
         return {"loss": avg_val_loss}
 
     @torch.no_grad()
@@ -682,8 +716,8 @@ class HJEPATrainer:
             target_flat = target_embeddings
 
         # Standard deviation (should be > 0)
-        metrics["context_std"] = context_flat.std().item()
-        metrics["target_std"] = target_flat.std().item()
+        metrics["context_std"] = context_flat.std(dim=0, correction=0).mean().item()
+        metrics["target_std"] = target_flat.std(dim=0, correction=0).mean().item()
 
         # Mean L2 norm
         metrics["context_norm"] = context_flat.norm(dim=1).mean().item()
@@ -703,18 +737,22 @@ class HJEPATrainer:
                 metrics["target_eff_rank"] = -1
             else:
                 # Compute singular values
-                context_sv = torch.svd(context_sample)[1]
-                target_sv = torch.svd(target_sample)[1]
+                context_sv = torch.linalg.svdvals(context_sample - context_sample.mean(dim=0))
+                target_sv = torch.linalg.svdvals(target_sample - target_sample.mean(dim=0))
 
                 # Effective rank (normalized entropy of singular values)
-                context_sv_norm = context_sv / context_sv.sum()
-                target_sv_norm = target_sv / target_sv.sum()
+                context_sv_norm = context_sv / context_sv.sum().clamp_min(1e-12)
+                target_sv_norm = target_sv / target_sv.sum().clamp_min(1e-12)
 
                 context_entropy = -(context_sv_norm * torch.log(context_sv_norm + 1e-8)).sum()
                 target_entropy = -(target_sv_norm * torch.log(target_sv_norm + 1e-8)).sum()
 
-                metrics["context_eff_rank"] = torch.exp(context_entropy).item()
-                metrics["target_eff_rank"] = torch.exp(target_entropy).item()
+                metrics["context_eff_rank"] = (
+                    torch.exp(context_entropy).item() if context_sv.sum() > 0 else 0.0
+                )
+                metrics["target_eff_rank"] = (
+                    torch.exp(target_entropy).item() if target_sv.sum() > 0 else 0.0
+                )
         except RuntimeError:
             # SVD can fail, just skip rank computation
             pass
@@ -749,7 +787,9 @@ class HJEPATrainer:
             prediction_mask = target_masks.any(dim=1)
 
             # Forward pass
-            outputs = self.model(images, prediction_mask)
+            outputs = self.model(
+                images, prediction_mask, context_mask=masks_dict["level_0"].get("context")
+            )
 
             # Log prediction comparison
             self.metrics_logger.log_prediction_comparison(
@@ -850,6 +890,23 @@ class HJEPATrainer:
         self.model.train()
         return metrics
 
+    def _rng_state(self) -> dict[str, Any]:
+        np_state = np.random.get_state()
+        state: dict[str, Any] = {
+            "python": random.getstate(),
+            "numpy": (np_state[0], np_state[1].tolist(), *np_state[2:]),
+            "torch": torch.get_rng_state(),
+        }
+        if torch.cuda.is_available():
+            state["cuda"] = torch.cuda.get_rng_state_all()
+        if self.device.type == "mps":
+            state["mps"] = torch.mps.get_rng_state()
+        for name in ("train", "val"):
+            loader = getattr(self, f"{name}_loader")
+            if loader is not None and loader.generator is not None:
+                state[name] = loader.generator.get_state()
+        return state
+
     def _save_checkpoint(
         self,
         epoch: int,
@@ -884,7 +941,16 @@ class HJEPATrainer:
             scheduler=scheduler_state,
             scaler=self.scaler,
             metrics=metrics,
-            extra_state={"global_step": self.global_step},
+            extra_state={
+                "global_step": self.global_step,
+                "config": self.config,
+                "loss_state_dict": self.loss_fn.state_dict(),
+                "rng_state": self._rng_state(),
+                "epoch_complete": getattr(self, "epoch_complete", True),
+                "early_stopping": (
+                    vars(self.early_stopping) if self.early_stopping is not None else None
+                ),
+            },
             is_best=is_best,
         )
 
@@ -907,7 +973,33 @@ class HJEPATrainer:
             device=self.device,
         )
 
+        if not metadata.get("epoch_complete", True):
+            raise ValueError(
+                "Cannot resume an incomplete epoch: sampler position is not saved. "
+                "Use an epoch-boundary checkpoint for reproducible continuation."
+            )
+        if self.early_stopping is not None and metadata.get("early_stopping") is not None:
+            self.early_stopping.__dict__.update(metadata["early_stopping"])
         self.current_epoch = metadata["epoch"] + 1
+        self.global_step = metadata.get("global_step", self.current_epoch * self.steps_per_epoch)
+        if "loss_state_dict" in metadata:
+            self.loss_fn.load_state_dict(metadata["loss_state_dict"])
+        if "rng_state" in metadata:
+            state = metadata["rng_state"]
+            random.setstate(state["python"])
+            np_state = state["numpy"]
+            np.random.set_state(
+                (np_state[0], np.array(np_state[1], dtype=np.uint32), *np_state[2:])
+            )
+            torch.set_rng_state(state["torch"].cpu())
+            if "cuda" in state and torch.cuda.is_available():
+                torch.cuda.set_rng_state_all([x.cpu() for x in state["cuda"]])
+            if "mps" in state and self.device.type == "mps":
+                torch.mps.set_rng_state(state["mps"].cpu())
+            for name in ("train", "val"):
+                loader = getattr(self, f"{name}_loader")
+                if loader is not None and loader.generator is not None and name in state:
+                    loader.generator.set_state(state[name].cpu())
 
         # Try to get best_metric from metadata, fallback to val_loss from metrics
         best_metric = metadata.get("best_metric", float("inf"))

@@ -57,6 +57,8 @@ class CosineScheduler:
         Returns:
             Learning rate value for this step
         """
+        if step >= self.total_steps:
+            return self.final_value
         if step < self.warmup_steps:
             # Linear warmup
             lr = (
@@ -122,6 +124,8 @@ class LinearScheduler:
 
     def __call__(self, step: int) -> float:
         """Get learning rate for the given training step."""
+        if step >= self.total_steps:
+            return self.final_value
         if step < self.warmup_steps:
             # Linear warmup
             lr = (
@@ -186,6 +190,8 @@ class EMAScheduler:
         Returns:
             EMA momentum coefficient for this step
         """
+        if step >= self.total_steps:
+            return self.final_value
         if step < self.warmup_steps:
             # During warmup, stay at base value
             return self.base_value

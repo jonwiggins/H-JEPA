@@ -2,6 +2,20 @@
 
 Technical documentation for the Hierarchical Joint-Embedding Predictive Architecture (H-JEPA).
 
+> Implementation clarification (2026-10-12): the diagrams below are conceptual,
+> not a verified paper reproduction. The implemented hierarchy pools the ordered
+> sequence of selected target tokens with 1D kernels `2**level` (ceil rounding),
+> not a 2D image pyramid with spatial downsampling. The context encoder zeros
+> hidden patch embeddings and retains dense tokens, rather than removing tokens
+> as in I-JEPA. FPN and shared projection heads are project extensions; only the
+> target backbone uses EMA. Classic encoder regularization applies variance and
+> covariance without matching unrelated images. SIGReg variants preserve raw
+> projected location/scale; the quantile-kernel variant is project-specific and
+> quadratic in sample count. End-to-end image training still includes prediction
+> loss. Historical benchmark/performance numbers below have not been reproduced
+> by this repository's small-run validation and should not be treated as measured
+> project results. See [validation report](VALIDATION_2026-10-12.md).
+
 ## Table of Contents
 
 1. [Overview](#overview)

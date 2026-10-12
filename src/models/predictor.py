@@ -54,7 +54,9 @@ class PredictorBlock(nn.Module):
         # Stochastic depth
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, key_padding_mask: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """
         Forward pass.
 
@@ -65,7 +67,9 @@ class PredictorBlock(nn.Module):
             Output tensor [B, N, D]
         """
         # Self-attention with residual connection
-        attn_out, _ = self.attn(self.norm1(x), self.norm1(x), self.norm1(x))
+        attn_out, _ = self.attn(
+            self.norm1(x), self.norm1(x), self.norm1(x), key_padding_mask=key_padding_mask
+        )
         x = x + self.drop_path(attn_out)
 
         # MLP with residual connection
@@ -186,6 +190,7 @@ class Predictor(nn.Module):
         context_features: torch.Tensor,
         mask_indices: torch.Tensor,
         pos_embed: torch.Tensor | None = None,
+        mask_valid: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Forward pass through the predictor.
@@ -219,6 +224,16 @@ class Predictor(nn.Module):
         # [B, N_context + N_mask, D]
         x = torch.cat([context_features, mask_tokens], dim=1)
 
+        key_padding_mask = None
+        if mask_valid is not None:
+            key_padding_mask = torch.cat(
+                [
+                    torch.zeros(B, N_context, dtype=torch.bool, device=x.device),
+                    ~mask_valid,
+                ],
+                dim=1,
+            )
+
         # Pass through transformer blocks with optional gradient checkpointing
         # Gradient checkpointing saves memory by recomputing activations during
         # the backward pass instead of storing them during the forward pass
@@ -226,10 +241,12 @@ class Predictor(nn.Module):
             for block in self.blocks:
                 # Use non-reentrant checkpointing for better compatibility with
                 # distributed training and edge cases
-                x = torch.utils.checkpoint.checkpoint(block, x, use_reentrant=False)
+                x = torch.utils.checkpoint.checkpoint(
+                    block, x, key_padding_mask, use_reentrant=False
+                )
         else:
             for block in self.blocks:
-                x = block(x)
+                x = block(x, key_padding_mask)
 
         # Extract only the predicted mask tokens
         x = x[:, N_context:, :]

@@ -22,6 +22,7 @@ Usage:
 import argparse
 import logging
 import os
+import random
 import sys
 from pathlib import Path
 from typing import Any
@@ -292,6 +293,8 @@ def setup_device(config: dict[str, Any], args: argparse.Namespace) -> torch.devi
         device = torch.device(config["device"])
     elif torch.cuda.is_available():
         device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
     else:
         device = torch.device("cpu")
 
@@ -346,6 +349,7 @@ def set_seed(seed: int, distributed: bool = False) -> None:
         seed: Random seed
         distributed: Whether distributed training is enabled
     """
+    random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -493,7 +497,10 @@ def main():
         device = setup_device(config, args)
 
         # Set random seed
-        set_seed(config.get("seed", 42), distributed=is_distributed)
+        set_seed(
+            config.get("seed", config.get("experiment", {}).get("seed", 42)),
+            distributed=is_distributed,
+        )
 
         # Create output directories
         if is_main_process:
@@ -570,6 +577,19 @@ def main():
 
         logger.info(f"Training dataset size: {len(train_dataset)}")
 
+        # Deterministic bounded subsets for smoke runs; no effect by default.
+        from torch.utils.data import Subset
+
+        for split in ("train", "val"):
+            count = config["data"].get(f"{split}_subset_size")
+            if count is not None:
+                if count <= 0:
+                    raise ValueError("Subset sizes must be positive")
+                if split == "train":
+                    train_dataset = Subset(train_dataset, range(min(count, len(train_dataset))))
+                elif val_dataset is not None:
+                    val_dataset = Subset(val_dataset, range(min(count, len(val_dataset))))
+
         # Build dataloaders
         train_loader = build_dataloader(
             dataset=train_dataset,
@@ -621,7 +641,7 @@ def main():
         logger.info("Building masking generator...")
 
         # Determine image dimensions in patches
-        patch_size = 16  # Most ViT models use 16x16 patches
+        patch_size = model.get_patch_size()
         img_size = config["data"]["image_size"]
         num_patches = (img_size // patch_size) ** 2
 
@@ -630,7 +650,9 @@ def main():
             input_size=(img_size, img_size),
             patch_size=patch_size,
             num_hierarchies=config["model"]["num_hierarchies"],
-            num_target_masks=config["masking"].get("num_masks", 4),
+            num_target_masks=config["masking"].get(
+                "num_target_masks", config["masking"].get("num_masks", 4)
+            ),
             base_scale=tuple(config["masking"].get("mask_scale", [0.05, 0.15])),
             aspect_ratio_range=tuple(config["masking"].get("aspect_ratio", [0.75, 1.5])),
         )

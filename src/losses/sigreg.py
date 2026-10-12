@@ -14,7 +14,7 @@ Mathematical Formulation:
     the distance from a standard 1D Gaussian distribution.
 
 Two Epps-Pulley variants are supported:
-    1. "reference_points" (default, original LeJEPA implementation):
+    1. "reference_points" (default, project-specific kernel approximation):
        Compares the empirical distribution to evenly-spaced quantile reference
        points using a Gaussian kernel.
     2. "char_function" (LeWorldModel variant):
@@ -30,7 +30,7 @@ References:
 """
 
 import math
-from typing import Literal
+from typing import Any, Literal
 
 import torch
 import torch.nn as nn
@@ -127,7 +127,7 @@ class EppsPulleyTest(nn.Module):
         return self._reference_points_forward(x)
 
     def _reference_points_forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Original reference-points implementation (LeJEPA)."""
+        """Project-specific kernel distance to a finite Gaussian quantile grid."""
         if x.ndim == 1:
             x = x.unsqueeze(0)
             squeeze_output = True
@@ -137,9 +137,9 @@ class EppsPulleyTest(nn.Module):
         batch_size, N = x.shape
         K = self.num_points
 
-        x_mean = x.mean(dim=-1, keepdim=True)
-        x_std = x.std(dim=-1, keepdim=True) + self.eps
-        x_standardized = (x - x_mean) / x_std
+        # Test against N(0, 1) in the original coordinates. Standardizing
+        # each projection would remove the mean/variance anti-collapse signal.
+        x_standardized = x
 
         g = self.reference_points.unsqueeze(0).expand(batch_size, -1)
 
@@ -176,9 +176,7 @@ class EppsPulleyTest(nn.Module):
         else:
             squeeze_output = False
 
-        x_mean = x.mean(dim=-1, keepdim=True)
-        x_std = x.std(dim=-1, keepdim=True) + self.eps
-        x_std_normed = (x - x_mean) / x_std  # [B, N]
+        x_std_normed = x  # Preserve the location and scale signal.
 
         t = self.quadrature_points  # [T]
 
@@ -290,6 +288,12 @@ class SIGRegLoss(nn.Module):
 
         # Pre-allocated fixed random slices if requested
         self._fixed_random_slices: torch.Tensor | None = None
+
+    def get_extra_state(self) -> dict[str, Any]:
+        return {"fixed_random_slices": self._fixed_random_slices}
+
+    def set_extra_state(self, state: dict[str, Any]) -> None:
+        self._fixed_random_slices = state["fixed_random_slices"]
 
     def _generate_random_slices(
         self,

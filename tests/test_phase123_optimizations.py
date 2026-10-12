@@ -585,6 +585,7 @@ class TestFPN:
         # Test 'add' fusion
         model_add = HJEPA(
             encoder_type="vit_tiny_patch16_224",
+            embed_dim=192,
             num_hierarchies=2,
             use_fpn=True,
             fpn_fusion_method="add",
@@ -595,6 +596,7 @@ class TestFPN:
         # Test 'concat' fusion
         model_concat = HJEPA(
             encoder_type="vit_tiny_patch16_224",
+            embed_dim=192,
             num_hierarchies=2,
             use_fpn=True,
             fpn_fusion_method="concat",

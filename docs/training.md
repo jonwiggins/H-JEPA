@@ -1,5 +1,15 @@
 # H-JEPA Training Guide
 
+For a measured, explicitly bounded CIFAR-10 smoke run, see
+[the correctness validation report](VALIDATION_2026-10-12.md) and
+`configs/validation_bounded.yaml`. Historical duration/accuracy estimates in this
+page are not guarantees. `training.max_steps` counts optimizer updates; partial
+accumulation windows are flushed and sample-weighted. Reproducible resume is
+supported at epoch boundaries with the same schedule/config and `num_workers=0`.
+A checkpoint from a max-step stop inside an epoch can be used for inference, but
+resume is rejected because sampler position is not stored. The validation harness
+provides a monotonic process-group deadline and persistent cumulative time budget.
+
 ## Table of Contents
 1. [Quick Start](#quick-start)
 2. [Available Configurations](#available-configurations)
