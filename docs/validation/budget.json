@@ -1,0 +1,394 @@
+[
+  {
+    "name": "baseline_core",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_trainers.py",
+      "tests/test_losses.py",
+      "tests/test_sigreg.py",
+      "tests/test_ijepa_compliance.py",
+      "tests/test_fpn.py",
+      "tests/test_lewm_features.py"
+    ],
+    "start": "2026-10-12T19:32:12.839715+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 60.707616250030696,
+    "status": "completed",
+    "end": "2026-10-12T19:33:13.548155+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "baseline_regressions",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_correctness_regressions.py"
+    ],
+    "start": "2026-10-12T19:33:32.818962+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 6.639844916993752,
+    "status": "completed",
+    "end": "2026-10-12T19:33:39.459603+00:00",
+    "returncode": 1
+  },
+  {
+    "name": "baseline_real",
+    "command": [
+      ".venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "baseline_real",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T19:34:57.231302+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 43.59141495905351,
+    "status": "completed",
+    "end": "2026-10-12T19:35:40.823603+00:00",
+    "returncode": 1
+  },
+  {
+    "name": "fixed_regressions_1",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_correctness_regressions.py"
+    ],
+    "start": "2026-10-12T19:36:32.901406+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 5.153434541891329,
+    "status": "completed",
+    "end": "2026-10-12T19:36:38.055557+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "fixed_core_1",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_correctness_regressions.py",
+      "tests/test_trainers.py",
+      "tests/test_losses.py",
+      "tests/test_sigreg.py",
+      "tests/test_ijepa_compliance.py",
+      "tests/test_fpn.py",
+      "tests/test_lewm_features.py"
+    ],
+    "start": "2026-10-12T19:37:20.548611+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 180.0,
+    "status": "cleanup_error_full_reservation",
+    "returncode": 1,
+    "last_test_output_utc": "2026-10-12T19:37:54.148935+00:00",
+    "note": "Tests completed (12 fixture-interface failures); supervisor killpg raised PermissionError after child exit. Full 180 s reservation retained; exact supervisor end was not recorded. No task processes remained on inspection."
+  },
+  {
+    "name": "fixed_real_1",
+    "command": [
+      ".venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "fixed_real_1",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T19:38:15.165912+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 18.45014158298727,
+    "status": "completed",
+    "end": "2026-10-12T19:38:33.616898+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "fixed_core_2",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_correctness_regressions.py",
+      "tests/test_trainers.py",
+      "tests/test_losses.py",
+      "tests/test_sigreg.py",
+      "tests/test_ijepa_compliance.py",
+      "tests/test_fpn.py",
+      "tests/test_lewm_features.py"
+    ],
+    "start": "2026-10-12T19:39:30.396414+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 35.450853042071685,
+    "status": "completed",
+    "end": "2026-10-12T19:40:05.848084+00:00",
+    "returncode": 1
+  },
+  {
+    "name": "final_suite_candidate",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests"
+    ],
+    "start": "2026-10-12T19:40:17.991499+00:00",
+    "allowance_seconds": 600.0,
+    "elapsed_seconds": 99.85399170790333,
+    "status": "completed",
+    "end": "2026-10-12T19:41:57.846544+00:00",
+    "returncode": -15
+  },
+  {
+    "name": "suite_offline",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests",
+      "--ignore=tests/test_data.py"
+    ],
+    "start": "2026-10-12T19:42:13.596054+00:00",
+    "allowance_seconds": 600.0,
+    "elapsed_seconds": 220.81804220797494,
+    "status": "completed",
+    "end": "2026-10-12T19:45:54.416298+00:00",
+    "returncode": 1
+  },
+  {
+    "name": "regressions_review",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_correctness_regressions.py",
+      "tests/test_trainers.py",
+      "tests/test_masks.py",
+      "tests/test_models.py",
+      "tests/test_phase123_optimizations.py",
+      "tests/test_utils.py",
+      "tests/test_vicreg.py"
+    ],
+    "start": "2026-10-12T19:46:19.843996+00:00",
+    "allowance_seconds": 300.0,
+    "elapsed_seconds": 71.4759661660064,
+    "status": "completed",
+    "child_pid": 17166,
+    "end": "2026-10-12T19:47:31.321107+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_core",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_correctness_regressions.py",
+      "tests/test_trainers.py",
+      "tests/test_losses.py",
+      "tests/test_sigreg.py",
+      "tests/test_lewm_features.py",
+      "tests/test_fpn.py"
+    ],
+    "start": "2026-10-12T19:47:56.239432+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 21.557985750027,
+    "status": "completed",
+    "child_pid": 18124,
+    "end": "2026-10-12T19:48:17.798362+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_classic_resume",
+    "command": [
+      ".venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "final_classic_resume",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T19:49:03.181033+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 13.740840124897659,
+    "status": "completed",
+    "child_pid": 18731,
+    "end": "2026-10-12T19:49:16.923087+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_classic_fresh",
+    "command": [
+      ".venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "final_classic_fresh",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T19:49:21.428537+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 14.084919875022024,
+    "status": "completed",
+    "child_pid": 18940,
+    "end": "2026-10-12T19:49:35.514500+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_sigreg",
+    "command": [
+      ".venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "final_sigreg",
+      "--regime",
+      "sigreg",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T19:50:03.237315+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 18.565022457856685,
+    "status": "completed",
+    "child_pid": 19435,
+    "end": "2026-10-12T19:50:21.803360+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_end_to_end",
+    "command": [
+      ".venv/bin/python",
+      "scripts/validate_small_run.py",
+      "--name",
+      "final_end_to_end",
+      "--regime",
+      "end_to_end",
+      "--resume-check"
+    ],
+    "start": "2026-10-12T19:50:36.068752+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 13.59808054100722,
+    "status": "completed",
+    "child_pid": 19744,
+    "end": "2026-10-12T19:50:49.667706+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_cli",
+    "command": [
+      ".venv/bin/python",
+      "scripts/train.py",
+      "--config",
+      "results/validation/cli.yaml",
+      "--device",
+      "mps"
+    ],
+    "start": "2026-10-12T19:51:09.203304+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 10.488003124948591,
+    "status": "completed",
+    "child_pid": 20408,
+    "end": "2026-10-12T19:51:19.692404+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_cli_resume",
+    "command": [
+      ".venv/bin/python",
+      "scripts/train.py",
+      "--config",
+      "results/validation/cli.yaml",
+      "--device",
+      "mps",
+      "--resume",
+      "results/validation/cli/checkpoints/checkpoint_epoch_0000.pth"
+    ],
+    "start": "2026-10-12T19:51:50.282747+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 8.519871957832947,
+    "status": "completed",
+    "child_pid": 22500,
+    "end": "2026-10-12T19:51:58.803571+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_suite",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests",
+      "--ignore=tests/test_data.py"
+    ],
+    "start": "2026-10-12T19:53:19.656587+00:00",
+    "allowance_seconds": 600.0,
+    "elapsed_seconds": 219.67258004192263,
+    "status": "completed",
+    "child_pid": 23577,
+    "end": "2026-10-12T19:56:59.330983+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "final_data_transforms",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-o",
+      "addopts=",
+      "tests/test_data.py::TestJEPATransforms",
+      "tests/test_data.py::TestAugmentations",
+      "tests/test_data.py::TestMultiCropTransforms"
+    ],
+    "start": "2026-10-12T19:57:07.721425+00:00",
+    "allowance_seconds": 180.0,
+    "elapsed_seconds": 3.0349224999081343,
+    "status": "completed",
+    "child_pid": 25724,
+    "end": "2026-10-12T19:57:10.757192+00:00",
+    "returncode": 0
+  },
+  {
+    "name": "timeout_cleanup_check",
+    "command": [
+      ".venv/bin/python",
+      "-c",
+      "import subprocess,sys,time; child=subprocess.Popen([sys.executable,\"-c\",\"import time; time.sleep(60)\"]); print(child.pid,flush=True); time.sleep(60)"
+    ],
+    "start": "2026-10-12T19:57:59.210224+00:00",
+    "allowance_seconds": 1.0,
+    "elapsed_seconds": 1.007105875061825,
+    "status": "timeout",
+    "child_pid": 26176,
+    "end": "2026-10-12T19:58:00.218432+00:00",
+    "returncode": 124
+  }
+]
