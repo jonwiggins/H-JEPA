@@ -507,3 +507,23 @@ and both a replacement PR and a direct main push are explicitly forbidden.
 gh workflow run test.yml --ref optio/task-8e636231-a839-4b71-b129-f99c8cf411d7
 gh run view 38342722329
 ```
+
+
+Final follow-up CI outcome: workflow **38342722329 succeeded** on exact code
+revision `9cafbafa70b73ca78088c30d5136750bebddca2a`. Ubuntu/Python 3.12 also completed:
+**1,494 passed, 23 skipped**, 7462.74 seconds including cold archive downloads.
+All three platform/Python combinations passed formatting, Ruff, mypy, the full
+pytest command, and coverage upload. Every real-data test remained enabled.
+The three full suites respectively completed in 1h15m52s, 2h04m22s, and 1h33m16s
+(Ubuntu 3.11, Ubuntu 3.12, macOS 3.12). The difference is dominated by slow cold
+archive transfers; the fixture fix eliminates subsequent copies within each job.
+These are CI durations, not new training experiments. No checks were disabled or
+suppressed to obtain success. The GPU availability job still did not execute CUDA.
+
+This green result applies to the **unmerged follow-up**, not retrospectively to
+the six-hour timeout workflows on merged commit `4696ce6`. The only remaining
+blocker is permission to land the follow-up through another PR: the original PR
+was already merged before these failures became visible. All follow-up changes,
+validation evidence and this report are committed/pushed on the same task branch;
+report-only commits after `9cafbaf` leave tested source, tests and workflows
+unchanged. No replacement PR has been created and main has not been pushed.
