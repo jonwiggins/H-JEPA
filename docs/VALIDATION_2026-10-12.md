@@ -480,3 +480,30 @@ python -m pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing
 gh run view 38311530081 --log
 gh run view 38311536204 --log
 ```
+
+
+The follow-up fix is committed as
+`9cafbafa70b73ca78088c30d5136750bebddca2a` and pushed to the original task branch.
+Manual Tests workflow [38342722329](https://github.com/jonwiggins/H-JEPA/actions/runs/38342722329)
+checks that exact commit with the unchanged full test command. As of
+2026-10-13 05:38 UTC, Ubuntu/Python 3.11 passed **1,494 tests, 23 skipped**
+(pytest 4552.82 seconds, including cold downloads), and macOS/Python 3.12 passed
+**1,504 tests, 13 skipped** (5596.13 seconds). Both completed every data test.
+Ubuntu/Python 3.12 remains in pytest, so the complete workflow is not yet green.
+The separate GPU availability job skipped CUDA tests. No further local training
+or evaluation experiment was launched; the original budget ledger is unchanged.
+These are ordinary CI runs, separately authorized in the follow-through request.
+
+The Ubuntu/Python 3.11 log shows CIFAR-100's first load completed at 04:52:45;
+subsequent builder and verification tests reused the data and completed without
+another archive download (verification at 04:55:15). This directly validates the
+fixture change while retaining the real loader/integrity behavior. Compact check
+status is in `docs/validation/ci-data-reuse-status.json`. Later report-only commits
+do not change the tested Python code or workflow. The follow-up remains unmerged;
+landing it requires permission for a follow-up PR because PR #6 is already merged
+and both a replacement PR and a direct main push are explicitly forbidden.
+
+```sh
+gh workflow run test.yml --ref optio/task-8e636231-a839-4b71-b129-f99c8cf411d7
+gh run view 38342722329
+```

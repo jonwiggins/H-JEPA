@@ -1,0 +1,33 @@
+{
+  "workflow_url": "https://github.com/jonwiggins/H-JEPA/actions/runs/38342722329",
+  "tested_revision": "9cafbafa70b73ca78088c30d5136750bebddca2a",
+  "observed_at_utc": "2026-10-13T05:38:00Z",
+  "status": "in_progress",
+  "conclusion": "",
+  "jobs": [
+    {
+      "name": "test-gpu",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/jonwiggins/H-JEPA/actions/runs/38342722329/job/115117108882"
+    },
+    {
+      "name": "test (ubuntu-latest, 3.12)",
+      "status": "in_progress",
+      "conclusion": "",
+      "url": "https://github.com/jonwiggins/H-JEPA/actions/runs/38342722329/job/115117109018"
+    },
+    {
+      "name": "test (macos-latest, 3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/jonwiggins/H-JEPA/actions/runs/38342722329/job/115117109043"
+    },
+    {
+      "name": "test (ubuntu-latest, 3.11)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/jonwiggins/H-JEPA/actions/runs/38342722329/job/115117109084"
+    }
+  ]
+}
