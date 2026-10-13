@@ -14,10 +14,6 @@ Test Coverage:
 - Edge cases and error handling
 """
 
-import shutil
-import tempfile
-from pathlib import Path
-
 import pytest
 import torch
 from PIL import Image
@@ -51,6 +47,16 @@ from src.data import (
     multicrop_collate_fn,
     verify_dataset,
 )
+
+
+@pytest.fixture(scope="module")
+def temp_data_dir(tmp_path_factory):
+    """Share immutable CIFAR archives across classes instead of downloading seven times.
+
+    Keep the real download/load/integrity checks and fresh dataset instances in each
+    test. The directory belongs to pytest and is isolated from other test modules.
+    """
+    return tmp_path_factory.mktemp("cifar")
 
 
 class TestJEPATransforms:
@@ -422,15 +428,6 @@ class TestMultiCropTransforms:
 class TestCIFARDatasets:
     """Test CIFAR dataset classes."""
 
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        # Cleanup after tests
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-
     def test_cifar10_download(self, temp_data_dir):
         """Test CIFAR-10 download and loading."""
         dataset = CIFAR10Dataset(
@@ -511,14 +508,6 @@ class TestCIFARDatasets:
 class TestMultiCropDatasets:
     """Test multi-crop dataset classes."""
 
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-
     def test_multicrop_dataset_basic(self, temp_data_dir):
         """Test MultiCropDataset wrapper."""
         base_dataset = CIFAR10Dataset(
@@ -547,7 +536,7 @@ class TestMultiCropDatasets:
         """Test MultiCropDatasetRaw."""
         dataset = MultiCropDatasetRaw(
             dataset_name="cifar10",
-            data_path=temp_data_dir,
+            data_path=temp_data_dir / "cifar10",
             split="train",
             download=True,
         )
@@ -564,7 +553,7 @@ class TestMultiCropDatasets:
         """Test building multi-crop dataset."""
         dataset = build_multicrop_dataset(
             dataset_name="cifar10",
-            data_path=temp_data_dir,
+            data_path=temp_data_dir / "cifar10",
             split="train",
             num_global_crops=2,
             num_local_crops=6,
@@ -579,7 +568,7 @@ class TestMultiCropDatasets:
         """Test building multi-crop dataloader."""
         dataset = build_multicrop_dataset(
             dataset_name="cifar10",
-            data_path=temp_data_dir,
+            data_path=temp_data_dir / "cifar10",
             split="train",
             download=True,
         )
@@ -629,14 +618,6 @@ class TestMultiCropDatasets:
 
 class TestMultiDatasets:
     """Test multi-dataset support for foundation models."""
-
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
 
     def test_weighted_multi_dataset(self, temp_data_dir):
         """Test WeightedMultiDataset with sampling weights."""
@@ -717,14 +698,6 @@ class TestMultiDatasets:
 class TestDatasetBuilder:
     """Test dataset builder function."""
 
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-
     def test_build_cifar10(self, temp_data_dir):
         """Test building CIFAR-10 dataset."""
         dataset = build_dataset(
@@ -787,14 +760,6 @@ class TestDatasetBuilder:
 
 class TestDataLoader:
     """Test dataloader functionality."""
-
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
 
     def test_build_dataloader(self, temp_data_dir):
         """Test building dataloader."""
@@ -965,14 +930,6 @@ class TestDatasetInfo:
 class TestVerification:
     """Test dataset verification."""
 
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-
     def test_verify_cifar10(self, temp_data_dir):
         """Test CIFAR-10 verification."""
         # Download first
@@ -1019,14 +976,6 @@ class TestVerification:
 
 class TestEdgeCasesAndErrorHandling:
     """Test edge cases and error handling."""
-
-    @pytest.fixture(scope="class")
-    def temp_data_dir(self):
-        """Create temporary directory for test data."""
-        temp_dir = Path(tempfile.mkdtemp())
-        yield temp_dir
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
 
     def test_custom_image_size(self, temp_data_dir):
         """Test datasets with custom image sizes."""

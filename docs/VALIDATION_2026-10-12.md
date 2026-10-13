@@ -433,3 +433,50 @@ results/validation/container-venv/bin/python scripts/train.py --help
 .venv/bin/python scripts/bounded_validation.py --seconds 180 --name container_cpu_final_resume -- results/validation/container-venv/bin/python scripts/validate_small_run.py --name container_cpu_final_resume --device cpu --resume-check
 .venv/bin/python scripts/bounded_validation.py --seconds 180 --name container_cpu_final_fresh -- results/validation/container-venv/bin/python scripts/validate_small_run.py --name container_cpu_final_fresh --device cpu --resume-check
 ```
+
+
+### Post-merge CI timeout investigation (2026-10-13 UTC)
+
+GitHub records PR #6 as externally squash-merged at 2026-10-12 21:35:02 UTC,
+before its final checks completed. Task head
+`7bd532c50d2365daca0ad96b3fa3d3cf0b61b8a1` and merge commit
+`4696ce60ff47f5c37d20c31b74ef5a2cc4ae14ef` have identical Git trees. The agent
+issued no merge command. Both Docker workflows (38311530050 and 38311536007)
+passed, including all three images, dependency/import/CLI checks, container smoke
+checks and security checks. CUDA tests were skipped because no CUDA runner was
+available; successful GPU image construction is not CUDA execution evidence.
+
+Both Python workflows (38311530081 and 38311536204) passed formatting, lint and
+mypy, then all six matrix jobs exceeded GitHub's six-hour execution limit.
+Each logged 183 passing tests with no assertion failure; its last completed test
+was `TestVerification::test_verify_cifar10`. The download tests earlier in the
+same logs passed. For example, Ubuntu/Python 3.11 first loaded CIFAR-10 at 22:02
+and CIFAR-100 at 22:26, then downloaded them again for subsequent classes until
+the job was killed at 03:35. This confirms repeated slow archive downloads,
+not a trainer/type-check failure. Compact evidence is in
+`docs/validation/ci-timeout-summary.json`; full logs remain untracked.
+
+Seven class-scoped temporary directories caused repeated full CIFAR downloads;
+the multicrop tests additionally used two different roots. The follow-up on the
+same task branch shares a pytest-owned module-scoped directory and one root per
+dataset. It retains all 77 test cases, all assertions, real downloads, torchvision
+integrity checks, and separate dataset objects/transforms. No test is skipped,
+mocked, or weakened. A structural comparison confirmed unchanged test names and
+assertions; collection, Black and Ruff passed. A manual execution of the unchanged
+Tests workflow on the follow-up branch is required to validate the entire suite.
+
+The fix changes test data reuse only; model/training behavior and the cumulative
+experiment charge (1463.04 seconds) are unchanged. Further commits cannot be
+merged through the already-merged PR #6. The user's instruction forbids another
+PR or a direct main push, so landing this follow-up requires a scope exception;
+no replacement PR or direct main push has been made. Full green CI for the merged
+revision has **not** been established.
+
+Reproduction on an empty pytest data directory:
+
+```sh
+python -m pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing
+# Inspect the recorded failures without rerunning a six-hour job:
+gh run view 38311530081 --log
+gh run view 38311536204 --log
+```

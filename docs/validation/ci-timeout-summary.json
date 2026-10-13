@@ -1,0 +1,48 @@
+{
+  "ci-final-tests": {
+    "test (ubuntu-latest, 3.12)": {
+      "passed": 183,
+      "last_passed": "2026-10-13T03:14:50.7169051Z tests/test_data.py::TestVerification::test_verify_cifar10 PASSED         [ 12%]",
+      "failures": [
+        "2026-10-13T03:35:31.5435706Z ##[error]The operation was canceled."
+      ]
+    },
+    "test (macos-latest, 3.12)": {
+      "passed": 183,
+      "last_passed": "2026-10-13T03:17:37.8664310Z tests/test_data.py::TestVerification::test_verify_cifar10 PASSED         [ 12%]",
+      "failures": [
+        "2026-10-13T03:35:30.3124720Z ##[error]The operation was canceled."
+      ]
+    },
+    "test (ubuntu-latest, 3.11)": {
+      "passed": 183,
+      "last_passed": "2026-10-13T03:17:04.5847550Z tests/test_data.py::TestVerification::test_verify_cifar10 PASSED         [ 12%]",
+      "failures": [
+        "2026-10-13T03:35:16.1705037Z ##[error]The operation was canceled."
+      ]
+    }
+  },
+  "ci-postmerge-tests": {
+    "test (ubuntu-latest, 3.12)": {
+      "passed": 183,
+      "last_passed": "2026-10-13T03:17:15.3640084Z tests/test_data.py::TestVerification::test_verify_cifar10 PASSED         [ 12%]",
+      "failures": [
+        "2026-10-13T03:35:19.8558512Z ##[error]The operation was canceled."
+      ]
+    },
+    "test (ubuntu-latest, 3.11)": {
+      "passed": 183,
+      "last_passed": "2026-10-13T03:17:00.5836976Z tests/test_data.py::TestVerification::test_verify_cifar10 PASSED         [ 12%]",
+      "failures": [
+        "2026-10-13T03:35:32.4608866Z ##[error]The operation was canceled."
+      ]
+    },
+    "test (macos-latest, 3.12)": {
+      "passed": 183,
+      "last_passed": "2026-10-13T03:17:18.8035020Z tests/test_data.py::TestVerification::test_verify_cifar10 PASSED         [ 12%]",
+      "failures": [
+        "2026-10-13T03:35:26.6596690Z ##[error]The operation was canceled."
+      ]
+    }
+  }
+}
